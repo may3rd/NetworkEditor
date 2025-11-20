@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useEffect, Key } from "react";
+import { useMemo, useCallback, useEffect, useState } from "react";
 import {
   Background,
   Controls,
@@ -71,31 +71,33 @@ export function NetworkEditor({
     },  
   };
 
-  // Nodes change handle
-  const handleNodesChange = useCallback((changes: NodesChange<Node>[]) => {
-  const positionChanges = changes
-    .filter(
-      (change): change is NodesChange<Node>[number] & { type: 'position'; position: { x: number; y: number } } =>
-        change.type === 'position' &&
-        'position' in change &&
-        change.position !== undefined &&
-        change.dragging === false
-    )
-    .map(change => ({
-      id: change.id,
-      position: change.position!,
-    }));
+  // Add local state for live dragging
+  const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
+  useEffect(() => {
+    setLocalNodes(rfNodes);
+  }, [rfNodes]);
 
-  if (positionChanges.length > 0 && onNetworkChange) {
-    onNetworkChange({
-      ...network,
-      nodes: network.nodes.map(node => {
-        const updated = positionChanges.find(pc => pc.id === node.id);
-        return updated ? { ...node, position: updated.position } : node;
-      }),
-    });
-  }
-}, [network, onNetworkChange]);
+  // Improved handler – now updates instantly during drag
+  const handleNodesChange = useCallback((changes: NodesChange<Node>[]) => {
+    setLocalNodes((nds) => applyNodeChanges(changes, nds));
+
+    // Only persist to parent on drag end
+    const endedDragChanges = changes.filter(
+      (c) => c.type === "position" && c.dragging === false && c.position
+    );
+
+    if (endedDragChanges.length > 0 && onNetworkChange) {
+      const updatedNodes = network.nodes.map((node) => {
+        const change = endedDragChanges.find((c) => c.id === node.id);
+        return change ? { ...node, position: change.position! } : node;
+      });
+
+      onNetworkChange({
+        ...network,
+        nodes: updatedNodes,
+      });
+    }
+  }, [network, onNetworkChange]);
 
   const rfEdges = useMemo<Edge[]>(
     () =>
@@ -198,7 +200,7 @@ export function NetworkEditor({
       {/* React Flow – offset by toolbar height */}
       <div style={{ height: "100%", paddingTop: 48 }}>
         <ReactFlow
-          nodes={rfNodes}
+          nodes={localNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
