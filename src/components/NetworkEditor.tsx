@@ -8,6 +8,8 @@ import {
   ReactFlow,
   type Edge,
   type Node,
+  MarkerType,
+  type DefaultEdgeOptions,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -48,6 +50,17 @@ export function NetworkEditor({
     [network.nodes, selectedId, selectedType]
   );
 
+  // Define rectangular (orthogonal) edges with right-angle routing
+const defaultEdgeOptions: DefaultEdgeOptions = {
+  style: { strokeWidth: 2, stroke: "#94a3b8" },
+  type: "smoothstep",           // "smoothstep" or "step" gives perfect right angles
+  animated: false,
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    color: "#94a3b8",
+  },
+};
+
   const rfEdges = useMemo<Edge[]>(
     () =>
       network.pipes.map((pipe) => ({
@@ -55,6 +68,7 @@ export function NetworkEditor({
         source: pipe.startNodeId,
         target: pipe.endNodeId,
         label: `${pipe.length} m`,
+        type: "smoothstep",
         style: {
           strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 1 : 1,
           stroke: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
@@ -91,6 +105,7 @@ export function NetworkEditor({
         nodes={rfNodes}
         edges={rfEdges}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         onNodeClick={(_, node) => onSelect(node.id, "node")}

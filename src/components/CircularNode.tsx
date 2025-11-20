@@ -13,8 +13,8 @@ function CircularNode({ data }: { data: NodeData }) {
 
   return (
     <>
-      <Handle type="target" position={Position.Top} style={{ opacity: 1 }} />
-      <Handle type="source" position={Position.Bottom} style={{ opacity: 1 }} />
+      <Handle type="target" position={Position.Left} style={{ opacity: 1 }} />
+      <Handle type="source" position={Position.Right} style={{ opacity: 1 }} />
 
       {/* Main circle – only background color changes when selected */}
       <div
