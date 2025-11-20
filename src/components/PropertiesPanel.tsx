@@ -42,15 +42,15 @@ export function PropertiesPanel({
       border="1px solid"
       borderColor="gray.200"
       p={4}
-      spacing={4}
+      gap={4}
     >
       <Heading size="md">Properties</Heading>
 
       {node && (
-        <Stack spacing={3}>
+        <Stack gap={3}>
           <Text fontWeight="semibold">{node.label}</Text>
 
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Label
             </Text>
@@ -60,7 +60,7 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Elevation (m)
             </Text>
@@ -73,7 +73,7 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Demand (L/s)
             </Text>
@@ -89,13 +89,13 @@ export function PropertiesPanel({
       )}
 
       {pipe && (
-        <Stack spacing={3}>
+        <Stack gap={3}>
           <Text fontWeight="semibold">Pipe {pipe.id}</Text>
           <Text fontSize="sm" color="gray.500">
             {pipe.startNodeId} → {pipe.endNodeId}
           </Text>
 
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Length (m)
             </Text>
@@ -108,7 +108,7 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Diameter (mm)
             </Text>
@@ -121,7 +121,7 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Roughness (mm)
             </Text>

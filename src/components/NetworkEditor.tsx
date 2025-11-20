@@ -168,17 +168,15 @@ export function NetworkEditor({
         background: "#fff",
         border: "1px solid #e2e8f0",
         position: "relative",
-        flex: 1,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Toolbar */}
       <div
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 48,
+          height: 36,
+          flexShrink: 0,
           background: "#f8fafc",
           borderBottom: "1px solid #e2e8f0",
           display: "flex",
@@ -193,11 +191,12 @@ export function NetworkEditor({
           disabled={!canUndo}
           style={{
             background: canUndo ? "#f59e0b" : "#cbd5e1",
-            color: canUndo ? "#000" : "#64748b",
+            color: canUndo ? "#000" : "white",
             border: "none",
-            padding: "8px 16px",
-            borderRadius: 8,
+            padding: "4px 8px",
+            borderRadius: 6,
             fontWeight: "600",
+            fontSize: "13px",
             cursor: canUndo ? "pointer" : "not-allowed",
           }}
           title="Undo (Ctrl+Z)"
@@ -212,9 +211,10 @@ export function NetworkEditor({
             background: canRedo ? "#10b981" : "#cbd5e1",
             color: "white",
             border: "none",
-            padding: "8px 16px",
-            borderRadius: 8,
+            padding: "4px 8px",
+            borderRadius: 6,
             fontWeight: "600",
+            fontSize: "13px",
             cursor: canRedo ? "pointer" : "not-allowed",
           }}
           title="Redo (Ctrl+Y)"
@@ -228,7 +228,12 @@ export function NetworkEditor({
       </div>
 
       {/* React Flow */}
-      <div style={{ height: "100%", paddingTop: 48 }}>
+      <div style={{ 
+        flex: 1,
+        minHeight: 0,
+        position: "relative",
+        width: "100%",
+      }}>
         <ReactFlow
           nodes={localNodes}
           edges={rfEdges}
@@ -240,9 +245,8 @@ export function NetworkEditor({
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={() => onSelect(null, null)}
           onNodesChange={handleNodesChange}
-          // Correct way to hide connection indicator halo
-          connectionLineStyle={{ stroke: "#94a3b8", strokeWidth: 1 }}
-          connectionMode={ConnectionMode.Loose}
+          maxZoom={16}
+          minZoom={0.1}
         >
           <Background />
           <MiniMap

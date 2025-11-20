@@ -34,7 +34,7 @@ export function SummaryPanel({ network, lastSolvedAt }: Props) {
       <SummaryCard label="Total demand" value={`${stats.totalDemand} L/s`} />
       <SummaryCard
         label="Avg pressure"
-        value={`${stats.avgPressure} m`}
+        value={`${stats.avgPressure} kPa`}
         helper={lastSolvedAt ? `Last solve: ${lastSolvedAt}` : undefined}
       />
     </Grid>

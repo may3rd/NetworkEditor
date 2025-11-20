@@ -20,7 +20,7 @@ export function Header({ onSolve, isSolving }: Props) {
       justify="center"
     >
       <Flex align="center" gap={4} w="100%" wrap={{ base: "wrap", md: "nowrap" }}>
-        <Stack spacing={1} flex="1 1 auto">
+        <Stack gap={1} flex="1 1 auto">
           <Heading size="lg">Pipeline Network Builder</Heading>
           <Text color="gray.600">
             Sketch networks, edit properties, then run the mock hydraulic solver.
@@ -29,7 +29,7 @@ export function Header({ onSolve, isSolving }: Props) {
 
         <Button
           ml={{ base: 0, md: "auto" }}
-          colorScheme="teal"
+          background={"#239BA7"}
           onClick={onSolve}
           isLoading={isSolving}
         >
