@@ -2,20 +2,20 @@
 
 import { useMemo, useCallback, useEffect, useState } from "react";
 import {
+  ReactFlow,
   Background,
   Controls,
   MiniMap,
-  ReactFlow,
+  ConnectionMode,
   type Edge,
   type Node,
-  MarkerType,
   type NodesChange,
+  MarkerType,
   applyNodeChanges,
   type DefaultEdgeOptions,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-
-import CircularNode from "@/components/CircularNode";
+import PressureNode from "@/components/PressureNode";
 import { NetworkState } from "@/lib/types";
 
 type Props = {
@@ -53,7 +53,7 @@ export function NetworkEditor({
     () =>
       network.nodes.map((node) => ({
         id: node.id,
-        type: "circular",
+        type: "pressure",
         position: node.position,
         data: {
           label: node.label,
@@ -88,7 +88,7 @@ export function NetworkEditor({
     [network.pipes, selectedId, selectedType]
   );
 
-  const nodeTypes = useMemo(() => ({ circular: CircularNode }), []);
+  const nodeTypes = useMemo(() => ({ pressure: PressureNode }), []);
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
     style: { strokeWidth: 2, stroke: "#94a3b8" },
@@ -98,25 +98,65 @@ export function NetworkEditor({
 
   const handleNodesChange = useCallback(
     (changes: NodesChange<Node>[]) => {
+      // Update local nodes for smooth dragging feedback
       setLocalNodes((nds) => applyNodeChanges(changes, nds));
-
-      const endedDragChanges = changes.filter(
+  
+      // Detect drag-end events (dragging: false + position exists)
+      const dragEndedChanges = changes.filter(
         (c): c is Extract<NodesChange<Node>[number], { type: "position"; dragging: false }> =>
-          c.type === "position" && c.dragging === false && !!c.position
+          c.type === "position" && c.dragging === false && c.position !== undefined
       );
-
-      if (endedDragChanges.length > 0 && onNetworkChange) {
-        onNetworkChange({
-          ...network,
-          nodes: network.nodes.map((node) => {
-            const change = endedDragChanges.find((c) => c.id === node.id);
-            return change ? { ...node, position: change.position! } : node;
-          }),
-        });
+  
+      if (dragEndedChanges.length > 0) {
+        // Persist positions to parent state
+        if (onNetworkChange) {
+          onNetworkChange({
+            ...network,
+            nodes: network.nodes.map((node) => {
+              const change = dragEndedChanges.find((c) => c.id === node.id);
+              return change ? { ...node, position: change.position! } : node;
+            }),
+          });
+        }
+  
+        // Safely select the last moved node
+        const lastMovedChange = dragEndedChanges[dragEndedChanges.length - 1];
+        if (lastMovedChange?.id) {
+          onSelect(lastMovedChange.id, "node");
+        }
       }
     },
-    [network, onNetworkChange]
+    [network, onNetworkChange, onSelect]
   );
+
+  // ── Keyboard Delete (Backspace / Delete) ───────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Backspace" && e.key !== "Delete") return;
+      if (!selectedId || !selectedType) return;
+
+      // Do not delete while typing in an input field
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === "INPUT" ||
+          active.tagName === "TEXTAREA" ||
+          (active as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+
+      e.preventDefault();
+
+      if (window.confirm(`Delete this ${selectedType}?`)) {
+        onDelete?.();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, selectedType, onDelete]);
+  // ───────────────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -201,7 +241,8 @@ export function NetworkEditor({
           onPaneClick={() => onSelect(null, null)}
           onNodesChange={handleNodesChange}
           // Correct way to hide connection indicator halo
-          connectionLineStyle={{ stroke: "#94a3b8", strokeWidth: 2 }}
+          connectionLineStyle={{ stroke: "#94a3b8", strokeWidth: 1 }}
+          connectionMode={ConnectionMode.Loose}
         >
           <Background />
           <MiniMap

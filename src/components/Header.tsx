@@ -17,16 +17,22 @@ export function Header({ onSolve, isSolving }: Props) {
       borderColor="gray.200"
       p={6}
       gap={4}
+      justify="center"
     >
-      <Stack spacing={1}>
-        <Heading size="lg">Pipeline Network Builder</Heading>
-        <Text color="gray.600">
-          Sketch networks, edit properties, then run the mock hydraulic solver.
-        </Text>
-      </Stack>
+      <Flex align="center" gap={4} w="100%" wrap={{ base: "wrap", md: "nowrap" }}>
+        <Stack spacing={1} flex="1 1 auto">
+          <Heading size="lg">Pipeline Network Builder</Heading>
+          <Text color="gray.600">
+            Sketch networks, edit properties, then run the mock hydraulic solver.
+          </Text>
+        </Stack>
 
-      <Flex gap={3} wrap="wrap">
-        <Button onClick={onSolve} colorScheme="teal" isLoading={isSolving}>
+        <Button
+          ml={{ base: 0, md: "auto" }}
+          colorScheme="teal"
+          onClick={onSolve}
+          isLoading={isSolving}
+        >
           {isSolving ? "Solving..." : "Run hydraulic calculation"}
         </Button>
       </Flex>

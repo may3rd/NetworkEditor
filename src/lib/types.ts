@@ -37,24 +37,24 @@ const baseNetwork: NetworkState = {
   nodes: [
     {
       id: "n1",
-      label: "Source",
+      label: "A",
       elevation: 30,
       demand: 0,
       position: { x: 150, y: 220 },
     },
     {
       id: "n2",
-      label: "J1",
+      label: "B1",
       elevation: 15,
       demand: 6,
-      position: { x: 420, y: 180 },
+      position: { x: 300, y: 120 },
     },
     {
       id: "n3",
-      label: "J2",
+      label: "B2",
       elevation: 10,
       demand: 4,
-      position: { x: 420, y: 320 },
+      position: { x: 450, y: 220 },
     },
   ],
   pipes: [
