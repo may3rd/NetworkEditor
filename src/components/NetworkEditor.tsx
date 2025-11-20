@@ -96,7 +96,7 @@ export function NetworkEditor({
         onNodeClick={(_, node) => onSelect(node.id, "node")}
         onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
         onPaneClick={() => onSelect(null, null)}
-      >
+      >    
         <Background />
         <MiniMap
           pannable
