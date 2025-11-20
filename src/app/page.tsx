@@ -91,6 +91,10 @@ export default function Home() {
     }
   }, [previousNetwork, handleSelect]);
 
+  const handleNetworkChange = useCallback((updatedNetwork: NetworkState) => {
+    setNetwork(updatedNetwork);
+  }, []);
+
   return (
     <Stack bg="#f8fafc" minH="100vh" gap={6} p={8}>
       <Header onSolve={handleSolve} isSolving={isSolving} />
@@ -105,6 +109,7 @@ export default function Home() {
           onDelete={handleDelete}
           onUndo={handleUndo}
           canUndo={!!previousNetwork}
+          onNetworkChange={handleNetworkChange}
           height="600px"
         />
 

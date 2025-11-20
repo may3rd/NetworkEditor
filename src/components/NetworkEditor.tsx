@@ -9,6 +9,8 @@ import {
   type Edge,
   type Node,
   MarkerType,
+  type NodesChange,
+  applyNodeChanges,
   type DefaultEdgeOptions,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
@@ -25,6 +27,7 @@ type Props = {
   onDelete?: () => void;
   onUndo?: () => void;
   canUndo?: boolean;
+  onNetworkChange?: (updatedNetwork: NetworkState) => void;
   height?: string | number;
 };
 
@@ -36,6 +39,7 @@ export function NetworkEditor({
   onDelete,
   onUndo,
   canUndo = false,
+  onNetworkChange,
   height = 520
 }: Props) {
   const rfNodes = useMemo<Node[]>(
@@ -57,15 +61,41 @@ export function NetworkEditor({
   );
 
   // Define rectangular (orthogonal) edges with right-angle routing
-const defaultEdgeOptions: DefaultEdgeOptions = {
-  style: { strokeWidth: 2, stroke: "#94a3b8" },
-  type: "smoothstep",           // "smoothstep" or "step" gives perfect right angles
-  animated: false,
-  markerEnd: {
-    type: MarkerType.ArrowClosed,
-    color: "#94a3b8",
-  },
-};
+  const defaultEdgeOptions: DefaultEdgeOptions = {
+    style: { strokeWidth: 2, stroke: "#94a3b8" },
+    type: "smoothstep",           // "smoothstep" or "step" gives perfect right angles
+    animated: false,
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      color: "#94a3b8",
+    },  
+  };
+
+  // Nodes change handle
+  const handleNodesChange = useCallback((changes: NodesChange<Node>[]) => {
+  const positionChanges = changes
+    .filter(
+      (change): change is NodesChange<Node>[number] & { type: 'position'; position: { x: number; y: number } } =>
+        change.type === 'position' &&
+        'position' in change &&
+        change.position !== undefined &&
+        change.dragging === false
+    )
+    .map(change => ({
+      id: change.id,
+      position: change.position!,
+    }));
+
+  if (positionChanges.length > 0 && onNetworkChange) {
+    onNetworkChange({
+      ...network,
+      nodes: network.nodes.map(node => {
+        const updated = positionChanges.find(pc => pc.id === node.id);
+        return updated ? { ...node, position: updated.position } : node;
+      }),
+    });
+  }
+}, [network, onNetworkChange]);
 
   const rfEdges = useMemo<Edge[]>(
     () =>
@@ -80,7 +110,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
           stroke: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
         },
         markerEnd: {
-          type: "arrowclosed",
+          type: MarkerType.ArrowClosed,
           color: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
         },
       })),
@@ -88,12 +118,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
   );
 
   // Register custom node types
-  const nodeTypes = useMemo(
-    () => ({
-      circular: CircularNode,
-    }),
-    []
-  );
+  const nodeTypes = useMemo(() => ({ circular: CircularNode }), []);;
 
   // New: Keyboard delete handler
   useEffect(() => {
@@ -182,6 +207,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
           onNodeClick={(_, node) => onSelect(node.id, "node")}
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={() => onSelect(null, null)}
+          onNodesChange={handleNodesChange}
         >    
           <Background />
           <MiniMap
