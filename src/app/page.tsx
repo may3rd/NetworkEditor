@@ -20,6 +20,9 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
 
+  const [previousNetwork, setPreviousNetwork] = useState<NetworkState | null>(null);
+  const [undoMessage, setUndoMessage] = useState<string | null>(null);
+
   const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
 
   const handleSolve = useCallback(async () => {
@@ -46,8 +49,50 @@ export default function Home() {
     }
   }, []);
 
+  const handleDelete = useCallback(() => {
+    if (!selection || !selectedType) return;
+
+    // Store current state for undo
+    setPreviousNetwork(network);
+    setUndoMessage(
+      selectedType === "node"
+      ? `Node "${network.nodes.find(n => n.id === selectedId)?.label || selectedId}" deleted`
+      : `Pipe deleted`
+    );
+    
+    if (selectedType === "node") {
+      const nodeId = selectedId;
+
+      setNetwork((current) => ({
+        ...current,
+        nodes: current.nodes.filter(n => n.id !== nodeId),
+        pipes: current.pipes.filter(p => p.startNodeId !== nodeId && p.endNodeId !== nodeId),
+      }));
+    } else if (selectedType === "pipe") {
+      setNetwork((current) => ({
+        ...current,
+        pipes: current.pipes.filter(p => p.id !== selectedId),
+      }));
+    }
+    
+    // Clear selection
+    handleSelect(null, null);
+
+    // Auto-clear the message after 5 seconds
+    setTimeout(() => setUndoMessage(null), 5000);
+  }, [network, selectedId, selectedType, handleSelect]);
+
+  const handleUndo = useCallback(() => {
+    if (previousNetwork) {
+      setNetwork(previousNetwork);
+      setPreviousNetwork(null);
+      setUndoMessage(null);
+      handleSelect(null, null);
+    }
+  }, [previousNetwork, handleSelect]);
+
   return (
-    <Stack bg="#f8fafc" minH="100vh" spacing={6} p={8}>
+    <Stack bg="#f8fafc" minH="100vh" gap={6} p={8}>
       <Header onSolve={handleSolve} isSolving={isSolving} />
       <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} />
 
@@ -57,6 +102,9 @@ export default function Home() {
           onSelect={handleSelect}
           selectedId={selectedId}
           selectedType={selectedType}
+          onDelete={handleDelete}
+          onUndo={handleUndo}
+          canUndo={!!previousNetwork}
           height="600px"
         />
 
@@ -88,7 +136,7 @@ export default function Home() {
         />
       </Flex>
 
-      <Stack spacing={3}>
+      <Stack gap={3}>
         <Heading size="md">Network snapshot</Heading>
         <pre
           style={{

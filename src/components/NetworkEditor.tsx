@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, Key } from "react";
 import {
   Background,
   Controls,
@@ -22,6 +22,9 @@ type Props = {
   onSelect: (id: string | null, type: "node" | "pipe" | null) => void;
   selectedId: string | null;
   selectedType: "node" | "pipe" | null;
+  onDelete?: () => void;
+  onUndo?: () => void;
+  canUndo?: boolean;
   height?: string | number;
 };
 
@@ -30,6 +33,9 @@ export function NetworkEditor({
   onSelect,
   selectedId,
   selectedType,
+  onDelete,
+  onUndo,
+  canUndo = false,
   height = 520
 }: Props) {
   const rfNodes = useMemo<Node[]>(
@@ -89,6 +95,26 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
     []
   );
 
+  // New: Keyboard delete handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Backspace" && e.key !== "Delete") return;
+      if (!selectedId || !selectedType) return;
+
+      // Prevent deletion while typing in inputs
+      const active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+
+      e.preventDefault();
+
+      if (window.confirm(`Delete this ${selectedType}?`)) {
+        onDelete?.();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedId, selectedType, onDelete]);
+
   return (
     <div
       style={{
@@ -99,30 +125,76 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
         background: "#fff",
         border: "1px solid #e2e8f0",
         flex: 1,
+        position: "relative",
       }}
     >
-      <ReactFlow
-        nodes={rfNodes}
-        edges={rfEdges}
-        nodeTypes={nodeTypes}
-        defaultEdgeOptions={defaultEdgeOptions}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
-        onNodeClick={(_, node) => onSelect(node.id, "node")}
-        onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
-        onPaneClick={() => onSelect(null, null)}
-      >    
-        <Background />
-        <MiniMap
-          pannable
-          zoomable
-          nodeColor={(node) => 
-            node.data?.isSelected ? "#f59e0b" : "#5a5a5cff"}
-          maskColor="rgba(255, 255, 255, 0.8)"
-          style = {{ background: "#f8f5f9" }}
-        />
-        <Controls />
-      </ReactFlow>
+      {/** Toolbar - fixed at the top */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 48,
+          background: "#f8fafc",
+          borderBottom: "1px solid #e2e8f0",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 16px",
+          zIndex: 10,
+          gap: 12,
+        }}
+      >
+        <button
+          onClick={onUndo}
+          disabled={!canUndo}
+          style={{
+            background: canUndo ? "#f59e0b" : "#cbd5e1",
+            color: canUndo ? "#000" : "#64748b",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: 8,
+            fontWeight: "600",
+            fontSize: "14px",
+            cursor: canUndo ? "pointer" : "not-allowed",
+            transition: "all 0.2s ease",
+            boxShadow: canUndo ? "0 2px 6px rgba(251, 158, 11, 0.3)" : "none",
+          }}
+          title="Undo last deletion (Ctrl+Z)"
+        >
+          ↺ Undo
+        </button>
+
+        <div style={{ fontSize: "13px", color: "#64748b" }}>
+          {canUndo ? "Last action can be undone" : "No actions to undo"}
+        </div>
+      </div>
+      
+      {/* React Flow – offset by toolbar height */}
+      <div style={{ height: "100%", paddingTop: 48 }}>
+        <ReactFlow
+          nodes={rfNodes}
+          edges={rfEdges}
+          nodeTypes={nodeTypes}
+          defaultEdgeOptions={defaultEdgeOptions}
+          fitView
+          fitViewOptions={{ padding: 0.2 }}
+          onNodeClick={(_, node) => onSelect(node.id, "node")}
+          onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
+          onPaneClick={() => onSelect(null, null)}
+        >    
+          <Background />
+          <MiniMap
+            pannable
+            zoomable
+            nodeColor={(node) => 
+              node.data?.isSelected ? "#f59e0b" : "#5a5a5cff"}
+            maskColor="rgba(255, 255, 255, 0.8)"
+            style = {{ background: "#f8f5f9" }}
+          />
+          <Controls />
+        </ReactFlow>
+      </div>
     </div>
   );
 }
