@@ -1,66 +1,90 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { Flex, Heading, Stack } from "@chakra-ui/react";
+import { useCallback, useState } from "react";
+import { NetworkEditor } from "@/components/NetworkEditor";
+import { PropertiesPanel } from "@/components/PropertiesPanel";
+import { Header } from "@/components/Header";
+import { SummaryPanel } from "@/components/SummaryPanel";
+import { createInitialNetwork, NetworkState, SelectedElement } from "@/lib/types";
+import { runHydraulicCalculation } from "@/lib/solverClient";
 
 export default function Home() {
+  const [network, setNetwork] = useState<NetworkState>(() => createInitialNetwork());
+  const [isSolving, setIsSolving] = useState(false);
+  const [selection, setSelection] = useState<SelectedElement>(null);
+  const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
+
+  const handleSolve = useCallback(async () => {
+    try {
+      setIsSolving(true);
+      const response = await runHydraulicCalculation(network);
+      setNetwork(response.network);
+      setLastSolvedAt(new Date().toLocaleTimeString());
+    } finally {
+      setIsSolving(false);
+    }
+  }, [network]);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <Stack bg="#f8fafc" minH="100vh" spacing={6} p={8}>
+      <Header onSolve={handleSolve} isSolving={isSolving} />
+      <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} />
+
+      <Flex
+        gap={4}
+        align="flex-start"
+        wrap={{ base: "wrap", xl: "nowrap" }}
+      >
+        <NetworkEditor
+          network={network}
+          height="600px"
+          onSelect={(id, type) => {
+            if (!id || !type) {
+              setSelection(null);
+              return;
+            }
+            setSelection({ type, id });
+          }}
         />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+
+        <PropertiesPanel
+          network={network}
+          selected={selection}
+          onUpdateNode={(id, patch) =>
+            setNetwork((current) => ({
+              ...current,
+              nodes: current.nodes.map((node) => (node.id === id ? { ...node, ...patch } : node)),
+            }))
+          }
+          onUpdatePipe={(id, patch) =>
+            setNetwork((current) => ({
+              ...current,
+              pipes: current.pipes.map((pipe) => (pipe.id === id ? { ...pipe, ...patch } : pipe)),
+            }))
+          }
+          onReset={() => {
+            setNetwork(createInitialNetwork());
+            setSelection(null);
+          }}
+        />
+      </Flex>
+
+      <Stack spacing={3}>
+        <Heading size="md">Network snapshot</Heading>
+        <pre
+          style={{
+            background: "#0f172a",
+            color: "#86efac",
+            padding: "16px",
+            borderRadius: "8px",
+            maxHeight: "320px",
+            overflow: "auto",
+          }}
+        >
+          {JSON.stringify(network, null, 2)}
+        </pre>
+      </Stack>
+    </Stack>
   );
 }
