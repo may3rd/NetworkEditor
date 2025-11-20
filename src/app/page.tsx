@@ -1,6 +1,6 @@
 "use client";
 
-import { Flex, Heading, Stack } from "@chakra-ui/react";
+import { Button, Flex, Heading, Stack } from "@chakra-ui/react";
 import { useCallback, useState, useEffect } from "react";
 import { NetworkEditor } from "@/components/NetworkEditor";
 import { PropertiesPanel } from "@/components/PropertiesPanel";
@@ -18,6 +18,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
   const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
+  const [showSnapshot, setShowSnapshot] = useState(false);
 
   // ──────────────────────────────────────────────────────────────
   // Multi-step Undo/Redo – fixed logic
@@ -161,20 +162,34 @@ export default function Home() {
       </Flex>
 
       <Stack gap={3}>
-        <Heading size="md">Network snapshot</Heading>
-        <pre
-          style={{
-            background: "#0f172a",
-            color: "#86efac",
-            padding: "16px",
-            borderRadius: "8px",
-            maxHeight: "320px",
-            overflow: "auto",
-            fontSize: "12px",
-          }}
-        >
-          {JSON.stringify(network, null, 2)}
-        </pre>
+        <Flex align="center" gap={2}>
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={() => setShowSnapshot(prev => !prev)}
+            aria-label="Toggle network snapshot visibility"
+          >
+            {showSnapshot ? "v" : ">"}
+          </Button>
+          <Heading size="md" m={0}>
+            Network snapshot
+          </Heading>
+        </Flex>
+        {showSnapshot && (
+          <pre
+            style={{
+              background: "#0f172a",
+              color: "#86efac",
+              padding: "16px",
+              borderRadius: "8px",
+              maxHeight: "320px",
+              overflow: "auto",
+              fontSize: "12px",
+            }}
+          >
+            {JSON.stringify(network, null, 2)}
+          </pre>
+        )}
       </Stack>
     </Stack>
   );
