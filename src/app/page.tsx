@@ -1,7 +1,7 @@
 "use client";
 
 import { Flex, Heading, Stack } from "@chakra-ui/react";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { NetworkEditor } from "@/components/NetworkEditor";
 import { PropertiesPanel } from "@/components/PropertiesPanel";
 import { Header } from "@/components/Header";
@@ -12,18 +12,61 @@ import { runHydraulicCalculation } from "@/lib/solverClient";
 export default function Home() {
   const [network, setNetwork] = useState<NetworkState>(() => createInitialNetwork());
   const [isSolving, setIsSolving] = useState(false);
-  
-  // Selection for PropertiesPanel (existing behavior)
+
+  // Selection state
   const [selection, setSelection] = useState<SelectedElement>(null);
-  
-  // New: Selection state specifically for visual highlighting in NetworkEditor
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
-
-  const [previousNetwork, setPreviousNetwork] = useState<NetworkState | null>(null);
-  const [undoMessage, setUndoMessage] = useState<string | null>(null);
-
   const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
+
+  // ──────────────────────────────────────────────────────────────
+  // Multi-step Undo/Redo – fixed logic
+  // ──────────────────────────────────────────────────────────────
+  const HISTORY_LIMIT = 20;
+  const [history, setHistory] = useState<NetworkState[]>([createInitialNetwork()]);
+  const [historyIndex, setHistoryIndex] = useState<number>(0); // start at 0
+
+  // Only push new state when the network actually changes (deep compare)
+  useEffect(() => {
+    const currentState = history[historyIndex];
+
+    // Simple deep equality check for our data structure
+    const isSame =
+      JSON.stringify(currentState?.nodes) === JSON.stringify(network.nodes) &&
+      JSON.stringify(currentState?.pipes) === JSON.stringify(network.pipes);
+
+    if (isSame) return; // no change → do nothing
+
+    // Truncate forward history if we are not at the end
+    let newHistory = history.slice(0, historyIndex + 1);
+
+    // Add new state
+    newHistory.push(network);
+
+    // Enforce limit
+    if (newHistory.length > HISTORY_LIMIT) {
+      newHistory = newHistory.slice(-HISTORY_LIMIT);
+    }
+
+    setHistory(newHistory);
+    setHistoryIndex(newHistory.length - 1);
+  }, [network, history, historyIndex]);
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex <= 0) return;
+    setHistoryIndex(i => i - 1);
+    setNetwork(history[historyIndex - 1]);
+  }, [history, historyIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex >= history.length - 1) return;
+    setHistoryIndex(i => i + 1);
+    setNetwork(history[historyIndex + 1]);
+  }, [history, historyIndex]);
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+  // ──────────────────────────────────────────────────────────────
 
   const handleSolve = useCallback(async () => {
     try {
@@ -36,60 +79,30 @@ export default function Home() {
     }
   }, [network]);
 
-  // Unified selection handler — updates both visual highlight and properties panel
   const handleSelect = useCallback((id: string | null, type: "node" | "pipe" | null) => {
     setSelectedId(id);
     setSelectedType(type);
-
-    // Keep existing SelectedElement format for PropertiesPanel
-    if (!id || !type) {
-      setSelection(null);
-    } else {
-      setSelection({ id, type });
-    }
+    setSelection(id && type ? { id, type } : null);
   }, []);
 
   const handleDelete = useCallback(() => {
-    if (!selection || !selectedType) return;
+    if (!selectedId || !selectedType) return;
 
-    // Store current state for undo
-    setPreviousNetwork(network);
-    setUndoMessage(
-      selectedType === "node"
-      ? `Node "${network.nodes.find(n => n.id === selectedId)?.label || selectedId}" deleted`
-      : `Pipe deleted`
-    );
-    
     if (selectedType === "node") {
-      const nodeId = selectedId;
-
-      setNetwork((current) => ({
+      setNetwork(current => ({
         ...current,
-        nodes: current.nodes.filter(n => n.id !== nodeId),
-        pipes: current.pipes.filter(p => p.startNodeId !== nodeId && p.endNodeId !== nodeId),
+        nodes: current.nodes.filter(n => n.id !== selectedId),
+        pipes: current.pipes.filter(p => p.startNodeId !== selectedId && p.endNodeId !== selectedId),
       }));
     } else if (selectedType === "pipe") {
-      setNetwork((current) => ({
+      setNetwork(current => ({
         ...current,
         pipes: current.pipes.filter(p => p.id !== selectedId),
       }));
     }
-    
-    // Clear selection
+
     handleSelect(null, null);
-
-    // Auto-clear the message after 5 seconds
-    setTimeout(() => setUndoMessage(null), 5000);
-  }, [network, selectedId, selectedType, handleSelect]);
-
-  const handleUndo = useCallback(() => {
-    if (previousNetwork) {
-      setNetwork(previousNetwork);
-      setPreviousNetwork(null);
-      setUndoMessage(null);
-      handleSelect(null, null);
-    }
-  }, [previousNetwork, handleSelect]);
+  }, [selectedId, selectedType, handleSelect]);
 
   const handleNetworkChange = useCallback((updatedNetwork: NetworkState) => {
     setNetwork(updatedNetwork);
@@ -108,8 +121,12 @@ export default function Home() {
           selectedType={selectedType}
           onDelete={handleDelete}
           onUndo={handleUndo}
-          canUndo={!!previousNetwork}
+          onRedo={handleRedo}
+          canUndo={canUndo}
+          canRedo={canRedo}
           onNetworkChange={handleNetworkChange}
+          historyIndex={historyIndex}
+          historyLength={history.length}
           height="600px"
         />
 
@@ -117,17 +134,17 @@ export default function Home() {
           network={network}
           selected={selection}
           onUpdateNode={(id, patch) =>
-            setNetwork((current) => ({
+            setNetwork(current => ({
               ...current,
-              nodes: current.nodes.map((node) =>
+              nodes: current.nodes.map(node =>
                 node.id === id ? { ...node, ...patch } : node
               ),
             }))
           }
           onUpdatePipe={(id, patch) =>
-            setNetwork((current) => ({
+            setNetwork(current => ({
               ...current,
-              pipes: current.pipes.map((pipe) =>
+              pipes: current.pipes.map(pipe =>
                 pipe.id === id ? { ...pipe, ...patch } : pipe
               ),
             }))
@@ -137,6 +154,8 @@ export default function Home() {
             setSelection(null);
             setSelectedId(null);
             setSelectedType(null);
+            setHistory([]);
+            setHistoryIndex(-1);
           }}
         />
       </Flex>
@@ -151,6 +170,7 @@ export default function Home() {
             borderRadius: "8px",
             maxHeight: "320px",
             overflow: "auto",
+            fontSize: "12px",
           }}
         >
           {JSON.stringify(network, null, 2)}

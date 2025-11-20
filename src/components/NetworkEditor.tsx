@@ -16,7 +16,6 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import CircularNode from "@/components/CircularNode";
-
 import { NetworkState } from "@/lib/types";
 
 type Props = {
@@ -26,7 +25,11 @@ type Props = {
   selectedType: "node" | "pipe" | null;
   onDelete?: () => void;
   onUndo?: () => void;
+  onRedo?: () => void;
   canUndo?: boolean;
+  canRedo?: boolean;
+  historyIndex?: number;
+  historyLength?: number;
   onNetworkChange?: (updatedNetwork: NetworkState) => void;
   height?: string | number;
 };
@@ -38,9 +41,13 @@ export function NetworkEditor({
   selectedType,
   onDelete,
   onUndo,
+  onRedo,
   canUndo = false,
+  canRedo = false,
+  historyIndex = 0,
+  historyLength = 0,
   onNetworkChange,
-  height = 520
+  height = 520,
 }: Props) {
   const rfNodes = useMemo<Node[]>(
     () =>
@@ -51,53 +58,15 @@ export function NetworkEditor({
         data: {
           label: node.label,
           isSelected: selectedType === "node" && selectedId === node.id,
-        },// ← These two lines fix the blank MiniMap
-        width: 20,   // or any reasonable value that fits your labels
+        },
+        width: 20,
         height: 20,
-        // Alternative (more precise if labels vary a lot):
-        // measured: { width: 140, height: 50 },
       })),
     [network.nodes, selectedId, selectedType]
   );
 
-  // Define rectangular (orthogonal) edges with right-angle routing
-  const defaultEdgeOptions: DefaultEdgeOptions = {
-    style: { strokeWidth: 2, stroke: "#94a3b8" },
-    type: "smoothstep",           // "smoothstep" or "step" gives perfect right angles
-    animated: false,
-    markerEnd: {
-      type: MarkerType.ArrowClosed,
-      color: "#94a3b8",
-    },  
-  };
-
-  // Add local state for live dragging
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
-  useEffect(() => {
-    setLocalNodes(rfNodes);
-  }, [rfNodes]);
-
-  // Improved handler – now updates instantly during drag
-  const handleNodesChange = useCallback((changes: NodesChange<Node>[]) => {
-    setLocalNodes((nds) => applyNodeChanges(changes, nds));
-
-    // Only persist to parent on drag end
-    const endedDragChanges = changes.filter(
-      (c) => c.type === "position" && c.dragging === false && c.position
-    );
-
-    if (endedDragChanges.length > 0 && onNetworkChange) {
-      const updatedNodes = network.nodes.map((node) => {
-        const change = endedDragChanges.find((c) => c.id === node.id);
-        return change ? { ...node, position: change.position! } : node;
-      });
-
-      onNetworkChange({
-        ...network,
-        nodes: updatedNodes,
-      });
-    }
-  }, [network, onNetworkChange]);
+  useEffect(() => setLocalNodes(rfNodes), [rfNodes]);
 
   const rfEdges = useMemo<Edge[]>(
     () =>
@@ -108,7 +77,7 @@ export function NetworkEditor({
         label: `${pipe.length} m`,
         type: "smoothstep",
         style: {
-          strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 1 : 1,
+          strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 4 : 2,
           stroke: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
         },
         markerEnd: {
@@ -119,28 +88,35 @@ export function NetworkEditor({
     [network.pipes, selectedId, selectedType]
   );
 
-  // Register custom node types
-  const nodeTypes = useMemo(() => ({ circular: CircularNode }), []);;
+  const nodeTypes = useMemo(() => ({ circular: CircularNode }), []);
 
-  // New: Keyboard delete handler
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Backspace" && e.key !== "Delete") return;
-      if (!selectedId || !selectedType) return;
+  const defaultEdgeOptions: DefaultEdgeOptions = {
+    style: { strokeWidth: 2, stroke: "#94a3b8" },
+    type: "smoothstep",
+    markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
+  };
 
-      // Prevent deletion while typing in inputs
-      const active = document.activeElement;
-      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+  const handleNodesChange = useCallback(
+    (changes: NodesChange<Node>[]) => {
+      setLocalNodes((nds) => applyNodeChanges(changes, nds));
 
-      e.preventDefault();
+      const endedDragChanges = changes.filter(
+        (c): c is Extract<NodesChange<Node>[number], { type: "position"; dragging: false }> =>
+          c.type === "position" && c.dragging === false && !!c.position
+      );
 
-      if (window.confirm(`Delete this ${selectedType}?`)) {
-        onDelete?.();
+      if (endedDragChanges.length > 0 && onNetworkChange) {
+        onNetworkChange({
+          ...network,
+          nodes: network.nodes.map((node) => {
+            const change = endedDragChanges.find((c) => c.id === node.id);
+            return change ? { ...node, position: change.position! } : node;
+          }),
+        });
       }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedId, selectedType, onDelete]);
+    },
+    [network, onNetworkChange]
+  );
 
   return (
     <div
@@ -151,11 +127,11 @@ export function NetworkEditor({
         overflow: "hidden",
         background: "#fff",
         border: "1px solid #e2e8f0",
-        flex: 1,
         position: "relative",
+        flex: 1,
       }}
     >
-      {/** Toolbar - fixed at the top */}
+      {/* Toolbar */}
       <div
         style={{
           position: "absolute",
@@ -182,22 +158,36 @@ export function NetworkEditor({
             padding: "8px 16px",
             borderRadius: 8,
             fontWeight: "600",
-            fontSize: "14px",
             cursor: canUndo ? "pointer" : "not-allowed",
-            transition: "all 0.2s ease",
-            boxShadow: canUndo ? "0 2px 6px rgba(251, 158, 11, 0.3)" : "none",
           }}
-          title="Undo last deletion (Ctrl+Z)"
+          title="Undo (Ctrl+Z)"
         >
-          ↺
+          ↺ Undo
         </button>
 
-        <div style={{ fontSize: "13px", color: "#64748b" }}>
-          {canUndo ? "Last action can be undone" : "No actions to undo"}
+        <button
+          onClick={onRedo}
+          disabled={!canRedo}
+          style={{
+            background: canRedo ? "#10b981" : "#cbd5e1",
+            color: "white",
+            border: "none",
+            padding: "8px 16px",
+            borderRadius: 8,
+            fontWeight: "600",
+            cursor: canRedo ? "pointer" : "not-allowed",
+          }}
+          title="Redo (Ctrl+Y)"
+        >
+          ↻ Redo
+        </button>
+
+        <div style={{ fontSize: "13px", color: "#64748b", marginLeft: "auto" }}>
+          {canUndo || canRedo ? `${historyIndex + 1} / ${historyLength}` : "No history"}
         </div>
       </div>
-      
-      {/* React Flow – offset by toolbar height */}
+
+      {/* React Flow */}
       <div style={{ height: "100%", paddingTop: 48 }}>
         <ReactFlow
           nodes={localNodes}
@@ -210,15 +200,15 @@ export function NetworkEditor({
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={() => onSelect(null, null)}
           onNodesChange={handleNodesChange}
-        >    
+          // Correct way to hide connection indicator halo
+          connectionLineStyle={{ stroke: "#94a3b8", strokeWidth: 2 }}
+        >
           <Background />
           <MiniMap
             pannable
             zoomable
-            nodeColor={(node) => 
-              node.data?.isSelected ? "#f59e0b" : "#5a5a5cff"}
-            maskColor="rgba(255, 255, 255, 0.8)"
-            style = {{ background: "#f8f5f9" }}
+            nodeColor={(n) => (n.data?.isSelected ? "#f59e0b" : "#5a5a5cff")}
+            style={{ background: "#f8f5f9" }}
           />
           <Controls />
         </ReactFlow>
