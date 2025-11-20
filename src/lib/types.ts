@@ -64,7 +64,7 @@ const baseNetwork: NetworkState = {
       endNodeId: "n2",
       length: 250,
       diameter: 150,
-      roughness: 120,
+      roughness: 0.0457,
     },
     {
       id: "p2",
@@ -72,7 +72,7 @@ const baseNetwork: NetworkState = {
       endNodeId: "n3",
       length: 240,
       diameter: 150,
-      roughness: 120,
+      roughness: 0.0457,
     },
     {
       id: "p3",
@@ -80,7 +80,7 @@ const baseNetwork: NetworkState = {
       endNodeId: "n3",
       length: 180,
       diameter: 125,
-      roughness: 110,
+      roughness: 0.0457,
     },
   ],
 };

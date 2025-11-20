@@ -123,7 +123,7 @@ export function PropertiesPanel({
 
           <Stack spacing={1}>
             <Text fontSize="sm" color="gray.500">
-              Roughness
+              Roughness (mm)
             </Text>
             <Input
               type="number"

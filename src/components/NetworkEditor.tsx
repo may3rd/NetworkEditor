@@ -162,7 +162,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
           }}
           title="Undo last deletion (Ctrl+Z)"
         >
-          ↺ Undo
+          ↺
         </button>
 
         <div style={{ fontSize: "13px", color: "#64748b" }}>
