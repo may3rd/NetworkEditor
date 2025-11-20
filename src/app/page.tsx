@@ -12,7 +12,14 @@ import { runHydraulicCalculation } from "@/lib/solverClient";
 export default function Home() {
   const [network, setNetwork] = useState<NetworkState>(() => createInitialNetwork());
   const [isSolving, setIsSolving] = useState(false);
+  
+  // Selection for PropertiesPanel (existing behavior)
   const [selection, setSelection] = useState<SelectedElement>(null);
+  
+  // New: Selection state specifically for visual highlighting in NetworkEditor
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
+
   const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
 
   const handleSolve = useCallback(async () => {
@@ -26,26 +33,31 @@ export default function Home() {
     }
   }, [network]);
 
+  // Unified selection handler — updates both visual highlight and properties panel
+  const handleSelect = useCallback((id: string | null, type: "node" | "pipe" | null) => {
+    setSelectedId(id);
+    setSelectedType(type);
+
+    // Keep existing SelectedElement format for PropertiesPanel
+    if (!id || !type) {
+      setSelection(null);
+    } else {
+      setSelection({ id, type });
+    }
+  }, []);
+
   return (
     <Stack bg="#f8fafc" minH="100vh" spacing={6} p={8}>
       <Header onSolve={handleSolve} isSolving={isSolving} />
       <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} />
 
-      <Flex
-        gap={4}
-        align="flex-start"
-        wrap={{ base: "wrap", xl: "nowrap" }}
-      >
+      <Flex gap={4} align="flex-start" flexDirection={{ base: "column", xl: "row" }}>
         <NetworkEditor
           network={network}
+          onSelect={handleSelect}
+          selectedId={selectedId}
+          selectedType={selectedType}
           height="600px"
-          onSelect={(id, type) => {
-            if (!id || !type) {
-              setSelection(null);
-              return;
-            }
-            setSelection({ type, id });
-          }}
         />
 
         <PropertiesPanel
@@ -54,18 +66,24 @@ export default function Home() {
           onUpdateNode={(id, patch) =>
             setNetwork((current) => ({
               ...current,
-              nodes: current.nodes.map((node) => (node.id === id ? { ...node, ...patch } : node)),
+              nodes: current.nodes.map((node) =>
+                node.id === id ? { ...node, ...patch } : node
+              ),
             }))
           }
           onUpdatePipe={(id, patch) =>
             setNetwork((current) => ({
               ...current,
-              pipes: current.pipes.map((pipe) => (pipe.id === id ? { ...pipe, ...patch } : pipe)),
+              pipes: current.pipes.map((pipe) =>
+                pipe.id === id ? { ...pipe, ...patch } : pipe
+              ),
             }))
           }
           onReset={() => {
             setNetwork(createInitialNetwork());
             setSelection(null);
+            setSelectedId(null);
+            setSelectedType(null);
           }}
         />
       </Flex>
