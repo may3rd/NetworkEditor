@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useCallback, useEffect, useState } from "react";
+import { useMemo, useCallback, useEffect, useState, useRef } from "react";
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
+  ReactFlowProvider,
+  useReactFlow,
   ConnectionMode,
   type Edge,
   type Node,
@@ -51,7 +53,7 @@ export function NetworkEditor({
   height = 520,
 }: Props) {
   const rfNodes = useMemo<Node[]>(
-    () =>
+    () => 
       network.nodes.map((node) => ({
         id: node.id,
         type: "pressure",
@@ -70,7 +72,7 @@ export function NetworkEditor({
   useEffect(() => setLocalNodes(rfNodes), [rfNodes]);
 
   const rfEdges = useMemo<Edge[]>(
-    () =>
+    () => 
       network.pipes.map((pipe) => ({
         id: pipe.id,
         source: pipe.startNodeId,
@@ -195,6 +197,85 @@ export function NetworkEditor({
   // ───────────────────────────────────────────────────────────────────────
 
   return (
+    <ReactFlowProvider>
+      <EditorCanvas {...{ network, onSelect, selectedId, selectedType, onDelete, onUndo, onRedo, canUndo, canRedo, historyIndex, historyLength, onNetworkChange, height, localNodes, setLocalNodes, rfEdges, nodeTypes, defaultEdgeOptions, handleNodesChange, handleConnect }} />
+    </ReactFlowProvider>
+  );
+}
+
+function EditorCanvas({
+  network,
+  onSelect,
+  onNetworkChange,
+  height,
+  localNodes,
+  setLocalNodes,
+  rfEdges,
+  nodeTypes,
+  defaultEdgeOptions,
+  handleNodesChange,
+  handleConnect,
+  canUndo,
+  canRedo,
+  onUndo,
+  onRedo,
+  historyIndex,
+  historyLength,
+}: Props & {
+  localNodes: Node[];
+  setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
+  rfEdges: Edge[];
+  nodeTypes: { [key: string]: any };
+  defaultEdgeOptions: DefaultEdgeOptions;
+  handleNodesChange: (changes: NodesChange<Node>[]) => void;
+  handleConnect: (connection: Connection) => void;
+}) {
+  const connectingNodeId = useRef<string | null>(null);
+  const { screenToFlowPosition } = useReactFlow();
+
+  const onConnectStart = useCallback((_: React.MouseEvent | React.TouchEvent, { nodeId }: { nodeId: string | null }) => {
+    connectingNodeId.current = nodeId;
+  }, []);
+
+  const onConnectEnd = useCallback(
+    (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement;
+      const fromId = connectingNodeId.current;
+
+      // Reset the ref
+      connectingNodeId.current = null;
+
+      // Check if the drop was on the pane and we have a source node
+      if (!fromId || !target.classList.contains('react-flow__pane') || !onNetworkChange) {
+        return;
+      }
+
+      const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+
+      const newNodeId = `node-${Date.now()}`;
+      const newNode = {
+        id: newNodeId,
+        label: `Node ${network.nodes.length + 1}`,
+        position: screenToFlowPosition({ x: clientX, y: clientY }),
+      };
+
+      const newPipe = {
+        id: `pipe-${fromId}-${newNodeId}-${Date.now()}`,
+        startNodeId: fromId,
+        endNodeId: newNodeId,
+        length: 100, // Default length
+        diameter: 0.1, // Default diameter
+      };
+
+      onNetworkChange({
+        nodes: [...network.nodes, newNode],
+        pipes: [...network.pipes, newPipe],
+      });
+    },
+    [screenToFlowPosition, onNetworkChange, network.nodes, network.pipes],
+  );
+
+  return (
     <div
       style={{
         height,
@@ -282,6 +363,8 @@ export function NetworkEditor({
           onPaneClick={() => onSelect(null, null)}
           onNodesChange={handleNodesChange}
           onConnect={handleConnect}
+          onConnectStart={onConnectStart}
+          onConnectEnd={onConnectEnd}
           connectionMode={ConnectionMode.Strict}
           maxZoom={16}
           minZoom={0.1}
