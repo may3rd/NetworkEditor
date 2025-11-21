@@ -15,18 +15,94 @@ export type NodeProps = {
   elevation?: number;
   demand?: number;
   pressure?: number;
+  fluid?: Fluid;
+  controlValve?: ControlValve;
+  orifice?: Orifice;
 };
 
 export type PipeProps = {
   id: string;
   startNodeId: string;
   endNodeId: string;
-  length: number;
   diameter: number;
+  pipeDiameter?: number,
+  inlteDiameter?: number,
+  outletDiameter?: number,
   roughness: number;
+  length: number;
+  elevation?: number;
   flow?: number;
   headloss?: number;
+  fluid?: Fluid;
+  fittingType?: string,
+  fittings?: FittingType[];
+  pipeLengthK?: number,
+  fittingK?: number,
+  userK?: number,
+  pipingFittingSafetyFactor?: number,
+  totalK?: number,
+  pipeNPD?: number,
+  designMargin?: number,
+  erosionalConstant?: number,
+  machNumber?: number,
+  boundaryPressure?: number,
+  designMassFlowRate?: number,
+  equivalentLength?: number,
 };
+
+// Fluid propertis
+export type Fluid = {
+  id: string,
+  phase: string,
+  viscosity: number,
+  density: number,
+  molecularWeight: number,
+  zFactor: number,
+  specificHeatRatio: number,
+  standardFlowRate: number,
+  vaporPressure: number,
+  criticalPressure: number,
+}
+
+// Hydraulic Loss Components
+export type ControlValve = {
+  id: string,
+  tag: string,
+  cv?: number,
+  cg?: number,
+  pressure_drop?: number,
+  C1?: number,
+  FL?: number,
+  Fd?: number,
+  xT?: number,
+  inlet_diameter?: number,
+  outlet_diameter?: number,
+  valve_diameter?: number,
+  calculation_note?: string,
+  adjustable?: boolean,
+}
+
+export type Orifice = {
+  id: string,
+  tag?: string,
+  d_over_D_ratio?: number,
+  pressure_drop?: number,
+  pipe_diameter?: number,
+  orifice_diameter?: number,
+  meter_type?: string,
+  taps?: string,
+  tap_position?: string,
+  discharge_coefficient?: number,
+  expansibility?: number,
+  calculation_note?: string,
+}
+
+export type FittingType = {
+  type: string;
+  count: number;
+  k_each: number;
+  k_total: number;
+}
 
 export type NetworkState = {
   nodes: NodeProps[];

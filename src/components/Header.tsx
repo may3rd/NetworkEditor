@@ -1,13 +1,14 @@
 "use client";
 
-import { Button, Flex, Heading, Stack, Text } from "@chakra-ui/react";
+import { Button, Flex, Heading, Stack, Text, Box, ButtonGroup } from "@chakra-ui/react";
 
 type Props = {
   onSolve: () => void;
   isSolving: boolean;
+  lastSolvedAt: string | null;
 };
 
-export function Header({ onSolve, isSolving }: Props) {
+export function Header({ onSolve, isSolving, lastSolvedAt }: Props) {
   return (
     <Flex
       direction="column"
@@ -27,14 +28,34 @@ export function Header({ onSolve, isSolving }: Props) {
           </Text>
         </Stack>
 
-        <Button
-          ml={{ base: 0, md: "auto" }}
-          background={"#239BA7"}
-          onClick={onSolve}
-          isLoading={isSolving}
-        >
-          {isSolving ? "Solving..." : "Run hydraulic calculation"}
-        </Button>
+        <Flex ml={{ base: 0, md: "auto" }} align="flex-start" gap={4} wrap={{ base: "wrap", md: "nowrap" }} justify="flex-end">
+          <ButtonGroup variant="outline" size="sm">
+            <Button onClick={() => alert("Print action triggered!")}>Print</Button>
+            <Button onClick={() => alert("Save action triggered!")}>Save</Button>
+            <Button onClick={() => alert("Load action triggered!")}>Load</Button>
+          </ButtonGroup>
+
+          <Stack align={{ base: "stretch", md: "flex-end" }}>
+            <Button
+              size="sm"
+              background={"#239BA7"}
+              color="white"
+              _hover={{ background: "#1d7b85" }}
+              onClick={onSolve}
+              loading={isSolving}
+              loadingText="Solving..."
+            >
+              Run hydraulic calculation
+            </Button>
+            <Box textAlign="center" minH="1.2em">
+              {lastSolvedAt && (
+                <Text fontSize="xs" color="gray.500">
+                  Last solved: {lastSolvedAt}
+                </Text>
+              )}
+            </Box>
+          </Stack>
+        </Flex>
       </Flex>
     </Flex>
   );

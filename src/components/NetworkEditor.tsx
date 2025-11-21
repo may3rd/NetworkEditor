@@ -9,6 +9,7 @@ import {
   ConnectionMode,
   type Edge,
   type Node,
+  type Connection,
   type NodesChange,
   MarkerType,
   applyNodeChanges,
@@ -129,6 +130,41 @@ export function NetworkEditor({
     [network, onNetworkChange, onSelect]
   );
 
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target || !onNetworkChange) return;
+
+      // Prevent connecting a node to itself
+      if (connection.source === connection.target) {
+        return;
+      }
+
+      // Check if a connection already exists between these two nodes (in either direction)
+      const existingConnection = network.pipes.find(
+        (pipe) =>
+          (pipe.startNodeId === connection.source && pipe.endNodeId === connection.target)
+      );
+
+      if (existingConnection) {
+        return; // Silently prevent duplicate connection
+      }
+
+      const newPipe = {
+        id: `pipe-${connection.source}-${connection.target}-${Date.now()}`,
+        startNodeId: connection.source,
+        endNodeId: connection.target,
+        length: 100, // Default length
+        diameter: 0.1, // Default diameter
+      };
+
+      onNetworkChange({
+        ...network,
+        pipes: [...network.pipes, newPipe],
+      });
+    },
+    [network, onNetworkChange]
+  );
+
   // ── Keyboard Delete (Backspace / Delete) ───────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -245,6 +281,8 @@ export function NetworkEditor({
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={() => onSelect(null, null)}
           onNodesChange={handleNodesChange}
+          onConnect={handleConnect}
+          connectionMode={ConnectionMode.Strict}
           maxZoom={16}
           minZoom={0.1}
         >

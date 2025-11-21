@@ -111,7 +111,7 @@ export default function Home() {
 
   return (
     <Stack bg="#f8fafc" minH="100vh" gap={6} p={8}>
-      <Header onSolve={handleSolve} isSolving={isSolving} />
+      <Header onSolve={handleSolve} isSolving={isSolving} lastSolvedAt={lastSolvedAt} />
       <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} />
 
       <Flex gap={4} align="flex-start" flexDirection={{ base: "column", xl: "row" }}>
@@ -163,17 +163,26 @@ export default function Home() {
 
       <Stack gap={3}>
         <Flex align="center" gap={2}>
+          <Heading size="md" m={0}>
+            Network snapshot
+          </Heading>
           <Button
             size="xs"
             variant="ghost"
             onClick={() => setShowSnapshot(prev => !prev)}
             aria-label="Toggle network snapshot visibility"
+            color="currentColor"
           >
-            {showSnapshot ? "v" : ">"}
+            {showSnapshot ? (
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                <path d="m16.01 7.43-1.4-1.41L9 11.6 3.42 6l-1.4 1.42 7 7z" />
+              </svg>
+            ) : (
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
+                <path d="m16.01 10.62-1.4 1.4L9 6.45l-5.59 5.59-1.4-1.41 7-7z" />
+              </svg>
+            )}
           </Button>
-          <Heading size="md" m={0}>
-            Network snapshot
-          </Heading>
         </Flex>
         {showSnapshot && (
           <pre
@@ -182,7 +191,7 @@ export default function Home() {
               color: "#86efac",
               padding: "16px",
               borderRadius: "8px",
-              maxHeight: "320px",
+              maxHeight: "640px",
               overflow: "auto",
               fontSize: "12px",
             }}
