@@ -42,7 +42,7 @@ export function Header({ onSolve, isSolving, lastSolvedAt }: Props) {
               color="white"
               _hover={{ background: "#1d7b85" }}
               onClick={onSolve}
-              loading={isSolving}
+              isLoading={isSolving}
               loadingText="Solving..."
             >
               Run hydraulic calculation

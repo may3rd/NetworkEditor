@@ -30,6 +30,7 @@ export type PipeProps = {
   outletDiameter?: number,
   roughness?: number;
   length?: number;
+  lengthUnit?: string;
   elevation?: number;
   flow?: number;
   headloss?: number;
@@ -139,6 +140,7 @@ const baseNetwork: NetworkState = {
       startNodeId: "n1",
       endNodeId: "n2",
       length: 250,
+      lengthUnit: "m",
       diameter: 150,
       roughness: 0.0457,
     },
@@ -147,6 +149,7 @@ const baseNetwork: NetworkState = {
       startNodeId: "n1",
       endNodeId: "n3",
       length: 240,
+      lengthUnit: "m",
       diameter: 150,
       roughness: 0.0457,
     },
@@ -155,6 +158,7 @@ const baseNetwork: NetworkState = {
       startNodeId: "n2",
       endNodeId: "n3",
       length: 180,
+      lengthUnit: "m",
       diameter: 125,
       roughness: 0.0457,
     },

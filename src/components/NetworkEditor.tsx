@@ -77,7 +77,7 @@ export function NetworkEditor({
         id: pipe.id,
         source: pipe.startNodeId,
         target: pipe.endNodeId,
-        label: `${pipe.length} m`,
+        label: `${pipe.length} ${pipe.lengthUnit}`,
         labelStyle: {
           fontSize: "8px",
           fill: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
@@ -125,15 +125,9 @@ export function NetworkEditor({
             }),
           });
         }
-  
-        // Safely select the last moved node
-        const lastMovedChange = dragEndedChanges[dragEndedChanges.length - 1];
-        if (lastMovedChange?.id) {
-          onSelect(lastMovedChange.id, "node");
-        }
       }
     },
-    [network, onNetworkChange, onSelect]
+    [network, onNetworkChange]
   );
 
   const handleConnect = useCallback(
@@ -396,6 +390,7 @@ function EditorCanvas({
           fitView
           fitViewOptions={{ padding: 0.2 }}
           onNodeClick={(_, node) => onSelect(node.id, "node")}
+          onNodeDragStart={(_, node) => onSelect(node.id, "node")}
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={() => onSelect(null, null)}
           onNodesChange={handleNodesChange}
