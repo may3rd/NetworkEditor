@@ -24,12 +24,12 @@ export type PipeProps = {
   id: string;
   startNodeId: string;
   endNodeId: string;
-  diameter: number;
+  diameter?: number;
   pipeDiameter?: number,
   inlteDiameter?: number,
   outletDiameter?: number,
-  roughness: number;
-  length: number;
+  roughness?: number;
+  length?: number;
   elevation?: number;
   flow?: number;
   headloss?: number;

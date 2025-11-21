@@ -78,9 +78,13 @@ export function NetworkEditor({
         source: pipe.startNodeId,
         target: pipe.endNodeId,
         label: `${pipe.length} m`,
+        labelStyle: {
+          fontSize: "8px",
+          fill: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
+        },
         type: "smoothstep",
         style: {
-          strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 4 : 2,
+          strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 2 : 1,
           stroke: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
         },
         markerEnd: {
@@ -236,7 +240,7 @@ function EditorCanvas({
   const { screenToFlowPosition } = useReactFlow();
 
   const onConnectStart = useCallback(
-    (_: React.MouseEvent | React.TouchEvent, { nodeId }: { nodeId: string | null }) => {
+    (_: React.MouseEvent<Element, MouseEvent> | React.TouchEvent<Element>, { nodeId }: { nodeId: string | null }) => {
       connectingNodeId.current = nodeId;
     },
     [],
@@ -373,7 +377,7 @@ function EditorCanvas({
         </div>
 
         <div style={{ fontSize: "13px", color: "#64748b", marginLeft: "auto" }}>
-          {canUndo || canRedo ? `${historyIndex + 1} / ${historyLength}` : "No history"}
+          {canUndo || canRedo ? `${(historyIndex ?? 0) + 1} / ${historyLength ?? 0}` : "No history"}
         </div>
       </div>
 

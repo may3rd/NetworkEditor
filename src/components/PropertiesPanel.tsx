@@ -34,6 +34,14 @@ export function PropertiesPanel({
       ? network.pipes.find((p) => p.id === selected.id)
       : undefined;
 
+  const startNode = pipe
+    ? network.nodes.find((n) => n.id === pipe.startNodeId)
+    : undefined;
+
+  const endNode = pipe
+    ? network.nodes.find((n) => n.id === pipe.endNodeId)
+    : undefined;
+
   return (
     <Stack
       w="320px"
@@ -92,7 +100,7 @@ export function PropertiesPanel({
         <Stack gap={3}>
           <Text fontWeight="semibold">Pipe {pipe.id}</Text>
           <Text fontSize="sm" color="gray.500">
-            {pipe.startNodeId} → {pipe.endNodeId}
+            {startNode?.label ?? "Unknown"} → {endNode?.label ?? "Unknown"}
           </Text>
 
           <Stack gap={1}>
