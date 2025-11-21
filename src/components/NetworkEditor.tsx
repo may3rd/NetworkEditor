@@ -230,12 +230,17 @@ function EditorCanvas({
   handleNodesChange: (changes: NodesChange<Node>[]) => void;
   handleConnect: (connection: Connection) => void;
 }) {
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
   const { screenToFlowPosition } = useReactFlow();
 
-  const onConnectStart = useCallback((_: React.MouseEvent | React.TouchEvent, { nodeId }: { nodeId: string | null }) => {
-    connectingNodeId.current = nodeId;
-  }, []);
+  const onConnectStart = useCallback(
+    (_: React.MouseEvent | React.TouchEvent, { nodeId }: { nodeId: string | null }) => {
+      connectingNodeId.current = nodeId;
+    },
+    [],
+  );
 
   const onConnectEnd = useCallback(
     (event: MouseEvent | TouchEvent) => {
@@ -246,17 +251,24 @@ function EditorCanvas({
       connectingNodeId.current = null;
 
       // Check if the drop was on the pane and we have a source node
-      if (!fromId || !target.classList.contains('react-flow__pane') || !onNetworkChange) {
+      if (!fromId || !target.classList.contains("react-flow__pane") || !onNetworkChange) {
         return;
       }
 
-      const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
+      const { clientX, clientY } = "changedTouches" in event ? event.changedTouches[0] : event;
+
+      const position = screenToFlowPosition({ x: clientX, y: clientY });
+
+      if (snapToGrid) {
+        position.x = Math.round(position.x / snapGrid[0]) * snapGrid[0];
+        position.y = Math.round(position.y / snapGrid[1]) * snapGrid[1];
+      }
 
       const newNodeId = `node-${Date.now()}`;
       const newNode = {
         id: newNodeId,
         label: `Node ${network.nodes.length + 1}`,
-        position: screenToFlowPosition({ x: clientX, y: clientY }),
+        position,
       };
 
       const newPipe = {
@@ -272,7 +284,7 @@ function EditorCanvas({
         pipes: [...network.pipes, newPipe],
       });
     },
-    [screenToFlowPosition, onNetworkChange, network.nodes, network.pipes],
+    [screenToFlowPosition, onNetworkChange, network.nodes, network.pipes, snapToGrid, snapGrid],
   );
 
   return (
@@ -339,6 +351,27 @@ function EditorCanvas({
           ↻ Redo
         </button>
 
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 12 }}>
+          <input
+            id="snap-to-grid"
+            type="checkbox"
+            checked={snapToGrid}
+            onChange={(e) => setSnapToGrid(e.target.checked)}
+            style={{ cursor: "pointer" }}
+          />
+          <label
+            htmlFor="snap-to-grid"
+            style={{
+              fontSize: "13px",
+              color: "#64748b",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            Snap to Grid
+          </label>
+        </div>
+
         <div style={{ fontSize: "13px", color: "#64748b", marginLeft: "auto" }}>
           {canUndo || canRedo ? `${historyIndex + 1} / ${historyLength}` : "No history"}
         </div>
@@ -365,6 +398,8 @@ function EditorCanvas({
           onConnect={handleConnect}
           onConnectStart={onConnectStart}
           onConnectEnd={onConnectEnd}
+          snapToGrid={snapToGrid}
+          snapGrid={snapGrid}
           connectionMode={ConnectionMode.Strict}
           maxZoom={16}
           minZoom={0.1}
