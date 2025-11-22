@@ -237,7 +237,7 @@ function EditorCanvas({
   const { screenToFlowPosition } = useReactFlow();
 
   const onConnectStart = useCallback(
-    (_: React.MouseEvent<Element, MouseEvent> | React.TouchEvent<Element>, { nodeId }: { nodeId: string | null }) => {
+    (_: any, { nodeId }: { nodeId: string | null }) => {
       connectingNodeId.current = nodeId;
     },
     [],
