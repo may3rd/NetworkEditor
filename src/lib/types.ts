@@ -16,8 +16,6 @@ export type NodeProps = {
   demand?: number;
   pressure?: number;
   fluid?: Fluid;
-  controlValve?: ControlValve;
-  orifice?: Orifice;
 };
 
 export type PipeProps = {
@@ -25,16 +23,21 @@ export type PipeProps = {
   startNodeId: string;
   endNodeId: string;
   diameter?: number;
+  diameterUnit?: string;
   pipeDiameter?: number,
-  inlteDiameter?: number,
+  pipeDiameterUnit?: string,
+  inletDiameter?: number,
+  inletDiameterUnit?: string,
   outletDiameter?: number,
+  outletDiameterUnit?: string,
   roughness?: number;
+  roughnessUnit?: string;
   length?: number;
   lengthUnit?: string;
   elevation?: number;
-  flow?: number;
-  headloss?: number;
-  fluid?: Fluid;
+  elevationUnit?: string;
+  flowAndFittingLoss?: number;
+  headLoss?: number;
   fittingType?: string,
   fittings?: FittingType[];
   pipeLengthK?: number,
@@ -43,12 +46,18 @@ export type PipeProps = {
   pipingFittingSafetyFactor?: number,
   totalK?: number,
   pipeNPD?: number,
+  pipeSchedule?: string,
   designMargin?: number,
   erosionalConstant?: number,
   machNumber?: number,
   boundaryPressure?: number,
+  boundaryPressureUnit?: string,
   designMassFlowRate?: number,
+  designMassFlowRateUnit?: string,
   equivalentLength?: number,
+  fluid?: Fluid;
+  controlValve?: ControlValve;
+  orifice?: Orifice;
 };
 
 // Fluid propertis

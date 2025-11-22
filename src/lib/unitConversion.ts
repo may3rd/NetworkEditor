@@ -1,106 +1,84 @@
-export type UnitFamily =
-  | "length"
-  | "pressure"
-  | "temperature"
-  | "massFlowrate"
-  | "volumeFlowrate"
-  | "smallLength"
-  | "smallPressure"
-  | "viscosity";
+import configureMeasurements from "convert-units";
+import pressure from "convert-units/definitions/pressure";
+import allMeasures from "convert-units/definitions/all";
 
-type UnitDefinition = {
-  toBase: (value: number) => number;
-  fromBase: (value: number) => number;
+export type UnitFamily = string;
+
+const atmInkPa = 101.325;
+
+const extendedPressure = {
+  systems: {
+    metric: {
+      ...pressure.systems.metric,
+      Pag: {
+        name: { singular: 'Pascal Gauge', plural: 'Pascals Gauge' },
+        to_anchor: {
+          numerator: 1,
+          denominator: 1e3,
+        },
+        anchor_shift: - atmInkPa,
+      },
+      kPag: {
+        name: { singular: 'Kilopascal Gauge', plural: 'Kilopascal Gauge' },
+        to_anchor: {
+          numerator: 1,
+          denominator: 1,
+        },
+        anchor_shift: - atmInkPa,
+      },
+      barg: {
+        name: { singular: 'Bar Gauge', plural: 'Bars Gauge' },
+        to_anchor: 100,
+        anchor_shift: - atmInkPa,
+      },
+      ksc: {
+        name: { singular: 'Kilogram per square centimeter', plural: 'Kilogram per square centimeter' },
+        to_anchor: 98.0665,
+      },
+      kg_cm2: {
+        name: { singular: 'Kilogram per square centimeter', plural: 'Kilogram per square centimeter' },
+        to_anchor: 98.0665,
+      },
+      kscg: {
+        name: { singular: 'Kilogram per cubic centimeter gauge', plural: 'Kilogram per cubic centimeter gauge' },
+        to_anchor: 98.0665,
+        anchor_shift: - atmInkPa,
+      },
+      kg_cm2g: {
+        name: { singular: 'Kilogram per cubic centimeter gauge', plural: 'Kilogram per cubic centimeter gauge' },
+        to_anchor: 98.0665,
+        anchor_shift: - atmInkPa,
+      },
+      atm: {
+        name: { singular: 'Atmospheric', plural: 'Atmospheric' },
+        to_anchor: atmInkPa,
+      },
+      mmH2O: {
+        name: { singular: 'Millimeter of Water', plural: 'Millimeter of Water' },
+        to_anchor: 9.80665e-3,
+      },
+    },
+    imperial: {
+      ...pressure.systems.imperial,
+      psig: {
+        name: { singular: 'PSI Gauge', plural: 'PSI Gauge' },
+        to_anchor: 6894.75729,
+        anchor_shift: - atmInkPa,
+      },
+    },
+  },
+  anchors: { ...pressure.anchors },
 };
 
-type UnitRegistry = Record<UnitFamily, Record<string, UnitDefinition>>;
+const convert = configureMeasurements({
+  ...allMeasures,
+  pressure: extendedPressure,
+});
 
-const identityUnit: UnitDefinition = {
-  toBase: (value: number) => value,
-  fromBase: (value: number) => value,
-};
-
-const registry: UnitRegistry = {
-  length: {
-    m: identityUnit,
-    mm: {
-      toBase: (v: number) => v * 1000,
-      fromBase: (v: number) => v / 1000,
-    },
-    cm: {
-      toBase: (v: number) => v * 100,
-      fromBase: (v: number) => v / 100,
-    },
-    km: {
-      toBase: (v: number) => v * 1000,
-      fromBase: (v: number) => v / 1000,
-    },
-    ft: {
-      toBase: (v: number) => v * 0.3048,
-      fromBase: (v: number) => v / 0.3048,
-    },
-  },
-  pressure: {
-    pa: identityUnit,
-  },
-  temperature: {
-    k: identityUnit,
-    c: {
-      toBase: (v: number) => v + 273.15,
-      fromBase: (v: number) => v - 273.15,
-    },
-    f: {
-      toBase: (v: number) => ((v - 32) * 5) / 9 + 273.15,
-      fromBase: (v: number) => ((v - 273.15) * 9) / 5 + 32,
-    },
-    r: {
-      toBase: (v: number) => (v * 5) / 9,
-      fromBase: (v: number) => (v * 9) / 5,
-    },
-  },
-  massFlowrate: {
-    kg_s: identityUnit,
-  },
-  volumeFlowrate: {
-    m3_s: identityUnit,
-  },
-  smallLength: {
-    mm: identityUnit,
-  },
-  smallPressure: {
-    kpa: identityUnit,
-  },
-  viscosity: {
-    cp: identityUnit,
-  },
-};
-
-export function convertUnit({
-  value,
-  fromUnit,
-  toUnit,
-  family = "length",
-}: {
-  value: number;
-  fromUnit: string;
-  toUnit: string;
-  family?: UnitFamily;
-}): number {
-  const familyRegistry = registry[family];
-  if (!familyRegistry) return value;
-
-  const from = familyRegistry[fromUnit];
-  const to = familyRegistry[toUnit];
-
-  if (!from || !to) return value;
-
-  const baseValue = from.toBase(value);
-  return to.fromBase(baseValue);
-}
-
-export function registerUnits(family: UnitFamily, units: Record<string, UnitDefinition>) {
-  registry[family] = {
-    ...registry[family],
-    ...units,
-  };
+export function convertUnit(value: number, fromUnit: string, toUnit: string, _family?: UnitFamily) {
+  try {
+    return convert(value).from(fromUnit).to(toUnit);
+  } catch {
+    return value;
+  }
 }

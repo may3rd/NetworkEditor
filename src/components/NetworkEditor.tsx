@@ -73,25 +73,28 @@ export function NetworkEditor({
 
   const rfEdges = useMemo<Edge[]>(
     () => 
-      network.pipes.map((pipe) => ({
-        id: pipe.id,
-        source: pipe.startNodeId,
-        target: pipe.endNodeId,
-        label: `${pipe.length} ${pipe.lengthUnit}`,
-        labelStyle: {
-          fontSize: "8px",
-          fill: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
-        },
-        type: "smoothstep",
-        style: {
-          strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 2 : 1,
-          stroke: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
-        },
-      })),
+      network.pipes.map((pipe) => {
+        const roundedLength = typeof pipe.length === "number" ? pipe.length.toFixed(3) : Number(pipe.length ?? 0).toFixed(3);
+        return {
+          id: pipe.id,
+          source: pipe.startNodeId,
+          target: pipe.endNodeId,
+          label: `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim(),
+          labelStyle: {
+            fontSize: "8px",
+            fill: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
+          },
+          type: "smoothstep",
+          style: {
+            strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 2 : 1,
+            stroke: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
+          },
+        };
+      }),
     [network.pipes, selectedId, selectedType]
   );
 

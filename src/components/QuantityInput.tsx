@@ -1,6 +1,7 @@
 "use client";
 
 import { Flex, Input, Select, FormControl, FormLabel } from "@chakra-ui/react";
+import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
 type QuantityInputProps = {
   label: string;
@@ -8,7 +9,8 @@ type QuantityInputProps = {
   unit: string;
   units: readonly string[];
   onValueChange: (value: number) => void;
-  onUnitChange: (unit: string) => void;
+  onUnitChange?: (unit: string) => void;
+  unitFamily?: UnitFamily;
   placeholder?: string;
 };
 
@@ -19,9 +21,22 @@ export function QuantityInput({
   units,
   onValueChange,
   onUnitChange,
+  unitFamily,
   placeholder,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
+
+  const handleUnitChange = (nextUnit: string) => {
+    const numericValue = typeof value === "number" ? value : Number(value);
+    const canConvert = unitFamily && !Number.isNaN(numericValue);
+
+    if (canConvert) {
+      const converted = convertUnit(numericValue, unit, nextUnit, unitFamily);
+      onValueChange(converted);
+    }
+
+    onUnitChange?.(nextUnit);
+  };
 
   return (
     <FormControl>
@@ -47,7 +62,7 @@ export function QuantityInput({
         />
         <Select
           value={unit}
-          onChange={(e) => onUnitChange(e.target.value)}
+          onChange={(e) => handleUnitChange(e.target.value)}
           border="none"
           borderLeft="1px solid"
           borderColor="inherit"
