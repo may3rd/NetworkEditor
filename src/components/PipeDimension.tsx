@@ -21,6 +21,27 @@ export type PipeSchedule =
   | "40S"
   | "80S";
 
+export const PIPE_FITTING_OPTIONS = [
+  { value: "elbow_45", label: "Elbow 45" },
+  { value: "elbow_90", label: "Elbow 90" },
+  { value: "u_bend", label: "U Bend" },
+  { value: "stub_in_elbow", label: "Stub-In Elbow" },
+  { value: "tee_elbow", label: "Tee Elbow" },
+  { value: "tee_through", label: "Tee Through" },
+  { value: "block_valve_full_line_size", label: "Block Valve Full Line Size" },
+  { value: "block_valve_reduced_trim_0.9d", label: "Block Valve Reduced Trim 0.9D" },
+  { value: "block_valve_reduced_trim_0.8d", label: "Block Valve Reduced Trim 0.8D" },
+  { value: "globe_valve", label: "Globe Valve" },
+  { value: "diaphragm_valve", label: "Diaphragm Valve" },
+  { value: "butterfly_valve", label: "Butterfly Valve" },
+  { value: "check_valve_swing", label: "Check Valve Swing" },
+  { value: "lift_check_valve", label: "Lift Check Valve" },
+  { value: "tilting_check_valve", label: "Tilting Check Valve" },
+  { value: "pipe_entrance_normal", label: "Pipe Entrance Normal" },
+  { value: "pipe_entrance_raise", label: "Pipe Entrance Raise" },
+  { value: "pipe_exit", label: "Pipe Exit" },
+] as const;
+
 type PipeScheduleEntry = {
   nps: number;
   innerDiameterMm: number;

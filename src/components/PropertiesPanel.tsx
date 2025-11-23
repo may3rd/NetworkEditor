@@ -2,14 +2,34 @@
 
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "./QuantityInput";
 import {
+  PIPE_FITTING_OPTIONS,
   PIPE_SCHEDULES,
   getScheduleEntries,
   nearest_pipe_diameter,
   normalizeSchedule,
   type PipeSchedule,
 } from "./PipeDimension";
-import { Box, Button, Heading, Input, Radio, RadioGroup, Select, Stack, Text } from "@chakra-ui/react";
-import { NetworkState, NodeProps, NodePatch, PipeProps, SelectedElement } from "@/lib/types";
+import {
+  Box,
+  Button,
+  Heading,
+  IconButton,
+  Input,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  Radio,
+  RadioGroup,
+  Select,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
+import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, SelectedElement } from "@/lib/types";
+
+const FITTING_TYPE_OPTIONS = ["SCRD", "LR", "SR"] as const;
 
 type Props = {
   network: NetworkState;
@@ -53,6 +73,43 @@ export function PropertiesPanel({
     scheduleEntries.some((entry) => entry.nps === pipe.pipeNPD)
       ? String(pipe.pipeNPD)
       : "";
+  const pipeFittings = pipe?.fittings ?? [];
+  const defaultFittingOption = PIPE_FITTING_OPTIONS[0]?.value ?? "elbow_45";
+
+  const updatePipeFittings = (nextFittings: FittingType[]) => {
+    if (!pipe) return;
+    onUpdatePipe(pipe.id, { fittings: nextFittings });
+  };
+
+  const handleFittingFieldChange = (index: number, update: Partial<FittingType>) => {
+    if (!pipe) return;
+    updatePipeFittings(
+      pipeFittings.map((fitting, idx) => (idx === index ? { ...fitting, ...update } : fitting))
+    );
+  };
+
+  const handleAddFitting = () => {
+    if (!pipe) return;
+    updatePipeFittings([
+      ...pipeFittings,
+      {
+        type: defaultFittingOption,
+        count: 1,
+        k_each: 0,
+        k_total: 0,
+      },
+    ]);
+  };
+
+  const handleRemoveFitting = (index: number) => {
+    if (!pipe) return;
+    updatePipeFittings(pipeFittings.filter((_, idx) => idx !== index));
+  };
+
+  const handleResetFittings = () => {
+    if (!pipe || pipeFittings.length === 0) return;
+    updatePipeFittings([]);
+  };
 
   const deriveDiameterFromNps = (npsValue?: number, scheduleValue?: PipeSchedule) => {
     if (npsValue === undefined || scheduleValue === undefined) {
@@ -411,12 +468,118 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          // TODO: input for pipe fittings, includes
-          // Fitting Type: ["SCRD", "LR", "SR"] - default "LR"
-          // Fittings List - Add / Reset.
-          // Each fitting contians Type, Count, and delete button (icon). Type is dropdown list, count is integer input.
-          // fitting type is [elbow_45,elbow_90,u_bend,stub_in_elbow,tee_elbow,tee_through,block_valve_full_line_size,block_valve_reduced_trim_0.9d,block_valve_reduced_trim_0.8d,globe_valve,diaphragm_valve,butterfly_valve,check_valve_swing,lift_check_valve,tilting_check_valve,pipe_entrance_normal,pipe_entrance_raise,pipe_exit]
-          // keep the fitting type list in PipeDimension.tsx, use elbow_90, elbow_45, ... when render network but in drop down list shown is 'Elbow 45' or 'Elbow 90', ...
+          <Stack gap={3}>
+            <Stack gap={1}>
+              <Text fontSize="sm" color="gray.500">
+                Fitting Type
+              </Text>
+              <Select
+                value={pipe.fittingType ?? "LR"}
+                onChange={(event) => onUpdatePipe(pipe.id, { fittingType: event.target.value })}
+                w="full"
+              >
+                {FITTING_TYPE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </Select>
+            </Stack>
+
+            <Stack gap={2}>
+              <Stack direction="row" justify="space-between" align="center">
+                <Text fontSize="sm" color="gray.500">
+                  Fittings
+                </Text>
+                <Stack direction="row" gap={2}>
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={handleResetFittings}
+                    isDisabled={pipeFittings.length === 0}
+                  >
+                    Reset
+                  </Button>
+                  <Button size="xs" onClick={handleAddFitting}>
+                    Add
+                  </Button>
+                </Stack>
+              </Stack>
+
+              {pipeFittings.length === 0 ? (
+                <Text fontSize="sm" color="gray.400">
+                  No fittings added.
+                </Text>
+              ) : (
+                <Stack gap={2}>
+                  {pipeFittings.map((fitting, index) => (
+                    <Stack
+                      key={`${fitting.type}-${index}`}
+                      direction="row"
+                      gap={2}
+                      align="flex-end"
+                    >
+                      <Stack flex="1" gap={1}>
+                        <Text fontSize="sm" color="gray.500">
+                          Type
+                        </Text>
+                        <Select
+                          value={fitting.type}
+                          onChange={(event) =>
+                            handleFittingFieldChange(index, {
+                              type: event.target.value,
+                              k_each: 0,
+                              k_total: 0,
+                            })
+                          }
+                          w="full"
+                        >
+                          {PIPE_FITTING_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </Stack>
+                      <Stack w="80px" gap={1}>
+                        <Text fontSize="sm" color="gray.500">
+                          Count
+                        </Text>
+                        <NumberInput
+                          min={0}
+                          step={1}
+                          value={fitting.count ?? 0}
+                          onChange={(_, valueNumber) => {
+                            if (!Number.isFinite(valueNumber)) {
+                              return;
+                            }
+                            const normalized = Math.max(0, Math.floor(valueNumber));
+                            handleFittingFieldChange(index, {
+                              count: normalized,
+                              k_total: normalized * (fitting.k_each ?? 0),
+                            });
+                          }}
+                        >
+                          <NumberInputField />
+                          <NumberInputStepper>
+                            <NumberIncrementStepper />
+                            <NumberDecrementStepper />
+                          </NumberInputStepper>
+                        </NumberInput>
+                      </Stack>
+                      <IconButton
+                        aria-label="Remove fitting"
+                        icon={<CloseIcon />}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveFitting(index)}
+                      />
+                    </Stack>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </Stack>
 
         </Stack>
       )}
