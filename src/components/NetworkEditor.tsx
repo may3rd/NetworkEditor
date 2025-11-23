@@ -73,6 +73,13 @@ export function NetworkEditor({
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
   useEffect(() => setLocalNodes(rfNodes), [rfNodes]);
 
+  useEffect(() => {
+    if (selectedType === "pipe" && selectedId) {
+      const selectedPipe = network.pipes.find(pipe => pipe.id === selectedId);
+      console.log("[PipeDebug] Selected pipe fluid:", selectedPipe?.fluid);
+    }
+  }, [selectedType, selectedId, network.pipes]);
+
   const rfEdges = useMemo<Edge[]>(
     () => 
       network.pipes.map((pipe) => {
@@ -154,12 +161,14 @@ export function NetworkEditor({
         return; // Silently prevent duplicate connection
       }
 
+      const startNode = network.nodes.find(node => node.id === connection.source);
       const newPipe = {
         id: `pipe-${connection.source}-${connection.target}-${Date.now()}`,
         startNodeId: connection.source,
         endNodeId: connection.target,
         length: 100, // Default length
         diameter: 0.1, // Default diameter
+        fluid: startNode?.fluid ? { ...startNode.fluid } : undefined,
       };
 
       onNetworkChange({
@@ -283,12 +292,18 @@ function EditorCanvas({
 
       const startsFromSourceHandle = handleType !== "target";
 
+      const pipeStartNodeId = startsFromSourceHandle ? fromId : newNodeId;
+      const pipeStartNode =
+        pipeStartNodeId === newNodeId
+          ? newNode
+          : network.nodes.find(node => node.id === pipeStartNodeId);
       const newPipe = {
         id: `pipe-${startsFromSourceHandle ? fromId : newNodeId}-${startsFromSourceHandle ? newNodeId : fromId}-${Date.now()}`,
-        startNodeId: startsFromSourceHandle ? fromId : newNodeId,
+        startNodeId: pipeStartNodeId,
         endNodeId: startsFromSourceHandle ? newNodeId : fromId,
         length: 100, // Default length
         diameter: 0.1, // Default diameter
+        fluid: pipeStartNode?.fluid ? { ...pipeStartNode.fluid } : undefined,
       };
 
       onNetworkChange({

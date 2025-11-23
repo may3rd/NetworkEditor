@@ -27,6 +27,7 @@ export type PipeProps = {
   endNodeId: string;
   diameter?: number;
   diameterUnit?: string;
+  diameterInputMode?: "nps" | "diameter";
   pipeDiameter?: number,
   pipeDiameterUnit?: string,
   inletDiameter?: number,
@@ -59,6 +60,8 @@ export type PipeProps = {
   designMassFlowRateUnit?: string,
   equivalentLength?: number,
   fluid?: Fluid;
+  massFlowRate?: number;
+  massFlowRateUnit?: string;
   controlValve?: ControlValve;
   orifice?: Orifice;
 };
@@ -216,3 +219,12 @@ export const createInitialNetwork = (): NetworkState => ({
   })),
   pipes: baseNetwork.pipes.map((pipe) => ({ ...pipe })),
 });
+
+export const copyFluidFromNodeToPipe = (node: NodeProps, pipe: PipeProps) => {
+  pipe.fluid = { ...node.fluid };
+};
+
+export const copyFluidFromPipeToNode = (pipe: PipeProps, node: NodeProps) => {
+  if (!pipe.fluid) return;
+  node.fluid = { ...pipe.fluid };
+}

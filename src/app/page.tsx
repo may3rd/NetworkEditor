@@ -6,7 +6,13 @@ import { NetworkEditor } from "@/components/NetworkEditor";
 import { PropertiesPanel } from "@/components/PropertiesPanel";
 import { Header } from "@/components/Header";
 import { SummaryPanel } from "@/components/SummaryPanel";
-import { createInitialNetwork, NetworkState, NodePatch, SelectedElement } from "@/lib/types";
+import {
+  createInitialNetwork,
+  NetworkState,
+  NodePatch,
+  SelectedElement,
+  NodeProps,
+} from "@/lib/types";
 import { runHydraulicCalculation } from "@/lib/solverClient";
 
 export default function Home() {
@@ -135,17 +141,41 @@ export default function Home() {
           network={network}
           selected={selection}
           onUpdateNode={(id, patch: NodePatch) =>
-            setNetwork(current => ({
-              ...current,
-              nodes: current.nodes.map(node =>
-                node.id === id
+            setNetwork(current => {
+              let updatedNode: NodeProps | undefined;
+
+              const nextNodes = current.nodes.map(node => {
+                if (node.id !== id) return node;
+
+                const nodePatch = typeof patch === "function" ? patch(node) : patch;
+                const mergedNode = {
+                  ...node,
+                  ...nodePatch,
+                };
+
+                updatedNode = mergedNode;
+                return mergedNode;
+              });
+
+              if (!updatedNode) {
+                return current;
+              }
+
+              const nextPipes = current.pipes.map(pipe =>
+                pipe.startNodeId === id
                   ? {
-                      ...node,
-                      ...(typeof patch === "function" ? patch(node) : patch),
+                      ...pipe,
+                      fluid: updatedNode?.fluid ? { ...updatedNode.fluid } : undefined,
                     }
-                  : node
-              ),
-            }))
+                  : pipe
+              );
+
+              return {
+                ...current,
+                nodes: nextNodes,
+                pipes: nextPipes,
+              };
+            })
           }
           onUpdatePipe={(id, patch) =>
             setNetwork(current => ({

@@ -120,7 +120,10 @@ const massDensityMeasure = {
   anchors: {
     metric: {
       imperial: {
-        ratio: 0.062427960576145,
+        ratio: {
+          numerator: 1,
+          denominator: 16.018463374,
+        },
       }
     },
     imperial: {
@@ -131,12 +134,100 @@ const massDensityMeasure = {
   }
 };
 
+const massFlowRateMeasure = {
+  systems: {
+    metric: {
+      "kg/s": {
+        name: { singular: "Kilogram per second", plural: "Kilogram per second" },
+        to_anchor: 1,
+      },
+      "g/s": {
+        name: { singular: "Gram per second", plural: "Gram per second" },
+        to_anchor: {
+          numerator: 1,
+          denominator: 1000,
+        },
+      },
+      "kg/hr": {
+        name: { singular: "Kilogram per hour", plural: "Kilogram per hour" },
+        to_anchor: {
+          numerator: 1,
+          denominator: 3600,
+        },
+        "ton/day": {
+          name: { singular: "Ton per day", plural: "Tons per day" },
+          to_anchor: {
+            numerator: 1000,
+            denominator: 86400,
+          },
+        }
+      },
+      "kg/h": {
+        name: { singular: "Kilogram per hour", plural: "Kilogram per hour" },
+        to_anchor: {
+          numerator: 1,
+          denominator: 3600,
+        },
+        "ton/day": {
+          name: { singular: "Ton per day", plural: "Tons per day" },
+          to_anchor: {
+            numerator: 1000,
+            denominator: 86400,
+          },
+        }
+      },
+    },
+    imperial: {
+      "lb/s": {
+        name: { singular: "Pound per second", plural: "Pound per second" },
+        to_anchor: 1,
+      },
+      "lb/min": {
+        name: { singular: "Pound per minute", plural: "Pound per minute" },
+        to_anchor: {
+          numerator: 1,
+          denominator: 60,
+        },
+      },
+      "lb/hr": {
+        name: { singular: "Pound per hour", plural: "Pound per hour" },
+        to_anchor: {
+          numerator: 1,
+          denominator: 3600,
+        },
+      },
+      "lb/h": {
+        name: { singular: "Pound per hour", plural: "Pound per hour" },
+        to_anchor: {
+          numerator: 1,
+          denominator: 3600,
+        },
+      },
+    },
+  },
+  anchors: {
+    metric: {
+      imperial: {
+        ratio: {
+          numerator: 1,
+          denominator: 0.45359237,
+        },
+      }
+    },
+    imperial: {
+      metric: {
+        ratio: 0.45359237,
+      },
+    },
+  },
+};
 
 const convert = configureMeasurements({
   ...allMeasures,
   pressure: extendedPressure,
   viscosity: viscosityMeasure,
   massDensity: massDensityMeasure,
+  massFlowRate: massFlowRateMeasure,
 } as any);
 
 export function convertUnit(value: number, fromUnit: string, toUnit: string, _family?: UnitFamily) {
