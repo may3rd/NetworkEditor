@@ -2,12 +2,12 @@
 
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "./QuantityInput";
 import { Box, Button, Heading, Input, Radio, RadioGroup, Stack, Text } from "@chakra-ui/react";
-import { NetworkState, NodeProps, PipeProps, SelectedElement } from "@/lib/types";
+import { NetworkState, NodeProps, NodePatch, PipeProps, SelectedElement } from "@/lib/types";
 
 type Props = {
   network: NetworkState;
   selected: SelectedElement;
-  onUpdateNode: (id: string, patch: Partial<NodeProps>) => void;
+  onUpdateNode: (id: string, patch: NodePatch) => void;
   onUpdatePipe: (id: string, patch: Partial<PipeProps>) => void;
   onReset: () => void;
 };
@@ -89,12 +89,12 @@ export function PropertiesPanel({
             <RadioGroup
               value={nodeFluidPhase}
               onChange={(value) =>
-                onUpdateNode(node.id, {
+                onUpdateNode(node.id, current => ({
                   fluid: {
-                    ...(node.fluid ?? {}),
+                    ...(current.fluid ?? {}),
                     phase: value as "liquid" | "gas",
                   },
-                })
+                }))
               }
             >
               <Stack direction="row">
@@ -103,7 +103,31 @@ export function PropertiesPanel({
               </Stack>
             </RadioGroup>
 
-            // TODO: add input for Liquid Density, hidden if gas is selected.
+            {nodeFluidPhase !== "gas" && (
+              <QuantityInput
+                label="Liquid Density"
+                value={node.fluid?.density ?? ""}
+                unit={node.fluid?.densityUnit ?? "kg/m3"}
+                units={QUANTITY_UNIT_OPTIONS.density}
+                unitFamily="density"
+                onValueChange={(newValue) =>
+                  onUpdateNode(node.id, (current) => ({
+                    fluid: {
+                      ...(current.fluid ?? {}),
+                      density: newValue,
+                    },
+                  }))
+                }
+                onUnitChange={(newUnit) =>
+                  onUpdateNode(node.id, (current) => ({
+                    fluid: {
+                      ...(current.fluid ?? {}),
+                      densityUnit: newUnit,
+                    },
+                  }))
+                }
+              />
+            )}
             // TODO: add input for Gas Molecular Weight, Z factor, Specific Heat Ratio, hidden if liquid is selected.
 
             <QuantityInput
@@ -113,14 +137,20 @@ export function PropertiesPanel({
               units={QUANTITY_UNIT_OPTIONS.viscosity}
               unitFamily="viscosity"
               onValueChange={(newValue) =>
-                onUpdateNode(node.id, {
-                  fluid: { ...(node.fluid ?? {}), viscosity: newValue },
-                })
+                onUpdateNode(node.id, current => ({
+                  fluid: {
+                    ...(current.fluid ?? {}),
+                    viscosity: newValue,
+                  },
+                }))
               }
               onUnitChange={(newUnit) =>
-                onUpdateNode(node.id, {
-                  fluid: { ...(node.fluid ?? {}), viscosityUnit: newUnit },
-                })
+                onUpdateNode(node.id, current => ({
+                  fluid: {
+                    ...(current.fluid ?? {}),
+                    viscosityUnit: newUnit,
+                  },
+                }))
               }
             />
 

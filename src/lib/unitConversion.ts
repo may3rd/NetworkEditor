@@ -1,6 +1,7 @@
 import configureMeasurements from "convert-units";
 import pressure from "convert-units/definitions/pressure";
 import allMeasures from "convert-units/definitions/all";
+import { i } from "framer-motion/client";
 
 export type UnitFamily = string;
 
@@ -89,10 +90,53 @@ const viscosityMeasure = {
   },
 };
 
+const massDensityMeasure = {
+  systems: {
+    metric: {
+      "kg/m3": {
+        name: { singular: "Kilogram per cubic meter", plural: "Kilogram per cubic meter" },
+        to_anchor: 1,
+        },
+      "kg/cm3": {
+        name: { singular: "Kilogram per cubic centimeter", plural: "Kilogram per cubic centimeter" },
+        to_anchor: 1000,
+      },
+      "g/cm3": {
+        name: { singular: "Gram per cubic centimeter", plural: "Gram per cubic centimeter" },
+        to_anchor: 1000,
+      },
+    },
+    imperial: {
+      "lb/ft3": {
+        name: { singular: "Pound per cubic foot", plural: "Pound per cubic foot" },
+        to_anchor: 1,
+      },
+      "lb/in3": {
+        name: { singular: "Pound per cubic inch", plural: "Pound per cubic inch" },
+        to_anchor: 1728,
+      },
+    }
+  },
+  anchors: {
+    metric: {
+      imperial: {
+        ratio: 0.062427960576145,
+      }
+    },
+    imperial: {
+      metric: {
+        ratio: 16.018463374,
+      }
+    },
+  }
+};
+
+
 const convert = configureMeasurements({
   ...allMeasures,
   pressure: extendedPressure,
   viscosity: viscosityMeasure,
+  massDensity: massDensityMeasure,
 } as any);
 
 export function convertUnit(value: number, fromUnit: string, toUnit: string, _family?: UnitFamily) {

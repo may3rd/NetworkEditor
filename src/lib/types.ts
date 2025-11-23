@@ -19,6 +19,8 @@ export type NodeProps = {
   fluid: Fluid,
 };
 
+export type NodePatch = Partial<NodeProps> | ((node: NodeProps) => Partial<NodeProps>);
+
 export type PipeProps = {
   id: string;
   startNodeId: string;

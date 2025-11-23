@@ -6,7 +6,7 @@ import { NetworkEditor } from "@/components/NetworkEditor";
 import { PropertiesPanel } from "@/components/PropertiesPanel";
 import { Header } from "@/components/Header";
 import { SummaryPanel } from "@/components/SummaryPanel";
-import { createInitialNetwork, NetworkState, SelectedElement } from "@/lib/types";
+import { createInitialNetwork, NetworkState, NodePatch, SelectedElement } from "@/lib/types";
 import { runHydraulicCalculation } from "@/lib/solverClient";
 
 export default function Home() {
@@ -134,11 +134,16 @@ export default function Home() {
         <PropertiesPanel
           network={network}
           selected={selection}
-          onUpdateNode={(id, patch) =>
+          onUpdateNode={(id, patch: NodePatch) =>
             setNetwork(current => ({
               ...current,
               nodes: current.nodes.map(node =>
-                node.id === id ? { ...node, ...patch } : node
+                node.id === id
+                  ? {
+                      ...node,
+                      ...(typeof patch === "function" ? patch(node) : patch),
+                    }
+                  : node
               ),
             }))
           }

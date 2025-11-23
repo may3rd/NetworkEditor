@@ -5,6 +5,7 @@ import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
 export const QUANTITY_UNIT_OPTIONS = {
   area: ["mm2", "cm2", "m2", "in2", "ft2"] as const,
+  density: ["kg/m3", "g/cm3", "lb/ft3"] as const,
   length: ["m", "km", "ft", "in", "mil"] as const,
   lengthSmall: ["mm", "cm", "in"] as const,
   massFlowRate: [] as const,
