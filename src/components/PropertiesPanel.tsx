@@ -89,7 +89,12 @@ export function PropertiesPanel({
             <RadioGroup
               value={nodeFluidPhase}
               onChange={(value) =>
-                onUpdateNode(node.id, { fluid: { ...(node.fluid ?? {}), phase: value as "liquid" | "gas" } })
+                onUpdateNode(node.id, {
+                  fluid: {
+                    ...(node.fluid ?? {}),
+                    phase: value as "liquid" | "gas",
+                  },
+                })
               }
             >
               <Stack direction="row">
@@ -107,8 +112,16 @@ export function PropertiesPanel({
               unit={node.fluid?.viscosityUnit ?? "cP"}
               units={QUANTITY_UNIT_OPTIONS.viscosity}
               unitFamily="viscosity"
-              onValueChange={(newValue) => onUpdateNode(node.id, { fluid: { ... (node.fluid ?? {}), viscosity: newValue } }) }
-              onUnitChange={(newUnit) => onUpdateNode(node.id, { fluid: { ... (node.fluid ?? {}), viscosityUnit: newUnit } }) }
+              onValueChange={(newValue) =>
+                onUpdateNode(node.id, {
+                  fluid: { ...(node.fluid ?? {}), viscosity: newValue },
+                })
+              }
+              onUnitChange={(newUnit) =>
+                onUpdateNode(node.id, {
+                  fluid: { ...(node.fluid ?? {}), viscosityUnit: newUnit },
+                })
+              }
             />
 
           </Stack>

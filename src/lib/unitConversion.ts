@@ -71,23 +71,23 @@ const extendedPressure = {
 };
 
 const viscosityMeasure = {
-    systems: {
+  systems: {
     metric: {
-        'Pa·s': {
-          name: { singular: 'Pascal-second', plural: 'Pascal-seconds' },
-          to_anchor: 1,
-        },
-        Poise: {
-          name: { singular: 'Poise', plural: 'Poises' },
-          to_anchor: 0.1,
-        },
-        cP: {
-          name: { singular: 'cP', plural: 'cP' },
-          to_anchor: 0.0001,
-        },
+      "Pa.s": {
+        name: { singular: "Pascal-second", plural: "Pascal-seconds" },
+        to_anchor: 1,
+      },
+      Poise: {
+        name: { singular: "Poise", plural: "Poises" },
+        to_anchor: 0.1,
+      },
+      cP: {
+        name: { singular: "Centipoise", plural: "Centipoise" },
+        to_anchor: 0.001,
       },
     },
-  }
+  },
+};
 
 const convert = configureMeasurements({
   ...allMeasures,
@@ -96,12 +96,9 @@ const convert = configureMeasurements({
 } as any);
 
 export function convertUnit(value: number, fromUnit: string, toUnit: string, _family?: UnitFamily) {
-  console.log(value, fromUnit, toUnit);
   try {
-    console.log("converted to ", convert(value).from(fromUnit).to(toUnit))
     return convert(value).from(fromUnit).to(toUnit);
   } catch {
-    console.log("error converting")
     return value;
   }
 }

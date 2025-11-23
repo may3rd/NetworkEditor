@@ -13,7 +13,7 @@ export const QUANTITY_UNIT_OPTIONS = {
   temperature: ["C", "F", "K", "R"] as const,
   volume: ["mm3", "cm3", "m3", "in3", "ft3"] as const,
   volumeFlowRate: ["m3/s"] as const,
-  viscosity: ["cP", "Poise", "Pa·s"] as const,
+  viscosity: ["cP", "Poise", "Pa.s"] as const,
 } as const;
 
 type QuantityInputProps = {
