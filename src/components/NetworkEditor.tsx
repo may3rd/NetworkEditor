@@ -463,7 +463,7 @@ function EditorCanvas({
             padding: "4px 10px",
             borderRadius: 6,
             fontWeight: "600",
-            fontSize: "13px",
+            fontSize: "12px",
             cursor: canEditNetwork ? "pointer" : "not-allowed",
             opacity: canEditNetwork ? 1 : 0.6,
           }}
@@ -482,7 +482,7 @@ function EditorCanvas({
             padding: "4px 8px",
             borderRadius: 6,
             fontWeight: "600",
-            fontSize: "13px",
+            fontSize: "12px",
             cursor: canUndo ? "pointer" : "not-allowed",
           }}
           title="Undo (Ctrl+Z)"
@@ -500,7 +500,7 @@ function EditorCanvas({
             padding: "4px 8px",
             borderRadius: 6,
             fontWeight: "600",
-            fontSize: "13px",
+            fontSize: "12px",
             cursor: canRedo ? "pointer" : "not-allowed",
           }}
           title="Redo (Ctrl+Y)"

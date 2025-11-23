@@ -589,10 +589,6 @@ export function PropertiesPanel({
           Select a node or pipe to view or edit its values.
         </Box>
       )}
-
-      <Button onClick={onReset} variant="outline">
-        Reset to starter network
-      </Button>
     </Stack>
   );
 }

@@ -115,9 +115,18 @@ export default function Home() {
     setNetwork(updatedNetwork);
   }, []);
 
+  const handleReset = () => {
+    setNetwork(createInitialNetwork());
+    setSelection(null);
+    setSelectedId(null);
+    setSelectedType(null);
+    setHistory([]);
+    setHistoryIndex(-1);
+  };
+
   return (
     <Stack bg="#f8fafc" minH="100vh" gap={6} p={8}>
-      <Header onSolve={handleSolve} isSolving={isSolving} lastSolvedAt={lastSolvedAt} />
+      <Header onSolve={handleSolve} onReset={handleReset} isSolving={isSolving} lastSolvedAt={lastSolvedAt} />
       <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} />
 
       <Flex gap={4} align="flex-start" flexDirection={{ base: "column", xl: "row" }}>
@@ -185,14 +194,7 @@ export default function Home() {
               ),
             }))
           }
-          onReset={() => {
-            setNetwork(createInitialNetwork());
-            setSelection(null);
-            setSelectedId(null);
-            setSelectedType(null);
-            setHistory([]);
-            setHistoryIndex(-1);
-          }}
+          onReset={handleReset}
         />
       </Flex>
 

@@ -4,11 +4,12 @@ import { Button, Flex, Heading, Stack, Text, Box, ButtonGroup } from "@chakra-ui
 
 type Props = {
   onSolve: () => void;
+  onReset: () => void;
   isSolving: boolean;
   lastSolvedAt: string | null;
 };
 
-export function Header({ onSolve, isSolving, lastSolvedAt }: Props) {
+export function Header({ onSolve, onReset, isSolving, lastSolvedAt }: Props) {
   return (
     <Flex
       direction="column"
@@ -29,10 +30,11 @@ export function Header({ onSolve, isSolving, lastSolvedAt }: Props) {
         </Stack>
 
         <Flex ml={{ base: 0, md: "auto" }} align="flex-start" gap={4} wrap={{ base: "wrap", md: "nowrap" }} justify="flex-end">
-          <ButtonGroup variant="outline" size="sm">
+          <ButtonGroup variant="outline" size="sm" marginRight={"8"}>
+            <Button onClick={onReset} marginRight={"8"} background={"orange"}>Reset</Button>
             <Button onClick={() => alert("Print action triggered!")}>Print</Button>
-            <Button onClick={() => alert("Save action triggered!")}>Save</Button>
             <Button onClick={() => alert("Load action triggered!")}>Load</Button>
+            <Button onClick={() => alert("Save action triggered!")}>Save</Button>
           </ButtonGroup>
 
           <Stack align={{ base: "stretch", md: "flex-end" }}>
