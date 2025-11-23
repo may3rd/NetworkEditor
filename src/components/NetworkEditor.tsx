@@ -23,6 +23,10 @@ import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
 import { NetworkState, type NodeProps } from "@/lib/types";
 
+const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
+)}") 12 12, auto`;
+
 type Props = {
   network: NetworkState;
   onSelect: (id: string | null, type: "node" | "pipe" | null) => void;
@@ -258,6 +262,7 @@ function EditorCanvas({
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
   const connectingHandleType = useRef<HandleType | null>(null);
+  const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null);
   const { screenToFlowPosition, getNodes } = useReactFlow();
 
   const onConnectStart = useCallback(
@@ -423,7 +428,33 @@ function EditorCanvas({
     [isAddingNode, onNetworkChange, screenToFlowPosition, snapToGrid, snapGrid, network, onSelect, mapNodeToReactFlow],
   );
 
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || !isAddingNode) return;
+      event.preventDefault();
+      setIsAddingNode(false);
+    };
+
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [isAddingNode]);
+
+  useEffect(() => {
+    const wrapper = reactFlowWrapperRef.current;
+    if (!wrapper) return;
+
+    const pane = wrapper.querySelector(".react-flow__pane") as HTMLDivElement | null;
+    if (!pane) return;
+
+    pane.style.cursor = isAddingNode ? ADD_NODE_CURSOR : "";
+
+    return () => {
+      pane.style.cursor = "";
+    };
+  }, [isAddingNode]);
+
   const canEditNetwork = Boolean(onNetworkChange);
+  const editorCursor = isAddingNode ? ADD_NODE_CURSOR : "default";
 
   return (
     <div
@@ -535,11 +566,14 @@ function EditorCanvas({
       </div>
 
       {/* React Flow */}
-      <div style={{ 
+      <div
+        ref={reactFlowWrapperRef}
+        style={{ 
         flex: 1,
         minHeight: 0,
         position: "relative",
         width: "100%",
+        cursor: editorCursor,
       }}>
         <ReactFlow
           nodes={localNodes}
@@ -561,6 +595,7 @@ function EditorCanvas({
           connectionMode={ConnectionMode.Strict}
           maxZoom={16}
           minZoom={0.1}
+          style={{ cursor: editorCursor }}
         >
           <Background />
           <MiniMap
