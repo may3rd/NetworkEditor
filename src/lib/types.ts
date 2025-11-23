@@ -3,6 +3,11 @@ export type SelectedElement =
   | { type: "pipe"; id: string }
   | null;
 
+export type Quantity = {
+  value: number;
+  unit: string;
+};
+
 export type Coordinate = {
   x: number;
   y: number;
@@ -25,6 +30,8 @@ export type PipeProps = {
   id: string;
   startNodeId: string;
   endNodeId: string;
+  pipeNPD?: number,
+  pipeSchedule?: string,
   diameter?: number;
   diameterUnit?: string;
   diameterInputMode?: "nps" | "diameter";
@@ -49,9 +56,6 @@ export type PipeProps = {
   userK?: number,
   pipingFittingSafetyFactor?: number,
   totalK?: number,
-  pipeNPD?: number,
-  pipeSchedule?: string,
-  designMargin?: number,
   erosionalConstant?: number,
   machNumber?: number,
   boundaryPressure?: number,
@@ -62,6 +66,7 @@ export type PipeProps = {
   fluid?: Fluid;
   massFlowRate?: number;
   massFlowRateUnit?: string;
+  designMargin?: number,
   controlValve?: ControlValve;
   orifice?: Orifice;
 };

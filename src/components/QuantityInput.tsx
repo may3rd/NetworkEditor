@@ -8,7 +8,7 @@ export const QUANTITY_UNIT_OPTIONS = {
   density: ["kg/m3", "g/cm3", "lb/ft3"] as const,
   length: ["m", "km", "ft", "in", "mil"] as const,
   lengthSmall: ["mm", "cm", "in"] as const,
-  massFlowRate: [] as const,
+  massFlowRate: ["kg/h", "kg/s", "lb/h", "lb/s", "tonn/day"] as const,
   pressure: ["kPag", "barg", "kg/cm2g", "kPa", "bar", "kg/cm2", "Pa", "psi", "mmH2O", "torr", "inHg"] as const,
   pressureDrop: ["kPa", "bar", "kg_cm2", "Pa", "psi"] as const,
   temperature: ["C", "F", "K", "R"] as const,

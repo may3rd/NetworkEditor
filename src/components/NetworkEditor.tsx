@@ -264,6 +264,7 @@ function EditorCanvas({
   const connectingHandleType = useRef<HandleType | null>(null);
   const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null);
   const { screenToFlowPosition, getNodes } = useReactFlow();
+  const NODE_SIZE = 20;
 
   const onConnectStart = useCallback(
     (_: MouseEvent, { nodeId, handleType }: OnConnectStartParams) => {
@@ -332,7 +333,10 @@ function EditorCanvas({
       const newNode = {
         id: newNodeId,
         label: `Node ${network.nodes.length + 1}`,
-        position,
+        position: {
+          x: position.x - NODE_SIZE / 2,
+          y: position.y - NODE_SIZE / 2,
+        },
         fluid: copiedFluid,
       };
 
@@ -385,7 +389,6 @@ function EditorCanvas({
       }
 
       if (isAddingNode && onNetworkChange) {
-        const NODE_SIZE = 20;
         const pointerPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY });
         let position = { ...pointerPosition };
         if (snapToGrid) {

@@ -118,6 +118,18 @@ export function PropertiesPanel({
     return nearest_pipe_diameter(npsValue, scheduleValue) ?? undefined;
   };
 
+  const computeDesignMassFlowRate = (
+    massFlowRateValue?: number,
+    marginPercent?: number
+  ): number | undefined => {
+    if (typeof massFlowRateValue !== "number" || !Number.isFinite(massFlowRateValue)) {
+      return undefined;
+    }
+    const normalizedMargin =
+      typeof marginPercent === "number" && Number.isFinite(marginPercent) ? marginPercent : 0;
+    return massFlowRateValue * (1 + normalizedMargin / 100);
+  };
+
   return (
     <Stack
       w="320px"
@@ -334,6 +346,63 @@ export function PropertiesPanel({
             {startNode?.label ?? "Unknown"} → {endNode?.label ?? "Unknown"}
           </Text>
 
+          <QuantityInput
+            label="Mass Flow Rate"
+            value={pipe.massFlowRate ?? ""}
+            unit={pipe.massFlowRateUnit ?? "kg/h"}
+            units={QUANTITY_UNIT_OPTIONS.massFlowRate}
+            unitFamily="massFlowRate"
+            onValueChange={(newValue) => {
+              const normalizedValue = Number.isFinite(newValue) ? newValue : undefined;
+              const designMassFlowRate = computeDesignMassFlowRate(
+                normalizedValue,
+                pipe.designMargin
+              );
+              onUpdatePipe(pipe.id, {
+                massFlowRate: normalizedValue,
+                designMassFlowRate,
+                designMassFlowRateUnit:
+                  designMassFlowRate !== undefined
+                    ? pipe.massFlowRateUnit ?? "kg/h"
+                    : undefined,
+              });
+            }}
+            onUnitChange={(newUnit) =>
+              onUpdatePipe(pipe.id, { massFlowRateUnit: newUnit, designMassFlowRateUnit: newUnit })
+            }
+          />
+
+          <Stack gap={1}>
+            <Text fontSize="sm" color="gray.500">
+              Design Margin (%)
+            </Text>
+            <Input
+              type="number"
+              step="any"
+              value={pipe.designMargin ?? ""}
+              onChange={(event) => {
+                const parsedValue =
+                  event.target.value === "" ? undefined : Number(event.target.value);
+                const normalizedMargin =
+                  typeof parsedValue === "number" && Number.isFinite(parsedValue)
+                    ? parsedValue
+                    : undefined;
+                const designMassFlowRate = computeDesignMassFlowRate(
+                  pipe.massFlowRate,
+                  normalizedMargin
+                );
+                onUpdatePipe(pipe.id, {
+                  designMargin: normalizedMargin,
+                  designMassFlowRate,
+                  designMassFlowRateUnit:
+                    designMassFlowRate !== undefined
+                      ? pipe.massFlowRateUnit ?? "kg/h"
+                      : undefined,
+                });
+              }}
+            />
+          </Stack>
+
           <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Diameter Input
@@ -486,6 +555,21 @@ export function PropertiesPanel({
               </Select>
             </Stack>
 
+            <Stack gap={1}>
+              <Text fontSize="sm" color="gray.500">
+                Safety Factor
+              </Text>
+              <Input
+                type="number"
+                step="any"
+                value={pipe.pipingFittingSafetyFactor ?? 1}
+                onChange={(event) => {
+                  const value = event.target.value === "" ? undefined : Number(event.target.value);
+                  onUpdatePipe(pipe.id, { pipingFittingSafetyFactor: value });
+                }}
+              />
+            </Stack>
+            
             <Stack gap={2}>
               <Stack direction="row" justify="space-between" align="center">
                 <Text fontSize="sm" color="gray.500">
@@ -578,6 +662,20 @@ export function PropertiesPanel({
                   ))}
                 </Stack>
               )}
+            </Stack>
+            <Stack gap={1}>
+              <Text fontSize="sm" color="gray.500">
+                User K
+              </Text>
+              <Input
+                type="number"
+                step="any"
+                value={pipe.userK ?? ""}
+                onChange={(event) => {
+                  const value = event.target.value === "" ? undefined : Number(event.target.value);
+                  onUpdatePipe(pipe.id, { userK: value });
+                }}
+              />
             </Stack>
           </Stack>
 
