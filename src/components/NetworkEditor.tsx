@@ -12,10 +12,12 @@ import {
   type Edge,
   type Node,
   type Connection,
-  type NodesChange,
+  type NodeChange,
   MarkerType,
   applyNodeChanges,
   type DefaultEdgeOptions,
+  type HandleType,
+  type OnConnectStartParams,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
@@ -107,13 +109,13 @@ export function NetworkEditor({
   };
 
   const handleNodesChange = useCallback(
-    (changes: NodesChange<Node>[]) => {
+    (changes: NodeChange<Node>[]) => {
       // Update local nodes for smooth dragging feedback
       setLocalNodes((nds) => applyNodeChanges(changes, nds));
   
       // Detect drag-end events (dragging: false + position exists)
       const dragEndedChanges = changes.filter(
-        (c): c is Extract<NodesChange<Node>[number], { type: "position"; dragging: false }> =>
+        (c): c is { id: string; type: "position"; dragging: false; position: { x: number; y: number } } =>
           c.type === "position" && c.dragging === false && c.position !== undefined
       );
   
@@ -228,17 +230,19 @@ function EditorCanvas({
   rfEdges: Edge[];
   nodeTypes: { [key: string]: any };
   defaultEdgeOptions: DefaultEdgeOptions;
-  handleNodesChange: (changes: NodesChange<Node>[]) => void;
+  handleNodesChange: (changes: NodeChange<Node>[]) => void;
   handleConnect: (connection: Connection) => void;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
+  const connectingHandleType = useRef<HandleType | null>(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const onConnectStart = useCallback(
-    (_: any, { nodeId }: { nodeId: string | null }) => {
+    (_: MouseEvent, { nodeId, handleType }: OnConnectStartParams) => {
       connectingNodeId.current = nodeId;
+      connectingHandleType.current = handleType ?? null;
     },
     [],
   );
@@ -247,9 +251,11 @@ function EditorCanvas({
     (event: MouseEvent | TouchEvent) => {
       const target = event.target as HTMLElement;
       const fromId = connectingNodeId.current;
+      const handleType = connectingHandleType.current;
 
       // Reset the ref
       connectingNodeId.current = null;
+      connectingHandleType.current = null;
 
       // Check if the drop was on the pane and we have a source node
       if (!fromId || !target.classList.contains("react-flow__pane") || !onNetworkChange) {
@@ -266,21 +272,27 @@ function EditorCanvas({
       }
 
       const newNodeId = `node-${Date.now()}`;
+      const sourceNode = network.nodes.find((node) => node.id === fromId);
+      const copiedFluid = sourceNode?.fluid ? { ...sourceNode.fluid } : { id: "fluid", phase: "liquid" };
       const newNode = {
         id: newNodeId,
         label: `Node ${network.nodes.length + 1}`,
         position,
+        fluid: copiedFluid,
       };
 
+      const startsFromSourceHandle = handleType !== "target";
+
       const newPipe = {
-        id: `pipe-${fromId}-${newNodeId}-${Date.now()}`,
-        startNodeId: fromId,
-        endNodeId: newNodeId,
+        id: `pipe-${startsFromSourceHandle ? fromId : newNodeId}-${startsFromSourceHandle ? newNodeId : fromId}-${Date.now()}`,
+        startNodeId: startsFromSourceHandle ? fromId : newNodeId,
+        endNodeId: startsFromSourceHandle ? newNodeId : fromId,
         length: 100, // Default length
         diameter: 0.1, // Default diameter
       };
 
       onNetworkChange({
+        ...network,
         nodes: [...network.nodes, newNode],
         pipes: [...network.pipes, newPipe],
       });

@@ -35,7 +35,7 @@ const extendedPressure = {
         name: { singular: 'Kilogram per square centimeter', plural: 'Kilogram per square centimeter' },
         to_anchor: 98.0665,
       },
-      kg_cm2: {
+      'kg/cm2': {
         name: { singular: 'Kilogram per square centimeter', plural: 'Kilogram per square centimeter' },
         to_anchor: 98.0665,
       },
@@ -44,7 +44,7 @@ const extendedPressure = {
         to_anchor: 98.0665,
         anchor_shift: - atmInkPa,
       },
-      kg_cm2g: {
+      'kg/cm2g': {
         name: { singular: 'Kilogram per cubic centimeter gauge', plural: 'Kilogram per cubic centimeter gauge' },
         to_anchor: 98.0665,
         anchor_shift: - atmInkPa,
@@ -70,15 +70,38 @@ const extendedPressure = {
   anchors: { ...pressure.anchors },
 };
 
+const viscosityMeasure = {
+    systems: {
+    metric: {
+        'Pa·s': {
+          name: { singular: 'Pascal-second', plural: 'Pascal-seconds' },
+          to_anchor: 1,
+        },
+        Poise: {
+          name: { singular: 'Poise', plural: 'Poises' },
+          to_anchor: 0.1,
+        },
+        cP: {
+          name: { singular: 'cP', plural: 'cP' },
+          to_anchor: 0.0001,
+        },
+      },
+    },
+  }
+
 const convert = configureMeasurements({
   ...allMeasures,
   pressure: extendedPressure,
-});
+  viscosity: viscosityMeasure,
+} as any);
 
 export function convertUnit(value: number, fromUnit: string, toUnit: string, _family?: UnitFamily) {
+  console.log(value, fromUnit, toUnit);
   try {
+    console.log("converted to ", convert(value).from(fromUnit).to(toUnit))
     return convert(value).from(fromUnit).to(toUnit);
   } catch {
+    console.log("error converting")
     return value;
   }
 }

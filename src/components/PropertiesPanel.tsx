@@ -1,7 +1,7 @@
 "use client";
 
-import { QuantityInput } from "./QuantityInput";
-import { Box, Button, Heading, Input, Stack, Text } from "@chakra-ui/react";
+import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "./QuantityInput";
+import { Box, Button, Heading, Input, Radio, RadioGroup, Stack, Text } from "@chakra-ui/react";
 import { NetworkState, NodeProps, PipeProps, SelectedElement } from "@/lib/types";
 
 type Props = {
@@ -30,6 +30,7 @@ export function PropertiesPanel({
 
   const startNode = pipe ? network.nodes.find((n) => n.id === pipe.startNodeId) : undefined;
   const endNode = pipe ? network.nodes.find((n) => n.id === pipe.endNodeId) : undefined;
+  const nodeFluidPhase = node?.fluid?.phase ?? "liquid";
 
   return (
     <Stack
@@ -45,8 +46,6 @@ export function PropertiesPanel({
 
       {node && (
         <Stack gap={3}>
-          <Text fontWeight="semibold">{node.label}</Text>
-
           <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Label
@@ -59,35 +58,67 @@ export function PropertiesPanel({
 
           <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
-              Elevation (m)
+              Conditions
             </Text>
-            <Input
-              type="number"
-              value={node.elevation ?? ""}
-              onChange={(event) =>
-                onUpdateNode(node.id, { elevation: Number(event.target.value) })
-              }
+
+            <QuantityInput
+              label="Temperature"
+              value={node.temperature ?? ""}
+              unit={node.temperatureUnit ?? "°C"}
+              units={QUANTITY_UNIT_OPTIONS.temperature}
+              unitFamily="temperature"
+              onValueChange={(newValue) => onUpdateNode(node.id, { temperature: newValue })}
+              onUnitChange={(newUnit) => onUpdateNode(node.id, { temperatureUnit: newUnit })}
+            />
+
+            <QuantityInput
+              label="Pressure"
+              value={node.pressure ?? ""}
+              unit={node.pressureUnit ?? "kPag"}
+              units={QUANTITY_UNIT_OPTIONS.pressure}
+              unitFamily="pressure"
+              onValueChange={(newValue) => onUpdateNode(node.id, { pressure: newValue })}
+              onUnitChange={(newUnit) => onUpdateNode(node.id, { pressureUnit: newUnit })}
             />
           </Stack>
 
           <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
-              Demand (L/s)
+              Fluid Phase
             </Text>
-            <Input
-              type="number"
-              value={node.demand ?? ""}
-              onChange={(event) =>
-                onUpdateNode(node.id, { demand: Number(event.target.value) })
+            <RadioGroup
+              value={nodeFluidPhase}
+              onChange={(value) =>
+                onUpdateNode(node.id, { fluid: { ...(node.fluid ?? {}), phase: value as "liquid" | "gas" } })
               }
+            >
+              <Stack direction="row">
+                <Radio value="liquid">Liquid</Radio>
+                <Radio value="gas">Gas</Radio>
+              </Stack>
+            </RadioGroup>
+
+            // TODO: add input for Liquid Density, hidden if gas is selected.
+            // TODO: add input for Gas Molecular Weight, Z factor, Specific Heat Ratio, hidden if liquid is selected.
+
+            <QuantityInput
+              label="Viscosity"
+              value={node.fluid?.viscosity ?? ""}
+              unit={node.fluid?.viscosityUnit ?? "cP"}
+              units={QUANTITY_UNIT_OPTIONS.viscosity}
+              unitFamily="viscosity"
+              onValueChange={(newValue) => onUpdateNode(node.id, { fluid: { ... (node.fluid ?? {}), viscosity: newValue } }) }
+              onUnitChange={(newUnit) => onUpdateNode(node.id, { fluid: { ... (node.fluid ?? {}), viscosityUnit: newUnit } }) }
             />
+
           </Stack>
+
         </Stack>
       )}
 
       {pipe && (
         <Stack gap={3}>
-          <Text fontWeight="semibold">Pipe {pipe.id}</Text>
+          <Text fontWeight="semibold">Pipe Section</Text>
           <Text fontSize="sm" color="gray.500">
             {startNode?.label ?? "Unknown"} → {endNode?.label ?? "Unknown"}
           </Text>
@@ -96,7 +127,7 @@ export function PropertiesPanel({
             label="Length"
             value={pipe.length ?? ""}
             unit={pipe.lengthUnit ?? "m"}
-            units={["m", "km", "ft", "in", "mil"]}
+            units={QUANTITY_UNIT_OPTIONS.length}
             unitFamily="length"
             onValueChange={(newValue) => onUpdatePipe(pipe.id, { length: newValue })}
             onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { lengthUnit: newUnit })}

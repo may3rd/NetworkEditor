@@ -12,10 +12,11 @@ export type NodeProps = {
   id: string;
   label: string;
   position: Coordinate;
-  elevation?: number;
-  demand?: number;
   pressure?: number;
-  fluid?: Fluid;
+  pressureUnit?: string;
+  temperature?: number;
+  temperatureUnit?: string;
+  fluid: Fluid,
 };
 
 export type PipeProps = {
@@ -64,14 +65,16 @@ export type PipeProps = {
 export type Fluid = {
   id: string,
   phase: string,
-  viscosity: number,
-  density: number,
-  molecularWeight: number,
-  zFactor: number,
-  specificHeatRatio: number,
-  standardFlowRate: number,
-  vaporPressure: number,
-  criticalPressure: number,
+  viscosity?: number,
+  viscosityUnit?: string,
+  density?: number,
+  densityUnit?: string,
+  molecularWeight?: number,
+  zFactor?: number,
+  specificHeatRatio?: number,
+  standardFlowRate?: number,
+  vaporPressure?: number,
+  criticalPressure?: number,
 }
 
 // Hydraulic Loss Components
@@ -124,23 +127,53 @@ const baseNetwork: NetworkState = {
     {
       id: "n1",
       label: "A",
-      elevation: 30,
-      demand: 0,
       position: { x: 150, y: 220 },
+      pressure: 101.08,
+      pressureUnit: 'kPag',
+      temperature: 120,
+      temperatureUnit: 'C',
+      fluid: {
+        id: "water",
+        phase: "liquid",
+        viscosity: 1.0,
+        viscosityUnit: "cP",
+        density: 1000,
+        densityUnit: "kg/m3",
+      }
     },
     {
       id: "n2",
       label: "B1",
-      elevation: 15,
-      demand: 6,
       position: { x: 300, y: 120 },
+      pressure: 101.08,
+      pressureUnit: 'kPag',
+      temperature: 120,
+      temperatureUnit: 'C',
+      fluid: {
+        id: "water",
+        phase: "liquid",
+        viscosity: 1.0,
+        viscosityUnit: "cP",
+        density: 1000,
+        densityUnit: "kg/m3",
+      }
     },
     {
       id: "n3",
       label: "B2",
-      elevation: 10,
-      demand: 4,
       position: { x: 450, y: 220 },
+      pressure: 101.08,
+      pressureUnit: 'kPag',
+      temperature: 120,
+      temperatureUnit: 'C',
+      fluid: {
+        id: "water",
+        phase: "liquid",
+        viscosity: 1.0,
+        viscosityUnit: "cP",
+        density: 1000,
+        densityUnit: "kg/m3",
+      }
     },
   ],
   pipes: [
