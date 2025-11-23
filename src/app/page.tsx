@@ -12,6 +12,7 @@ import {
   NodePatch,
   SelectedElement,
   NodeProps,
+  PipeProps,
 } from "@/lib/types";
 import { runHydraulicCalculation } from "@/lib/solverClient";
 
@@ -170,14 +171,32 @@ export default function Home() {
                 return current;
               }
 
-              const nextPipes = current.pipes.map(pipe =>
-                pipe.startNodeId === id
-                  ? {
-                      ...pipe,
-                      fluid: updatedNode?.fluid ? { ...updatedNode.fluid } : undefined,
-                    }
-                  : pipe
-              );
+              const nextPipes = current.pipes.map(pipe => {
+                const isStartNode = pipe.startNodeId === id;
+                const isEndNode = pipe.endNodeId === id;
+
+                if (!isStartNode && !isEndNode) {
+                  return pipe;
+                }
+
+                const pipePatch: Partial<PipeProps> = {};
+
+                if (isStartNode) {
+                  pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
+                }
+
+                const direction = pipe.direction ?? "forward";
+                const shouldUpdateBoundary =
+                  (direction === "forward" && isStartNode) ||
+                  (direction === "backward" && isEndNode);
+
+                if (shouldUpdateBoundary) {
+                  pipePatch.boundaryPressure = updatedNode?.pressure;
+                  pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
+                }
+
+                return Object.keys(pipePatch).length > 0 ? { ...pipe, ...pipePatch } : pipe;
+              });
 
               return {
                 ...current,

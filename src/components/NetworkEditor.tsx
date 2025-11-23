@@ -182,6 +182,9 @@ export function NetworkEditor({
         length: 100, // Default length
         diameter: 0.1, // Default diameter
         fluid: startNode?.fluid ? { ...startNode.fluid } : undefined,
+        direction: "forward",
+        boundaryPressure: startNode?.pressure,
+        boundaryPressureUnit: startNode?.pressureUnit,
       };
 
       onNetworkChange({
@@ -354,6 +357,9 @@ function EditorCanvas({
         length: 100, // Default length
         diameter: 0.1, // Default diameter
         fluid: pipeStartNode?.fluid ? { ...pipeStartNode.fluid } : undefined,
+        direction: "forward",
+        boundaryPressure: pipeStartNode?.pressure,
+        boundaryPressureUnit: pipeStartNode?.pressureUnit,
       };
 
       onNetworkChange({

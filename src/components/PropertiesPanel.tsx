@@ -346,6 +346,30 @@ export function PropertiesPanel({
             {startNode?.label ?? "Unknown"} → {endNode?.label ?? "Unknown"}
           </Text>
 
+          <Stack gap={1}>
+            <Text fontSize="sm" color="gray.500">
+              Calculation Direction
+            </Text>
+            <RadioGroup
+              value={pipe.direction ?? "forward"}
+              onChange={(value) => {
+                const nextDirection = value as "forward" | "backward";
+                const boundaryNode = nextDirection === "forward" ? startNode : endNode;
+
+                onUpdatePipe(pipe.id, {
+                  direction: nextDirection,
+                  boundaryPressure: boundaryNode?.pressure,
+                  boundaryPressureUnit: boundaryNode?.pressureUnit,
+                });
+              }}
+            >
+              <Stack direction="row">
+                <Radio value="forward">Forward</Radio>
+                <Radio value="backward">Backward</Radio>
+              </Stack>
+            </RadioGroup>
+          </Stack>
+
           <QuantityInput
             label="Mass Flow Rate"
             value={pipe.massFlowRate ?? ""}

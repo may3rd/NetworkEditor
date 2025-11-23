@@ -24,6 +24,27 @@ export type NodeProps = {
   fluid: Fluid,
 };
 
+// Pressure Drop Caculation Results
+// All pressure drop values are in Pa.
+export type PressureDropCalculationResults = {
+  pipeLengthK?: number,
+  fittingK?: number,
+  userK?: number,
+  pipingFittingSafetyFactor?: number,
+  totalK?: number,
+  reynoldsNumber?: number,
+  frictionalFactor?: number,
+  flowScheme?: string,
+  pipeAndFittingPressureDrop?: number,
+  elevationPressureDrop?: number,
+  controlValvePressureDrop?: number,
+  orificePressureDrop?: number,
+  userSpecifiedPressureDrop?: number,
+  totalSegmentPressureDrop?: number,
+  normalizedPressureDrop?: number,
+  gasFlowCriticalPressure?: number,
+}
+
 export type NodePatch = Partial<NodeProps> | ((node: NodeProps) => Partial<NodeProps>);
 
 export type PipeProps = {
@@ -58,6 +79,7 @@ export type PipeProps = {
   totalK?: number,
   erosionalConstant?: number,
   machNumber?: number,
+  direction?: string,
   boundaryPressure?: number,
   boundaryPressureUnit?: string,
   designMassFlowRate?: number,
@@ -69,6 +91,7 @@ export type PipeProps = {
   designMargin?: number,
   controlValve?: ControlValve;
   orifice?: Orifice;
+  pressureDropCalculationResults?: PressureDropCalculationResults;
 };
 
 // Fluid propertis
@@ -195,6 +218,17 @@ const baseNetwork: NetworkState = {
       lengthUnit: "m",
       diameter: 150,
       roughness: 0.0457,
+      direction: "forward",
+      boundaryPressure: 101.08,
+      boundaryPressureUnit: "kPag",
+      fluid: {
+        id: "water",
+        phase: "liquid",
+        viscosity: 1.0,
+        viscosityUnit: "cP",
+        density: 1000,
+        densityUnit: "kg/m3",
+      }
     },
     {
       id: "p2",
@@ -204,6 +238,17 @@ const baseNetwork: NetworkState = {
       lengthUnit: "m",
       diameter: 150,
       roughness: 0.0457,
+      direction: "forward",
+      boundaryPressure: 101.08,
+      boundaryPressureUnit: "kPag",
+      fluid: {
+        id: "water",
+        phase: "liquid",
+        viscosity: 1.0,
+        viscosityUnit: "cP",
+        density: 1000,
+        densityUnit: "kg/m3",
+      }
     },
     {
       id: "p3",
@@ -213,17 +258,43 @@ const baseNetwork: NetworkState = {
       lengthUnit: "m",
       diameter: 125,
       roughness: 0.0457,
+      direction: "forward",
+      boundaryPressure: 101.08,
+      boundaryPressureUnit: "kPag",
+      fluid: {
+        id: "water",
+        phase: "liquid",
+        viscosity: 1.0,
+        viscosityUnit: "cP",
+        density: 1000,
+        densityUnit: "kg/m3",
+      }
     },
   ],
 };
 
-export const createInitialNetwork = (): NetworkState => ({
-  nodes: baseNetwork.nodes.map((node) => ({
+export const createInitialNetwork = (): NetworkState => {
+  const nodes = baseNetwork.nodes.map(node => ({
     ...node,
     position: { ...node.position },
-  })),
-  pipes: baseNetwork.pipes.map((pipe) => ({ ...pipe })),
-});
+  }));
+
+  const findNode = (id: string) => nodes.find(node => node.id === id);
+
+  const pipes = baseNetwork.pipes.map(pipe => {
+    const direction = pipe.direction ?? "forward";
+    const boundaryNode = direction === "forward" ? findNode(pipe.startNodeId) : findNode(pipe.endNodeId);
+
+    return {
+      ...pipe,
+      direction,
+      boundaryPressure: boundaryNode?.pressure,
+      boundaryPressureUnit: boundaryNode?.pressureUnit,
+    };
+  });
+
+  return { nodes, pipes };
+};
 
 export const copyFluidFromNodeToPipe = (node: NodeProps, pipe: PipeProps) => {
   pipe.fluid = { ...node.fluid };
