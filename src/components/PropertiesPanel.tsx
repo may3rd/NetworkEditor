@@ -384,9 +384,32 @@ export function PropertiesPanel({
             onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { lengthUnit: newUnit })}
           />
 
-          // TODO: input for elevation change if fluid is liquid
+          {pipeFluidPhase === "liquid" && (
+            <QuantityInput
+              label="Elevation Change"
+              value={pipe.elevation ?? ""}
+              unit={pipe.elevationUnit ?? "m"}
+              units={QUANTITY_UNIT_OPTIONS.length}
+              unitFamily="length"
+              onValueChange={(newValue) => onUpdatePipe(pipe.id, { elevation: newValue })}
+              onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { elevationUnit: newUnit })}
+            />
+          )}
 
-          // TODO: input for Erosional Constant, default is 100
+          <Stack gap={1}>
+            <Text fontSize="sm" color="gray.500">
+              Erosional Constant
+            </Text>
+            <Input
+              type="number"
+              step="any"
+              value={pipe.erosionalConstant ?? 100}
+              onChange={(event) => {
+                const value = event.target.value === "" ? undefined : Number(event.target.value);
+                onUpdatePipe(pipe.id, { erosionalConstant: value });
+              }}
+            />
+          </Stack>
 
           // TODO: input for pipe fittings, includes
           // Fitting Type: ["SCRD", "LR", "SR"] - default "LR"
