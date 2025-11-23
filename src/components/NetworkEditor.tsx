@@ -21,7 +21,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
-import { NetworkState } from "@/lib/types";
+import { NetworkState, type NodeProps } from "@/lib/types";
 
 type Props = {
   network: NetworkState;
@@ -54,20 +54,29 @@ export function NetworkEditor({
   onNetworkChange,
   height = 520,
 }: Props) {
+  const mapNodeToReactFlow = useCallback(
+    (node: NodeProps, isSelected: boolean): Node => ({
+      id: node.id,
+      type: "pressure",
+      position: { ...node.position },
+      data: {
+        label: node.label,
+        isSelected,
+      },
+      width: 20,
+      height: 20,
+      draggable: true,
+      connectable: true,
+    }),
+    []
+  );
+
   const rfNodes = useMemo<Node[]>(
-    () => 
-      network.nodes.map((node) => ({
-        id: node.id,
-        type: "pressure",
-        position: node.position,
-        data: {
-          label: node.label,
-          isSelected: selectedType === "node" && selectedId === node.id,
-        },
-        width: 20,
-        height: 20,
-      })),
-    [network.nodes, selectedId, selectedType]
+    () =>
+      network.nodes.map(node =>
+        mapNodeToReactFlow(node, selectedType === "node" && selectedId === node.id)
+      ),
+    [mapNodeToReactFlow, network.nodes, selectedId, selectedType]
   );
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
@@ -210,7 +219,7 @@ export function NetworkEditor({
 
   return (
     <ReactFlowProvider>
-      <EditorCanvas {...{ network, onSelect, selectedId, selectedType, onDelete, onUndo, onRedo, canUndo, canRedo, historyIndex, historyLength, onNetworkChange, height, localNodes, setLocalNodes, rfEdges, nodeTypes, defaultEdgeOptions, handleNodesChange, handleConnect }} />
+      <EditorCanvas {...{ network, onSelect, selectedId, selectedType, onDelete, onUndo, onRedo, canUndo, canRedo, historyIndex, historyLength, onNetworkChange, height, localNodes, setLocalNodes, rfEdges, nodeTypes, defaultEdgeOptions, handleNodesChange, handleConnect, mapNodeToReactFlow }} />
     </ReactFlowProvider>
   );
 }
@@ -233,6 +242,7 @@ function EditorCanvas({
   onRedo,
   historyIndex,
   historyLength,
+  mapNodeToReactFlow,
 }: Props & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
@@ -241,12 +251,14 @@ function EditorCanvas({
   defaultEdgeOptions: DefaultEdgeOptions;
   handleNodesChange: (changes: NodeChange<Node>[]) => void;
   handleConnect: (connection: Connection) => void;
+  mapNodeToReactFlow: (node: NodeProps, isSelected: boolean) => Node;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const [isAddingNode, setIsAddingNode] = useState(false);
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
   const connectingHandleType = useRef<HandleType | null>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getNodes } = useReactFlow();
 
   const onConnectStart = useCallback(
     (_: MouseEvent, { nodeId, handleType }: OnConnectStartParams) => {
@@ -266,12 +278,41 @@ function EditorCanvas({
       connectingNodeId.current = null;
       connectingHandleType.current = null;
 
+      const pointer = "changedTouches" in event ? event.changedTouches[0] : event;
+      const { clientX, clientY } = pointer;
+
       // Check if the drop was on the pane and we have a source node
-      if (!fromId || !target.classList.contains("react-flow__pane") || !onNetworkChange) {
+      if (!fromId || !target.classList.contains("react-flow__pane")) {
         return;
       }
 
-      const { clientX, clientY } = "changedTouches" in event ? event.changedTouches[0] : event;
+      const flowPosition = screenToFlowPosition({ x: clientX, y: clientY });
+      const existingNodeAtPointer = getNodes().find((node) => {
+        const width = node.width ?? 20;
+        const height = node.height ?? 20;
+        const nodePosition = node.positionAbsolute ?? node.position;
+        return (
+          flowPosition.x >= nodePosition.x &&
+          flowPosition.x <= nodePosition.x + width &&
+          flowPosition.y >= nodePosition.y &&
+          flowPosition.y <= nodePosition.y + height
+        );
+      });
+
+      if (existingNodeAtPointer && existingNodeAtPointer.id !== fromId) {
+        const connection: Connection =
+          handleType === "target"
+            ? { source: existingNodeAtPointer.id, target: fromId }
+            : { source: fromId, target: existingNodeAtPointer.id };
+        handleConnect(connection);
+        connectingNodeId.current = null;
+        connectingHandleType.current = null;
+        return;
+      }
+
+      if (!onNetworkChange) {
+        return;
+      }
 
       const position = screenToFlowPosition({ x: clientX, y: clientY });
 
@@ -311,9 +352,78 @@ function EditorCanvas({
         nodes: [...network.nodes, newNode],
         pipes: [...network.pipes, newPipe],
       });
+
+      setLocalNodes((current) => [
+        ...current,
+        mapNodeToReactFlow(newNode, false),
+      ]);
     },
-    [screenToFlowPosition, onNetworkChange, network.nodes, network.pipes, snapToGrid, snapGrid],
+    [
+      screenToFlowPosition,
+      getNodes,
+      onNetworkChange,
+      network.nodes,
+      network.pipes,
+      snapToGrid,
+      snapGrid,
+      handleConnect,
+      setLocalNodes,
+      mapNodeToReactFlow,
+    ],
   );
+
+  const handlePaneClick = useCallback(
+    (event: MouseEvent) => {
+      if (isAddingNode && !onNetworkChange) {
+        setIsAddingNode(false);
+        return;
+      }
+
+      if (isAddingNode && onNetworkChange) {
+        const NODE_SIZE = 20;
+        const pointerPosition = screenToFlowPosition({ x: event.clientX, y: event.clientY });
+        let position = { ...pointerPosition };
+        if (snapToGrid) {
+          position = {
+            x: Math.round(position.x / snapGrid[0]) * snapGrid[0],
+            y: Math.round(position.y / snapGrid[1]) * snapGrid[1],
+          };
+        }
+        position.x -= NODE_SIZE / 2;
+        position.y -= NODE_SIZE / 2;
+
+        const newNodeId = `node-${Date.now()}`;
+        const templateFluid =
+          network.nodes[0]?.fluid !== undefined
+            ? { ...network.nodes[0].fluid }
+            : { id: "fluid", phase: "liquid" };
+
+        const newNode = {
+          id: newNodeId,
+          label: `Node ${network.nodes.length + 1}`,
+          position,
+          fluid: templateFluid,
+        };
+
+        onNetworkChange({
+          ...network,
+          nodes: [...network.nodes, newNode],
+        });
+        setLocalNodes(current => [
+          ...current,
+          mapNodeToReactFlow(newNode, true),
+        ]);
+        setIsAddingNode(false);
+        onSelect(newNodeId, "node");
+        return;
+      }
+
+      onSelect(null, null);
+    },
+    [isAddingNode, onNetworkChange, screenToFlowPosition, snapToGrid, snapGrid, network, onSelect, mapNodeToReactFlow],
+  );
+
+  const canEditNetwork = Boolean(onNetworkChange);
 
   return (
     <div
@@ -343,6 +453,25 @@ function EditorCanvas({
           gap: 12,
         }}
       >
+        <button
+          onClick={() => setIsAddingNode((value) => !value)}
+          disabled={!canEditNetwork}
+          style={{
+            background: isAddingNode ? "#3b82f6" : "#0ea5e9",
+            color: "white",
+            border: "none",
+            padding: "4px 10px",
+            borderRadius: 6,
+            fontWeight: "600",
+            fontSize: "13px",
+            cursor: canEditNetwork ? "pointer" : "not-allowed",
+            opacity: canEditNetwork ? 1 : 0.6,
+          }}
+          title="Add node"
+        >
+          ＋ Add Node
+        </button>
+
         <button
           onClick={onUndo}
           disabled={!canUndo}
@@ -422,7 +551,7 @@ function EditorCanvas({
           onNodeClick={(_, node) => onSelect(node.id, "node")}
           onNodeDragStart={(_, node) => onSelect(node.id, "node")}
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
-          onPaneClick={() => onSelect(null, null)}
+          onPaneClick={handlePaneClick}
           onNodesChange={handleNodesChange}
           onConnect={handleConnect}
           onConnectStart={onConnectStart}
