@@ -818,11 +818,114 @@ export function PropertiesPanel({
           )}
 
           {pipe?.pipeSectionType === "control valve" && (
-            <Stack gap={1}>
+            <>
               <Text fontSize="sm" color="gray.500">
-                Control Valve
+                Control Valve Calculation Mode
               </Text>
-            </Stack>
+              <RadioGroup
+                value={pipe.controlValve?.calculation_note || "cv_to_dp"}
+                onChange={(value) => {
+                  onUpdatePipe(pipe.id, {
+                    controlValve: {
+                      id: pipe.controlValve?.id || pipe.id,
+                      tag: pipe.controlValve?.tag || pipe.id,
+                      ...pipe.controlValve,
+                      calculation_note: value,
+                    },
+                  });
+                }}
+              >
+                <Stack direction="row">
+                  <Radio value="cv_to_dp">Input Cv, Calculate Pressure Drop</Radio>
+                  <Radio value="dp_to_cv">Input Pressure Drop, Calculate Cv</Radio>
+                </Stack>
+              </RadioGroup>
+
+              {pipe.controlValve?.calculation_note === "cv_to_dp" && (
+                <>
+                  <Stack gap={1}>
+                    <Text fontSize="sm" color="gray.500">
+                      Cv (Flow Coefficient)
+                    </Text>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={pipe.controlValve?.cv ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value === "" ? undefined : Number(event.target.value);
+                        onUpdatePipe(pipe.id, {
+                          controlValve: {
+                            id: pipe.controlValve?.id || pipe.id,
+                            tag: pipe.controlValve?.tag || pipe.id,
+                            ...pipe.controlValve,
+                            cv: value,
+                            pressure_drop: undefined, // Clear the other input
+                          },
+                        });
+                      }}
+                    />
+                  </Stack>
+                  <Stack gap={1}>
+                    <Text fontSize="sm" color="gray.500">
+                      Calculated Pressure Drop (Pa)
+                    </Text>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={pipe.pressureDropCalculationResults?.controlValvePressureDrop ?? ""}
+                      readOnly
+                    />
+                  </Stack>
+                </>
+              )}
+
+              {pipe.controlValve?.calculation_note === "dp_to_cv" && (
+                <>
+                  <QuantityInput
+                    label="Pressure Drop"
+                    value={pipe.controlValve?.pressure_drop ?? ""}
+                    unit={pipe.controlValve?.pressureDropUnit ?? "kPa"}
+                    units={QUANTITY_UNIT_OPTIONS.pressureDrop}
+                    unitFamily="pressure"
+                    onValueChange={(newValue) => {
+                      const normalizedValue = Number.isFinite(newValue) ? newValue : undefined;
+                      const hasUnit = Boolean(pipe.controlValve?.pressureDropUnit);
+                      onUpdatePipe(pipe.id, {
+                        controlValve: {
+                          id: pipe.controlValve?.id || pipe.id,
+                          tag: pipe.controlValve?.tag || pipe.id,
+                          ...pipe.controlValve,
+                          pressure_drop: normalizedValue,
+                          ...(hasUnit ? {} : { pressureDropUnit: "kPa" }),
+                          cv: undefined, // Clear the other input
+                        },
+                      });
+                    }}
+                    onUnitChange={(newUnit) => {
+                      onUpdatePipe(pipe.id, {
+                        controlValve: {
+                          id: pipe.controlValve?.id || pipe.id,
+                          tag: pipe.controlValve?.tag || pipe.id,
+                          ...pipe.controlValve,
+                          pressureDropUnit: newUnit,
+                        },
+                      });
+                    }}
+                  />
+                  <Stack gap={1}>
+                    <Text fontSize="sm" color="gray.500">
+                      Calculated Cv
+                    </Text>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={pipe.controlValve?.cv ?? ""}
+                      readOnly
+                    />
+                  </Stack>
+                </>
+              )}
+            </>
           )}
 
           {pipe?.pipeSectionType === "orifice" && (
@@ -843,4 +946,3 @@ export function PropertiesPanel({
     </Stack>
   );
 }
-
