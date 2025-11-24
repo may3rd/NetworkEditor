@@ -661,6 +661,25 @@ export function PropertiesPanel({
                 onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { lengthUnit: newUnit })}
               />
 
+              {pipeFluidPhase === "gas" && (
+                <Stack gap={1}>
+                  <Text fontSize="sm" color="gray.500">
+                    Gas Flow Model
+                  </Text>
+                  <Select
+                    value={pipe.gasFlowModel ?? "adiabatic"}
+                    onChange={(event) =>
+                      onUpdatePipe(pipe.id, {
+                        gasFlowModel: event.target.value as "adiabatic" | "isothermal",
+                      })
+                    }
+                  >
+                    <option value="adiabatic">Adiabatic</option>
+                    <option value="isothermal">Isothermal</option>
+                  </Select>
+                </Stack>
+              )}
+
               {pipeFluidPhase === "liquid" && (
                 <QuantityInput
                   label="Elevation Change"

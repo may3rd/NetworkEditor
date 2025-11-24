@@ -7,6 +7,13 @@ import {
   darcyFrictionFactor,
   determineFlowScheme,
 } from "./calculations/basicCaculations";
+import {
+  solveIsothermal,
+  solveAdiabatic,
+  gasStateFromConditions,
+  type GasState,
+  UNIVERSAL_GAS_CONSTANT,
+} from "./calculations/gasFlow";
 import { convertUnit } from "./unitConversion";
 import type {
   FittingType,
@@ -30,10 +37,15 @@ type HydraulicContext = {
   viscosity: number;
   pipeDiameter: number;
   volumetricFlowRate: number;
+  massFlow: number;
   temperature: number;
   pressure: number;
   length?: number;
   roughness?: number;
+  phase: string;
+  molarMass?: number;
+  zFactor?: number;
+  gamma?: number;
 };
 
 type PipeLengthComputation = {
@@ -69,6 +81,24 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
     // Default to pipeline calculation
     const fittingResult = computeFittingContribution(pipe, context);
     const pipeResult = computePipeLengthContribution(pipe, context, fittingResult.fittingK);
+    const gasResults =
+      context && context.phase === "gas"
+        ? calculateGasFlowForPipe(pipe, context, pipeResult, fittingResult.fittingK)
+        : null;
+
+    if (gasResults) {
+      return {
+        ...pipe,
+        fittingK: fittingResult.fittingK,
+        pipeLengthK: pipeResult.pipeLengthK,
+        totalK: pipeResult.totalK,
+        equivalentLength: pipeResult.equivalentLength,
+        fittings: fittingResult.fittings,
+        pressureDropCalculationResults: gasResults.pressureDropResults,
+        resultSummary: gasResults.resultSummary,
+      };
+    }
+
     pressureDropResults = calculatePressureDropResults(
       pipe,
       context,
@@ -334,6 +364,160 @@ function calculatePressureDropResults(
   return results;
 }
 
+function calculateGasFlowForPipe(
+  pipe: PipeProps,
+  context: HydraulicContext,
+  pipeResult: PipeLengthComputation,
+  fittingK?: number
+): { pressureDropResults: PressureDropCalculationResults; resultSummary: resultSummary } | null {
+  if (context.phase !== "gas") {
+    return null;
+  }
+
+  const totalK = typeof pipeResult.totalK === "number" ? pipeResult.totalK : undefined;
+  const molarMass = context.molarMass;
+  const zFactor = context.zFactor;
+  const gamma = context.gamma;
+  if (
+    totalK === undefined ||
+    !isPositive(context.massFlow) ||
+    !isPositive(context.pipeDiameter) ||
+    !isPositive(context.temperature) ||
+    !isPositive(context.pressure) ||
+    !isPositive(molarMass) ||
+    !isPositive(zFactor) ||
+    !isPositive(gamma)
+  ) {
+    return null;
+  }
+
+  const gasFlowModel = (pipe.gasFlowModel ?? "adiabatic").toLowerCase();
+  const isForward = (pipe.direction ?? "forward") !== "backward";
+  const length = context.length ?? 0;
+  const frictionFactor = pipeResult.frictionFactor ?? 0;
+
+  try {
+    if (gasFlowModel === "isothermal") {
+      const [, finalState] = solveIsothermal(
+        context.pressure,
+        context.temperature,
+        context.massFlow,
+        context.pipeDiameter,
+        length,
+        frictionFactor,
+        totalK,
+        0,
+        molarMass,
+        zFactor,
+        gamma,
+        isForward,
+        "darcy",
+      );
+      const boundaryState = gasStateFromConditions(
+        context.pressure,
+        context.temperature,
+        context.massFlow,
+        context.pipeDiameter,
+        molarMass,
+        zFactor,
+        gamma,
+      );
+      const inletState = isForward ? boundaryState : finalState;
+      const outletState = isForward ? finalState : boundaryState;
+      return finalizeGasResults(pipe, pipeResult, fittingK, inletState, outletState);
+    }
+
+    const [inletState, outletState] = solveAdiabatic(
+      context.pressure,
+      context.temperature,
+      context.massFlow,
+      context.pipeDiameter,
+      length,
+      frictionFactor,
+      totalK,
+      0,
+      molarMass,
+      zFactor,
+      gamma,
+      isForward,
+      { friction_factor_type: "darcy" },
+    );
+    return finalizeGasResults(pipe, pipeResult, fittingK, inletState, outletState);
+  } catch {
+    return null;
+  }
+}
+
+function finalizeGasResults(
+  pipe: PipeProps,
+  pipeResult: PipeLengthComputation,
+  fittingK: number | undefined,
+  inletState: GasState,
+  outletState: GasState,
+): { pressureDropResults: PressureDropCalculationResults; resultSummary: resultSummary } | null {
+  const inletPressure = inletState.pressure;
+  const outletPressure = outletState.pressure;
+  if (!isPositive(inletPressure) || !isPositive(outletPressure)) {
+    return null;
+  }
+  const totalDrop = Math.abs(inletPressure - outletPressure);
+  const normalizedPressureDrop =
+    totalDrop !== undefined &&
+    typeof pipeResult.equivalentLength === "number" &&
+    pipeResult.equivalentLength > 0
+      ? totalDrop / pipeResult.equivalentLength
+      : undefined;
+  const userK =
+    typeof pipe.userK === "number" && Number.isFinite(pipe.userK) ? pipe.userK : undefined;
+  const gasFlowCriticalPressure =
+    inletState.gas_flow_critical_pressure ?? outletState.gas_flow_critical_pressure;
+  const reynolds = pipeResult.reynolds;
+  const flowScheme =
+    typeof reynolds === "number" ? determineFlowScheme(reynolds) : undefined;
+
+  const pressureDropResults: PressureDropCalculationResults = {
+    pipeLengthK: pipeResult.pipeLengthK,
+    fittingK,
+    userK,
+    pipingFittingSafetyFactor: pipe.pipingFittingSafetyFactor,
+    totalK: pipeResult.totalK,
+    reynoldsNumber: reynolds,
+    frictionalFactor: pipeResult.frictionFactor,
+    flowScheme,
+    pipeAndFittingPressureDrop: totalDrop,
+    elevationPressureDrop: 0,
+    controlValvePressureDrop: 0,
+    orificePressureDrop: 0,
+    userSpecifiedPressureDrop: 0,
+    totalSegmentPressureDrop: totalDrop,
+    normalizedPressureDrop,
+    gasFlowCriticalPressure,
+  };
+
+  const erosionalConstant = pipe.erosionalConstant ?? 100;
+  const resultSummary: resultSummary = {
+    inletState: gasStateToPipeState(inletState, erosionalConstant),
+    outletState: gasStateToPipeState(outletState, erosionalConstant),
+  };
+
+  return { pressureDropResults, resultSummary };
+}
+
+function gasStateToPipeState(state: GasState, erosionalConstant?: number): pipeState {
+  return {
+    pressure: state.pressure,
+    temprature: state.temperature,
+    density: state.density,
+    velocity: state.velocity,
+    machNumber: state.mach,
+    erosionalVelocity: computeErosionalVelocity(state.density, erosionalConstant),
+    flowMomentum:
+      typeof state.density === "number" && typeof state.velocity === "number"
+        ? state.density * state.velocity * state.velocity
+        : undefined,
+  };
+}
+
 function calculateControlValvePressureDrop(
   pipe: PipeProps,
   context: HydraulicContext | null
@@ -507,16 +691,7 @@ function calculateResultSummary(
 
   const velocity = lengthResult.velocity;
   const erosionalConstant = pipe.erosionalConstant ?? 100; // Default erosional constant in imperial units
-  const erosionalVelocity = context.density
-    ? (() => {
-        // Convert density from kg/m³ to lb/ft³ for imperial calculation
-        const densityLbPerFt3 = context.density / 16.018463;
-        const sqrtDensityImp = Math.sqrt(densityLbPerFt3);
-        const velocityFtPerS = erosionalConstant / sqrtDensityImp;
-        // Convert velocity from ft/s to m/s
-        return velocityFtPerS * 0.3048;
-      })()
-    : undefined;
+  const erosionalVelocity = computeErosionalVelocity(context.density, erosionalConstant);
   const flowMomentum = velocity && context.density
     ? context.density * velocity * velocity
     : undefined;
@@ -553,12 +728,43 @@ function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {
     return null;
   }
 
-  const density = convertScalar(fluid.density, fluid.densityUnit, "kg/m3");
+  const phase = (fluid.phase ?? "liquid").toLowerCase();
   const viscosity = convertScalar(fluid.viscosity, fluid.viscosityUnit, "Pa.s");
   const massFlow = resolveMassFlow(pipe);
   const pipeDiameter = resolveDiameter(pipe);
+  if (!isPositive(viscosity) || !isPositive(massFlow) || !isPositive(pipeDiameter)) {
+    return null;
+  }
 
-  if (!isPositive(density) || !isPositive(viscosity) || !isPositive(massFlow) || !isPositive(pipeDiameter)) {
+  const pressure =
+    convertScalar(pipe.boundaryPressure, pipe.boundaryPressureUnit, "Pa") ??
+    DEFAULT_PRESSURE_PA;
+  const temperature =
+    convertScalar(pipe.boundaryTemperature, pipe.boundaryTemperatureUnit, "K") ??
+    DEFAULT_TEMPERATURE_K;
+
+  let density = convertScalar(fluid.density, fluid.densityUnit, "kg/m3");
+  let molarMass = normalizeMolarMass(fluid.molecularWeight);
+  let zFactor = fluid.zFactor;
+  let gamma = fluid.specificHeatRatio;
+
+  if (phase === "gas") {
+    if (!isPositive(molarMass) || !isPositive(zFactor) || !isPositive(gamma)) {
+      return null;
+    }
+    if (!isPositive(density)) {
+      density = (pressure * molarMass) / (zFactor * UNIVERSAL_GAS_CONSTANT * temperature);
+    }
+  } else {
+    if (!isPositive(density)) {
+      return null;
+    }
+    molarMass = undefined;
+    zFactor = undefined;
+    gamma = undefined;
+  }
+
+  if (!isPositive(density)) {
     return null;
   }
 
@@ -577,12 +783,6 @@ function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {
   );
   const roughness = convertLength(pipe.roughness, pipe.roughnessUnit ?? "mm", true);
   const length = convertLength(pipe.length, pipe.lengthUnit ?? "m", true);
-  const pressure =
-    convertScalar(pipe.boundaryPressure, pipe.boundaryPressureUnit, "Pa") ??
-    DEFAULT_PRESSURE_PA;
-  const temperature =
-    convertScalar(pipe.boundaryTemperature, pipe.boundaryTemperatureUnit, "K") ??
-    DEFAULT_TEMPERATURE_K;
 
   const sectionBase: HydraulicContext["sectionBase"] = {
     volumetricFlowRate,
@@ -610,12 +810,17 @@ function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {
     sectionBase,
     density,
     viscosity,
+    massFlow,
     pipeDiameter,
     volumetricFlowRate,
     temperature,
     pressure,
     length,
     roughness,
+    phase,
+    molarMass,
+    zFactor,
+    gamma,
   };
 }
 
@@ -699,6 +904,32 @@ function convertScalar(
     return undefined;
   }
   return result;
+}
+
+function normalizeMolarMass(value?: number | null): number | undefined {
+  if (value === null || value === undefined || value <= 0) {
+    return undefined;
+  }
+  return value <= 0.5 ? value * 1000 : value;
+}
+
+function computeErosionalVelocity(
+  density?: number,
+  erosionalConstant?: number,
+): number | undefined {
+  if (!isPositive(density) || !isPositive(erosionalConstant)) {
+    return undefined;
+  }
+  const densityLbPerFt3 = density / 16.018463;
+  if (densityLbPerFt3 <= 0) {
+    return undefined;
+  }
+  const sqrtDensityImp = Math.sqrt(densityLbPerFt3);
+  if (!Number.isFinite(sqrtDensityImp) || sqrtDensityImp === 0) {
+    return undefined;
+  }
+  const velocityFtPerS = erosionalConstant / sqrtDensityImp;
+  return velocityFtPerS * 0.3048;
 }
 
 function resetFittingValues(fitting: FittingType): FittingType {

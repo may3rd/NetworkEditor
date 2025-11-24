@@ -235,6 +235,8 @@ export function NetworkEditor({
         roughness: 0.0457, // Default roughness
         roughnessUnit: "mm",
         fluid: startNode?.fluid ? { ...startNode.fluid } : undefined,
+        gasFlowModel:
+          startNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined,
         direction: "forward",
         boundaryPressure: startNode?.pressure,
         boundaryPressureUnit: startNode?.pressureUnit,
@@ -434,6 +436,8 @@ function EditorCanvas({
         roughness: 0.0457, // Default roughness
         roughnessUnit: "mm",
         fluid: pipeStartNode?.fluid ? { ...pipeStartNode.fluid } : undefined,
+        gasFlowModel:
+          pipeStartNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined,
         direction: "forward",
         boundaryPressure: sourceNode?.pressure, // Use source node pressure
         boundaryPressureUnit: sourceNode?.pressureUnit,

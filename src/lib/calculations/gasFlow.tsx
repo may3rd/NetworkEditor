@@ -12,7 +12,7 @@
  *
  * Plan for porting:
  * 1. Recreate the GasState structure plus the helper functions
- *    (_gas_state, _fanno_fL_D, _fanno_mach_from_fL_D, etc.).
+ *    (gasStateFromConditions, _fanno_fL_D, _fanno_mach_from_fL_D, etc.).
  * 2. Translate solve_isothermal and solve_adiabatic into TypeScript, reusing existing math libs.
  * 3. Wire the solvers into the fitting recalculation flow once complete.
  */
@@ -30,7 +30,7 @@ export type GasState = {
   is_choked?: boolean;
 };
 
-const UNIVERSAL_GAS_CONSTANT = 8314.462618; // J/(kmol*K)
+export const UNIVERSAL_GAS_CONSTANT = 8314.462618; // J/(kmol*K)
 const MIN_MACH = 1e-6;
 const MAX_ISOTHERMAL_ITER = 25;
 const ISOTHERMAL_TOL = 1e-6;
@@ -179,7 +179,7 @@ const _fannoTemperatureRatio = (mach: number, gamma: number): number => {
   return (gamma + 1) / (2 * (1 + ((gamma - 1) / 2) * mach2));
 };
 
-const _gasState = (
+export const gasStateFromConditions = (
   pressure: number,
   temperature: number,
   massFlow: number,
@@ -331,7 +331,7 @@ export const solveIsothermal = (
   if (length <= 0) {
     return [
       inlet_pressure,
-      _gasState(
+      gasStateFromConditions(
         inlet_pressure,
         temperature,
         mass_flow,
@@ -355,7 +355,7 @@ export const solveIsothermal = (
   if (totalK === 0) {
     return [
       inlet_pressure,
-      _gasState(
+      gasStateFromConditions(
         inlet_pressure,
         temperature,
         mass_flow,
@@ -450,7 +450,7 @@ export const solveIsothermal = (
     );
   }
 
-  const finalState = _gasState(
+  const finalState = gasStateFromConditions(
     finalPressure,
     temperature,
     mass_flow,
@@ -501,7 +501,7 @@ export const solveAdiabatic = (
   );
 
   if (!length || length <= 0) {
-    const state = _gasState(
+    const state = gasStateFromConditions(
       boundary_pressure,
       temperature,
       mass_flow,
@@ -515,7 +515,7 @@ export const solveAdiabatic = (
 
   const totalK = k_total + k_additional;
   if (totalK === 0) {
-    const state = _gasState(
+    const state = gasStateFromConditions(
       boundary_pressure,
       temperature,
       mass_flow,
@@ -597,7 +597,7 @@ export const solveAdiabatic = (
       gas_flow_model: "adiabatic",
     });
     if (critical !== null && state.pressure <= critical) {
-      const choked = _gasState(
+      const choked = gasStateFromConditions(
         critical,
         temp,
         mass_flow,
@@ -615,7 +615,7 @@ export const solveAdiabatic = (
   };
 
   const inletState = applyChoke(
-    _gasState(
+    gasStateFromConditions(
       inletPressure,
       inletTemperature,
       mass_flow,
@@ -627,7 +627,7 @@ export const solveAdiabatic = (
     inletTemperature,
   );
   const outletState = applyChoke(
-    _gasState(
+    gasStateFromConditions(
       outletPressure,
       outletTemperature,
       mass_flow,
