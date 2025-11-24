@@ -22,6 +22,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
 import { NetworkState, type NodeProps } from "@/lib/types";
+import { recalculatePipeFittingLosses } from "@/lib/fittings";
 
 const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
@@ -191,6 +192,11 @@ export function NetworkEditor({
         direction: "forward",
         boundaryPressure: startNode?.pressure,
         boundaryPressureUnit: startNode?.pressureUnit,
+        boundaryTemperature: startNode?.temperature,
+        boundaryTemperatureUnit: startNode?.temperatureUnit,
+        erosionalConstant: 100,
+        pipingFittingSafetyFactor: 1,
+        fittingType: "LR",
       };
 
       onNetworkChange({
@@ -370,14 +376,21 @@ function EditorCanvas({
         roughnessUnit: "mm",
         fluid: pipeStartNode?.fluid ? { ...pipeStartNode.fluid } : undefined,
         direction: "forward",
-        boundaryPressure: pipeStartNode?.pressure,
-        boundaryPressureUnit: pipeStartNode?.pressureUnit,
+        boundaryPressure: sourceNode?.pressure, // Use source node pressure
+        boundaryPressureUnit: sourceNode?.pressureUnit,
+        boundaryTemperature: sourceNode?.temperature,
+        boundaryTemperatureUnit: sourceNode?.temperatureUnit,
+        erosionalConstant: 100,
+        pipingFittingSafetyFactor: 1,
+        fittingType: "LR",
       };
+
+      const calculatedPipe = recalculatePipeFittingLosses(newPipe);
 
       onNetworkChange({
         ...network,
         nodes: [...network.nodes, newNode],
-        pipes: [...network.pipes, newPipe],
+        pipes: [...network.pipes, calculatedPipe],
       });
 
       setLocalNodes((current) => [
