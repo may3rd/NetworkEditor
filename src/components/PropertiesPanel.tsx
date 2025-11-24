@@ -12,6 +12,7 @@ import {
 import {
   Box,
   Button,
+  Checkbox,
   Heading,
   IconButton,
   Input,
@@ -28,7 +29,9 @@ import {
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, SelectedElement } from "@/lib/types";
+import { convertUnit } from "@/lib/unitConversion";
 
+const PIPE_SECTION_TYPE = ["pipeline", "control valve", "orifice"] as const;
 const FITTING_TYPE_OPTIONS = ["SCRD", "LR", "SR"] as const;
 
 type Props = {
@@ -178,6 +181,41 @@ export function PropertiesPanel({
               onValueChange={(newValue) => onUpdateNode(node.id, { pressure: newValue })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { pressureUnit: newUnit })}
             />
+
+            <Button
+              size="sm"
+              onClick={() => {
+                // Find connected pipes and update node with outlet state
+                const connectedPipes = network.pipes.filter(pipe =>
+                  pipe.startNodeId === node.id || pipe.endNodeId === node.id
+                );
+                for (const pipe of connectedPipes) {
+                  if (pipe.resultSummary?.outletState) {
+                    const outletState = pipe.resultSummary.outletState;
+                    const isOutletNode =
+                      (pipe.direction === 'forward' && pipe.endNodeId === node.id) ||
+                      (pipe.direction === 'reverse' && pipe.startNodeId === node.id);
+
+                    if (isOutletNode && outletState.pressure !== undefined) {
+                      const pressureInNodeUnit = convertUnit(outletState.pressure, 'Pa', node.pressureUnit ?? 'kPag');
+                      const updates: Partial<NodeProps> = {
+                        pressure: pressureInNodeUnit,
+                        pressureUnit: node.pressureUnit ?? 'kPag'
+                      };
+                      if (outletState.temprature !== undefined) {
+                        const temperatureInNodeUnit = convertUnit(outletState.temprature, 'K', node.temperatureUnit ?? 'C');
+                        updates.temperature = temperatureInNodeUnit;
+                        updates.temperatureUnit = node.temperatureUnit ?? 'C';
+                      }
+                      onUpdateNode(node.id, updates);
+                      break; // Update from first matching pipe
+                    }
+                  }
+                }
+              }}
+            >
+              Update from Connected Pipe
+            </Button>
           </Stack>
 
           <Stack gap={1}>

@@ -42,6 +42,8 @@ type Props = {
   historyLength?: number;
   onNetworkChange?: (updatedNetwork: NetworkState) => void;
   height?: string | number;
+  showPressures?: boolean;
+  setShowPressures?: (show: boolean) => void;
 };
 
 export function NetworkEditor({
@@ -58,7 +60,13 @@ export function NetworkEditor({
   historyLength = 0,
   onNetworkChange,
   height = 520,
+  showPressures: externalShowPressures,
+  setShowPressures: externalSetShowPressures,
 }: Props) {
+  const [internalShowPressures, setInternalShowPressures] = useState(false);
+  const showPressures = externalShowPressures ?? internalShowPressures;
+  const setShowPressures = externalSetShowPressures ?? setInternalShowPressures;
+
   const mapNodeToReactFlow = useCallback(
     (node: NodeProps, isSelected: boolean): Node => ({
       id: node.id,
@@ -67,6 +75,9 @@ export function NetworkEditor({
       data: {
         label: node.label,
         isSelected,
+        showPressures,
+        pressure: node.pressure,
+        pressureUnit: node.pressureUnit,
       },
       width: 20,
       height: 20,
@@ -78,10 +89,26 @@ export function NetworkEditor({
 
   const rfNodes = useMemo<Node[]>(
     () =>
-      network.nodes.map(node =>
-        mapNodeToReactFlow(node, selectedType === "node" && selectedId === node.id)
-      ),
-    [mapNodeToReactFlow, network.nodes, selectedId, selectedType]
+      network.nodes.map(node => {
+        const isSelected = selectedType === "node" && selectedId === node.id;
+        return {
+          id: node.id,
+          type: "pressure",
+          position: { ...node.position },
+          data: {
+            label: node.label,
+            isSelected,
+            showPressures,
+            pressure: node.pressure,
+            pressureUnit: node.pressureUnit,
+          },
+          width: 20,
+          height: 20,
+          draggable: true,
+          connectable: true,
+        };
+      }),
+    [network.nodes, selectedId, selectedType, showPressures]
   );
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
@@ -95,14 +122,19 @@ export function NetworkEditor({
   }, [selectedType, selectedId, network.pipes]);
 
   const rfEdges = useMemo<Edge[]>(
-    () => 
+    () =>
       network.pipes.map((pipe) => {
         const roundedLength = typeof pipe.length === "number" ? pipe.length.toFixed(3) : Number(pipe.length ?? 0).toFixed(3);
+        let label = `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim();
+        if (showPressures && pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined) {
+          const deltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000; // Pa to kPa
+          label += `\nΔP: ${deltaP.toFixed(1)} kPa`;
+        }
         return {
           id: pipe.id,
           source: pipe.startNodeId,
           target: pipe.endNodeId,
-          label: `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim(),
+          label,
           labelStyle: {
             fontSize: "8px",
             fill: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
@@ -118,7 +150,7 @@ export function NetworkEditor({
           },
         };
       }),
-    [network.pipes, selectedId, selectedType]
+    [network.pipes, selectedId, selectedType, showPressures]
   );
 
   const nodeTypes = useMemo(() => ({ pressure: PressureNode }), []);
@@ -238,7 +270,7 @@ export function NetworkEditor({
 
   return (
     <ReactFlowProvider>
-      <EditorCanvas {...{ network, onSelect, selectedId, selectedType, onDelete, onUndo, onRedo, canUndo, canRedo, historyIndex, historyLength, onNetworkChange, height, localNodes, setLocalNodes, rfEdges, nodeTypes, defaultEdgeOptions, handleNodesChange, handleConnect, mapNodeToReactFlow }} />
+      <EditorCanvas {...{ network, onSelect, selectedId, selectedType, onDelete, onUndo, onRedo, canUndo, canRedo, historyIndex, historyLength, onNetworkChange, height, localNodes, setLocalNodes, rfEdges, nodeTypes, defaultEdgeOptions, handleNodesChange, handleConnect, mapNodeToReactFlow, showPressures, setShowPressures }} />
     </ReactFlowProvider>
   );
 }
@@ -262,6 +294,8 @@ function EditorCanvas({
   historyIndex,
   historyLength,
   mapNodeToReactFlow,
+  showPressures,
+  setShowPressures,
 }: Props & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
@@ -271,6 +305,8 @@ function EditorCanvas({
   handleNodesChange: (changes: NodeChange<Node>[]) => void;
   handleConnect: (connection: Connection) => void;
   mapNodeToReactFlow: (node: NodeProps, isSelected: boolean) => Node;
+  showPressures: boolean;
+  setShowPressures: (show: boolean) => void;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [isAddingNode, setIsAddingNode] = useState(false);
@@ -591,6 +627,27 @@ function EditorCanvas({
             }}
           >
             Snap to Grid
+          </label>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            id="show-pressures"
+            type="checkbox"
+            checked={showPressures}
+            onChange={(e) => setShowPressures(e.target.checked)}
+            style={{ cursor: "pointer" }}
+          />
+          <label
+            htmlFor="show-pressures"
+            style={{
+              fontSize: "13px",
+              color: "#64748b",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            Show Pressures
           </label>
         </div>
 

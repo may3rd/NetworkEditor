@@ -6,10 +6,13 @@ import { Handle, Position } from '@xyflow/react';
 type NodeData = {
     label: string;
     isSelected: boolean;
+    showPressures: boolean;
+    pressure?: number;
+    pressureUnit?: string;
 };
 
 function PressureNode({ data }: { data: NodeData }) {
-    const { isSelected } = data;
+    const { isSelected, showPressures, pressure, pressureUnit } = data;
 
     return (
         <>
@@ -42,7 +45,7 @@ function PressureNode({ data }: { data: NodeData }) {
                     whiteSpace: 'nowrap',
                 }}
             >
-                {data.label}
+                {showPressures && pressure !== undefined ? `${data.label}\n${pressure.toFixed(1)} ${pressureUnit}` : data.label}
             </div>
         </>
     );

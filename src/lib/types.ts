@@ -14,15 +14,15 @@ export type Coordinate = {
 };
 
 export type NodeProps = {
-  id: string;
-  label: string;
-  position: Coordinate;
-  pressure?: number;
-  pressureUnit?: string;
-  temperature?: number;
-  temperatureUnit?: string;
-  fluid: Fluid,
-};
+   id: string;
+   label: string;
+   position: Coordinate;
+   pressure?: number;
+   pressureUnit?: string;
+   temperature?: number;
+   temperatureUnit?: string;
+   fluid: Fluid,
+ };
 
 export type pipeState = {
   pressure?: number, // State pressure in Pa
@@ -346,6 +346,8 @@ export const createInitialNetwork = (): NetworkState => {
       direction,
       boundaryPressure: boundaryNode?.pressure,
       boundaryPressureUnit: boundaryNode?.pressureUnit,
+      boundaryTemperature: boundaryNode?.temperature,
+      boundaryTemperatureUnit: boundaryNode?.temperatureUnit,
     };
   });
 

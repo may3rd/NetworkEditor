@@ -26,6 +26,7 @@ type QuantityInputProps = {
   onUnitChange?: (unit: string) => void;
   unitFamily?: UnitFamily;
   placeholder?: string;
+  isDisabled?: boolean;
 };
 
 export function QuantityInput({
@@ -37,6 +38,7 @@ export function QuantityInput({
   onUnitChange,
   unitFamily,
   placeholder,
+  isDisabled = false,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
 
@@ -73,6 +75,7 @@ export function QuantityInput({
           border="none"
           borderRadius="0"
           _focus={{ boxShadow: "none" }}
+          isDisabled={isDisabled}
         />
         <Select
           value={unit}

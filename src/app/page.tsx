@@ -16,6 +16,7 @@ import {
 } from "@/lib/types";
 import { runHydraulicCalculation } from "@/lib/solverClient";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
+import { convertUnit } from "@/lib/unitConversion";
 
 const createNetworkWithDerivedValues = () =>
   applyFittingLosses(createInitialNetwork());
