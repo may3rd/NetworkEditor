@@ -779,6 +779,75 @@ export function calculateSharpEdgedPlateOrificePressureDrop({
   return { kFactor, pressureDrop };
 }
 
+export type GasControlValveArgs = {
+  flowScfh: number;
+  p1Psia: number;
+  p2Psia: number;
+  tempRankine: number;
+  specificGravity: number;
+  kFactor?: number; // Cp/Cv, default ~1.4 for air
+  xt?: number; // ISA pressure drop ratio
+  c1?: number; // Optional valve coefficient
+};
+
+export function calculateRequiredCg({
+  flowScfh,
+  p1Psia,
+  p2Psia,
+  tempRankine,
+  specificGravity,
+  kFactor = 1.4,
+  xt = 0.72,
+  c1,
+}: GasControlValveArgs): number {
+  if (
+    !isPositive(flowScfh) ||
+    !isPositive(p1Psia) ||
+    !Number.isFinite(p2Psia) ||
+    !isPositive(tempRankine) ||
+    !isPositive(specificGravity)
+  ) {
+    return 0;
+  }
+
+  const boundedP2 = Math.max(0, p2Psia);
+  const deltaP = Math.max(0, p1Psia - boundedP2);
+  const xtValue = isPositive(xt) ? xt : 0.72;
+
+  const c1Value = isPositive(c1) ? c1 : 39.76 * Math.sqrt(xtValue);
+  if (!isPositive(c1Value)) {
+    return 0;
+  }
+
+  const xActual = deltaP / p1Psia;
+  const xChokedLimit = xtValue * (kFactor / 1.4);
+  const xEffective = Math.min(xActual, xChokedLimit);
+
+  if (!(xEffective > 0)) {
+    return 0;
+  }
+
+  let angleDegrees = (3417 / c1Value) * Math.sqrt(xEffective);
+  if (!Number.isFinite(angleDegrees)) {
+    return 0;
+  }
+  angleDegrees = Math.min(angleDegrees, 90);
+  const angleRadians = (angleDegrees * Math.PI) / 180;
+
+  const termTempDensity = Math.sqrt(1 / (specificGravity * tempRankine));
+  if (!Number.isFinite(termTempDensity) || termTempDensity <= 0) {
+    return 0;
+  }
+
+  const denominator = p1Psia * 520 * termTempDensity * Math.sin(angleRadians);
+  if (!Number.isFinite(denominator) || denominator === 0) {
+    return 0;
+  }
+
+  const requiredCg = flowScfh / denominator;
+  return Number.isFinite(requiredCg) && requiredCg > 0 ? requiredCg : 0;
+}
+
 function ensureSwageFittings(pipe: PipeProps, baseFittings: FittingType[]): FittingType[] {
   const defaultUnit = pipe.diameterUnit ?? pipe.pipeDiameterUnit ?? "mm";
   const inletDiameter = convertLength(pipe.inletDiameter, pipe.inletDiameterUnit ?? defaultUnit);
