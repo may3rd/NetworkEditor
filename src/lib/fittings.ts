@@ -343,9 +343,9 @@ function calculateControlValvePressureDrop(
   let calculatedCv: number | undefined;
   let updatedControlValve = { ...controlValve };
 
-  if (controlValve.pressure_drop !== undefined && controlValve.pressure_drop > 0) {
+  if (controlValve.pressureDrop !== undefined && controlValve.pressureDrop > 0) {
     // Calculate Cv from pressure drop
-    const pressureDropPa = convertScalar(controlValve.pressure_drop, controlValve.pressureDropUnit ?? "Pa", "Pa") ?? controlValve.pressure_drop;
+    const pressureDropPa = convertScalar(controlValve.pressureDrop, controlValve.pressureDropUnit ?? "Pa", "Pa") ?? controlValve.pressureDrop;
     const pressureDropPsi = pressureDropPa / 6894.76; // Pa to psi
     calculatedCv = volumetricFlowGpm / Math.sqrt(pressureDropPsi / specificGravity);
     pressureDrop = pressureDropPa;
@@ -358,10 +358,10 @@ function calculateControlValvePressureDrop(
     const displayUnit = controlValve.pressureDropUnit ?? "kPa";
     const convertedPressureDrop = convertScalar(pressureDrop, "Pa", displayUnit);
     if (convertedPressureDrop === undefined) {
-      updatedControlValve.pressure_drop = pressureDrop;
+      updatedControlValve.pressureDrop = pressureDrop;
       updatedControlValve.pressureDropUnit = "Pa";
     } else {
-      updatedControlValve.pressure_drop = convertedPressureDrop;
+      updatedControlValve.pressureDrop = convertedPressureDrop;
       updatedControlValve.pressureDropUnit = displayUnit;
     }
   }
@@ -615,6 +615,59 @@ function applyUserAndSafety(pipe: PipeProps, pipeLengthK?: number, fittingK?: nu
 
 function isPositive(value?: number): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+export type SharpEdgedOrificeInput = {
+  beta: number;
+  reynolds: number;
+  density: number;
+  velocity: number;
+};
+
+export type SharpEdgedOrificeResult = {
+  kFactor: number;
+  pressureDrop: number;
+};
+
+/**
+ * Calculates the resistance factor (K) and pressure drop across a sharp-edged plate orifice.
+ * Ref: Idelchik Diagram 4-15. The function currently expects SI inputs.
+ */
+export function calculateSharpEdgedPlateOrificePressureDrop({
+  beta,
+  reynolds,
+  density,
+  velocity,
+}: SharpEdgedOrificeInput): SharpEdgedOrificeResult | undefined {
+  if (!isPositive(beta) || beta >= 1 || !isPositive(reynolds) || !isPositive(density)) {
+    return undefined;
+  }
+  const absVelocity = Math.abs(velocity);
+  if (!Number.isFinite(absVelocity)) {
+    return undefined;
+  }
+
+  const betaSquared = beta * beta;
+  const betaFourth = betaSquared * betaSquared;
+  if (betaFourth === 0) {
+    return undefined;
+  }
+
+  const geomFactor = (1 - betaSquared) * (1 / betaFourth - 1);
+  const flowFactor =
+    reynolds <= 2500
+      ? 2.72 + betaSquared * (120 / reynolds - 1)
+      : 2.72 - (betaSquared * 4000) / reynolds;
+
+  const kFactor = flowFactor * geomFactor;
+  const dynamicPressure = 0.5 * density * absVelocity * absVelocity;
+  const pressureDrop = kFactor * dynamicPressure;
+
+  if (!Number.isFinite(pressureDrop)) {
+    return undefined;
+  }
+
+  return { kFactor, pressureDrop };
 }
 
 function ensureSwageFittings(pipe: PipeProps, baseFittings: FittingType[]): FittingType[] {

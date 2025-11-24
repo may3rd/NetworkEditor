@@ -136,10 +136,10 @@ export type Fluid = {
 // Hydraulic Loss Components
 export type ControlValve = {
   id: string,
-  tag: string,
+  tag?: string,
   cv?: number,
   cg?: number,
-  pressure_drop?: number,
+  pressureDrop?: number,
   pressureDropUnit?: string,
   C1?: number,
   FL?: number,
@@ -153,18 +153,12 @@ export type ControlValve = {
 }
 
 export type Orifice = {
+  // use a sharp-edged plate.
   id: string,
   tag?: string,
-  d_over_D_ratio?: number,
-  pressure_drop?: number,
-  pipe_diameter?: number,
-  orifice_diameter?: number,
-  meter_type?: string,
-  taps?: string,
-  tap_position?: string,
-  discharge_coefficient?: number,
-  expansibility?: number,
-  calculation_note?: string,
+  betaRatio?: number, // d over D ratio
+  pressureDrop?: number,
+  pressureDropUnit?: string,
 }
 
 export type FittingType = {

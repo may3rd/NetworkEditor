@@ -81,9 +81,9 @@ export function PropertiesPanel({
   const controlValvePressureDropUnit = pipe?.controlValve?.pressureDropUnit ?? "kPa";
   const controlValveCalculatedPressureDropPa =
     pipe?.pressureDropCalculationResults?.controlValvePressureDrop ??
-    (pipe?.controlValve?.pressure_drop !== undefined
+    (pipe?.controlValve?.pressureDrop !== undefined
       ? convertUnit(
-          pipe.controlValve.pressure_drop,
+          pipe.controlValve.pressureDrop,
           pipe.controlValve.pressureDropUnit ?? "kPa",
           "Pa"
         )
@@ -877,7 +877,7 @@ export function PropertiesPanel({
                             controlValve: {
                               ...currentValve,
                               cv: value,
-                              pressure_drop: undefined, // Clear the other input
+                              pressureDrop: undefined, // Clear the other input
                             },
                             pressureDropCalculationResults: undefined,
                             resultSummary: undefined,
@@ -910,8 +910,8 @@ export function PropertiesPanel({
                             const valveUnit = currentValve.pressureDropUnit ?? "kPa";
                             const pressureDropPa =
                               currentPipe.pressureDropCalculationResults?.controlValvePressureDrop ??
-                              (currentValve.pressure_drop !== undefined
-                                ? convertUnit(currentValve.pressure_drop, valveUnit, "Pa")
+                              (currentValve.pressureDrop !== undefined
+                                ? convertUnit(currentValve.pressureDrop, valveUnit, "Pa")
                                 : undefined);
                             const converted =
                               pressureDropPa === undefined
@@ -920,7 +920,7 @@ export function PropertiesPanel({
                             return {
                               controlValve: {
                                 ...currentValve,
-                                pressure_drop: converted,
+                                pressureDrop: converted,
                                 pressureDropUnit: nextUnit,
                               },
                             };
@@ -942,7 +942,7 @@ export function PropertiesPanel({
                 <>
                   <QuantityInput
                     label="Pressure Drop"
-                    value={pipe.controlValve?.pressure_drop ?? ""}
+                    value={pipe.controlValve?.pressureDrop ?? ""}
                     unit={controlValvePressureDropUnit}
                     units={QUANTITY_UNIT_OPTIONS.pressureDrop}
                     unitFamily="pressureDrop"
@@ -956,7 +956,7 @@ export function PropertiesPanel({
                         return {
                           controlValve: {
                             ...currentValve,
-                            pressure_drop: newValue,
+                            pressureDrop: newValue,
                             pressureDropUnit: currentValve.pressureDropUnit ?? "kPa",
                             cv: undefined,
                           },
