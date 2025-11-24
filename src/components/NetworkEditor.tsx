@@ -296,6 +296,9 @@ function EditorCanvas({
   mapNodeToReactFlow,
   showPressures,
   setShowPressures,
+  onDelete,
+  selectedId,
+  selectedType,
 }: Props & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
@@ -307,6 +310,9 @@ function EditorCanvas({
   mapNodeToReactFlow: (node: NodeProps, isSelected: boolean) => Node;
   showPressures: boolean;
   setShowPressures: (show: boolean) => void;
+  onDelete?: () => void;
+  selectedId: string | null;
+  selectedType: "node" | "pipe" | null;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [isAddingNode, setIsAddingNode] = useState(false);
@@ -389,6 +395,8 @@ function EditorCanvas({
           y: position.y - NODE_SIZE / 2,
         },
         fluid: copiedFluid,
+        temperature: sourceNode?.temperature,
+        temperatureUnit: sourceNode?.temperatureUnit,
       };
 
       const startsFromSourceHandle = handleType !== "target";
@@ -478,6 +486,10 @@ function EditorCanvas({
           label: `Node ${network.nodes.length + 1}`,
           position,
           fluid: templateFluid,
+          temperature: network.nodes[0]?.temperature,
+          temperatureUnit: network.nodes[0]?.temperatureUnit ?? "°C",
+          pressure: network.nodes[0]?.pressure,
+          pressureUnit: network.nodes[0]?.pressureUnit ?? "kPag",
         };
 
         onNetworkChange({
@@ -571,6 +583,25 @@ function EditorCanvas({
           title="Add node"
         >
           ＋ Add Node
+        </button>
+
+        <button
+          onClick={onDelete}
+          disabled={!canEditNetwork || !selectedId}
+          style={{
+            background: selectedId ? "#dc2626" : "#cbd5e1",
+            color: "white",
+            border: "none",
+            padding: "4px 10px",
+            borderRadius: 6,
+            fontWeight: "600",
+            fontSize: "12px",
+            cursor: canEditNetwork && selectedId ? "pointer" : "not-allowed",
+            opacity: canEditNetwork && selectedId ? 1 : 0.6,
+          }}
+          title="Delete selected item"
+        >
+          🗑️ Delete
         </button>
 
         <button

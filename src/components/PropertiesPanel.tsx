@@ -168,7 +168,10 @@ export function PropertiesPanel({
               unit={node.temperatureUnit ?? "°C"}
               units={QUANTITY_UNIT_OPTIONS.temperature}
               unitFamily="temperature"
-              onValueChange={(newValue) => onUpdateNode(node.id, { temperature: newValue })}
+              onValueChange={(newValue) => onUpdateNode(node.id, {
+                temperature: newValue,
+                ...(node.temperatureUnit === undefined && { temperatureUnit: "°C" })
+              })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { temperatureUnit: newUnit })}
             />
 
@@ -178,7 +181,10 @@ export function PropertiesPanel({
               unit={node.pressureUnit ?? "kPag"}
               units={QUANTITY_UNIT_OPTIONS.pressure}
               unitFamily="pressure"
-              onValueChange={(newValue) => onUpdateNode(node.id, { pressure: newValue })}
+              onValueChange={(newValue) => onUpdateNode(node.id, {
+                pressure: newValue,
+                ...(node.pressureUnit === undefined && { pressureUnit: "kPag" })
+              })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { pressureUnit: newUnit })}
             />
 
@@ -186,15 +192,21 @@ export function PropertiesPanel({
               size="sm"
               onClick={() => {
                 // Find connected pipes and update node with outlet state
+                // Prioritize pipes where node is the target (endNode) first, then source (startNode)
                 const connectedPipes = network.pipes.filter(pipe =>
                   pipe.startNodeId === node.id || pipe.endNodeId === node.id
                 );
-                for (const pipe of connectedPipes) {
+
+                const targetPipes = connectedPipes.filter(pipe => pipe.endNodeId === node.id);
+                const sourcePipes = connectedPipes.filter(pipe => pipe.startNodeId === node.id);
+                const prioritizedPipes = [...targetPipes, ...sourcePipes];
+
+                for (const pipe of prioritizedPipes) {
                   if (pipe.resultSummary?.outletState) {
                     const outletState = pipe.resultSummary.outletState;
                     const isOutletNode =
                       (pipe.direction === 'forward' && pipe.endNodeId === node.id) ||
-                      (pipe.direction === 'reverse' && pipe.startNodeId === node.id);
+                      (pipe.direction === 'backward' && pipe.startNodeId === node.id);
 
                     if (isOutletNode && outletState.pressure !== undefined) {
                       const pressureInNodeUnit = convertUnit(outletState.pressure, 'Pa', node.pressureUnit ?? 'kPag');
