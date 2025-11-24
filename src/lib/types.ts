@@ -24,6 +24,21 @@ export type NodeProps = {
   fluid: Fluid,
 };
 
+export type pipeState = {
+  pressure?: number, // State pressure in Pa
+  temprature?: number, // State temperature in K
+  density?: number, // State fluid density in kg/m3
+  machNumber?: number, // State gas mach number in m/s (only gas)
+  velocity?: number, // velocity of fluid at pipe diameter in m/s
+  erosionalVelocity?: number // Erosional velocity in m/s
+  flowMomentum?: number // flow momentum of fluid, rho * v ^2, in Pa
+}
+
+export type resultSummary = {
+	inletState: pipeState,
+	outletState: pipeState,
+}
+
 // Pressure Drop Caculation Results
 // All pressure drop values are in Pa.
 export type PressureDropCalculationResults = {
@@ -94,6 +109,7 @@ export type PipeProps = {
   controlValve?: ControlValve;
   orifice?: Orifice;
   pressureDropCalculationResults?: PressureDropCalculationResults;
+  resultSummary?: resultSummary,
 };
 
 // Fluid propertis
