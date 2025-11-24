@@ -514,7 +514,25 @@ export function PropertiesPanel({
             </Stack>
           )}
 
-          // todo
+          <QuantityInput
+            label="Inlet Diameter"
+            value={pipe.inletDiameter ?? ""}
+            unit={pipe.inletDiameterUnit ?? pipe.diameterUnit ?? "mm"}
+            units={QUANTITY_UNIT_OPTIONS.lengthSmall}
+            unitFamily="diameter"
+            onValueChange={(newValue) => onUpdatePipe(pipe.id, { inletDiameter: newValue })}
+            onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { inletDiameterUnit: newUnit })}
+          />
+
+          <QuantityInput
+            label="Outlet Diameter"
+            value={pipe.outletDiameter ?? ""}
+            unit={pipe.outletDiameterUnit ?? pipe.diameterUnit ?? "mm"}
+            units={QUANTITY_UNIT_OPTIONS.lengthSmall}
+            unitFamily="diameter"
+            onValueChange={(newValue) => onUpdatePipe(pipe.id, { outletDiameter: newValue })}
+            onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { outletDiameterUnit: newUnit })}
+          />
 
           <QuantityInput
             label="Pipe Roughness"
@@ -622,70 +640,79 @@ export function PropertiesPanel({
                 </Text>
               ) : (
                 <Stack gap={2}>
-                  {pipeFittings.map((fitting, index) => (
-                    <Stack
-                      key={`${fitting.type}-${index}`}
-                      direction="row"
-                      gap={2}
-                      align="flex-end"
-                    >
-                      <Stack flex="1" gap={1}>
-                        <Text fontSize="sm" color="gray.500">
-                          Type
-                        </Text>
-                        <Select
-                          value={fitting.type}
-                          onChange={(event) =>
-                            handleFittingFieldChange(index, {
-                              type: event.target.value,
-                              k_each: 0,
-                              k_total: 0,
-                            })
-                          }
-                          w="full"
-                        >
-                          {PIPE_FITTING_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </Select>
-                      </Stack>
-                      <Stack w="80px" gap={1}>
-                        <Text fontSize="sm" color="gray.500">
-                          Count
-                        </Text>
-                        <NumberInput
-                          min={0}
-                          step={1}
-                          value={fitting.count ?? 0}
-                          onChange={(_, valueNumber) => {
-                            if (!Number.isFinite(valueNumber)) {
-                              return;
+                  {pipeFittings.map((fitting, index) => {
+                    const isSwage =
+                      fitting.type === "inlet_swage" || fitting.type === "outlet_swage";
+                    return (
+                      <Stack
+                        key={`${fitting.type}-${index}`}
+                        direction="row"
+                        gap={2}
+                        align="flex-end"
+                      >
+                        <Stack flex="1" gap={1}>
+                          <Text fontSize="sm" color="gray.500">
+                            Type
+                          </Text>
+                          <Select
+                            value={fitting.type}
+                            isDisabled={isSwage}
+                            onChange={(event) =>
+                              handleFittingFieldChange(index, {
+                                type: event.target.value,
+                                k_each: 0,
+                                k_total: 0,
+                              })
                             }
-                            const normalized = Math.max(0, Math.floor(valueNumber));
-                            handleFittingFieldChange(index, {
-                              count: normalized,
-                              k_total: normalized * (fitting.k_each ?? 0),
-                            });
-                          }}
-                        >
-                          <NumberInputField />
-                          <NumberInputStepper>
-                            <NumberIncrementStepper />
-                            <NumberDecrementStepper />
-                          </NumberInputStepper>
-                        </NumberInput>
+                            w="full"
+                          >
+                            {PIPE_FITTING_OPTIONS.filter(
+                              (option) => !option.autoOnly || option.value === fitting.type
+                            ).map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </Select>
+                        </Stack>
+                        <Stack w="80px" gap={1}>
+                          <Text fontSize="sm" color="gray.500">
+                            Count
+                          </Text>
+                          <NumberInput
+                            min={0}
+                            step={1}
+                            isDisabled={isSwage}
+                            value={fitting.count ?? 0}
+                            onChange={(_, valueNumber) => {
+                              if (!Number.isFinite(valueNumber)) {
+                                return;
+                              }
+                              const normalized = Math.max(0, Math.floor(valueNumber));
+                              handleFittingFieldChange(index, {
+                                count: normalized,
+                                k_total: normalized * (fitting.k_each ?? 0),
+                              });
+                            }}
+                          >
+                            <NumberInputField />
+                            <NumberInputStepper>
+                              <NumberIncrementStepper />
+                              <NumberDecrementStepper />
+                            </NumberInputStepper>
+                          </NumberInput>
+                        </Stack>
+                        <IconButton
+                          aria-label="Remove fitting"
+                          icon={<CloseIcon />}
+                          size="sm"
+                          variant="ghost"
+                          isDisabled={isSwage}
+                          onClick={() => handleRemoveFitting(index)}
+                        />
                       </Stack>
-                      <IconButton
-                        aria-label="Remove fitting"
-                        icon={<CloseIcon />}
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleRemoveFitting(index)}
-                      />
-                    </Stack>
-                  ))}
+                    );
+                  })}
                 </Stack>
               )}
             </Stack>
@@ -705,6 +732,7 @@ export function PropertiesPanel({
             </Stack>
           </Stack>
 
+          // todo add the input user pressure loss that will be added to the total pressure loss.
         </Stack>
       )}
 

@@ -40,6 +40,8 @@ export const PIPE_FITTING_OPTIONS = [
   { value: "pipe_entrance_normal", label: "Pipe Entrance Normal" },
   { value: "pipe_entrance_raise", label: "Pipe Entrance Raise" },
   { value: "pipe_exit", label: "Pipe Exit" },
+  { value: "inlet_swage", label: "Inlet Swage", autoOnly: true },
+  { value: "outlet_swage", label: "Outlet Swage", autoOnly: true },
 ] as const;
 
 type PipeScheduleEntry = {

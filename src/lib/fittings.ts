@@ -20,6 +20,9 @@ const UNIT_ALIASES: Record<string, string> = {
   "tonn/day": "ton/day",
 };
 
+const SWAGE_ABSOLUTE_TOLERANCE = 1e-6;
+const SWAGE_RELATIVE_TOLERANCE = 1e-3;
+
 type HydraulicContext = {
   fluidArgs: FittingCalculationArgs["fluid"];
   sectionBase: Omit<FittingCalculationArgs["section"], "fittings">;
@@ -68,7 +71,7 @@ function computeFittingContribution(
   pipe: PipeProps,
   context: HydraulicContext | null
 ): { fittingK?: number; fittings: FittingType[] } {
-  const fittings = pipe.fittings ?? [];
+  const fittings = ensureSwageFittings(pipe, pipe.fittings ?? []);
   if (fittings.length === 0) {
     return { fittingK: 0, fittings };
   }
@@ -457,4 +460,62 @@ function applyUserAndSafety(pipe: PipeProps, pipeLengthK?: number, fittingK?: nu
 
 function isPositive(value?: number): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function ensureSwageFittings(pipe: PipeProps, baseFittings: FittingType[]): FittingType[] {
+  const defaultUnit = pipe.diameterUnit ?? pipe.pipeDiameterUnit ?? "mm";
+  const inletDiameter = convertLength(pipe.inletDiameter, pipe.inletDiameterUnit ?? defaultUnit);
+  const outletDiameter = convertLength(
+    pipe.outletDiameter,
+    pipe.outletDiameterUnit ?? defaultUnit
+  );
+  const pipeDiameter = resolveDiameter(pipe);
+
+  const needsInletSwage = shouldAddSwage(inletDiameter, pipeDiameter);
+  const needsOutletSwage = shouldAddSwage(pipeDiameter, outletDiameter);
+
+  const filtered = baseFittings.filter((fitting) => {
+    if (fitting.type === "inlet_swage") {
+      return needsInletSwage;
+    }
+    if (fitting.type === "outlet_swage") {
+      return needsOutletSwage;
+    }
+    return true;
+  });
+
+  const normalized = [...filtered];
+
+  if (needsInletSwage && !normalized.some((fitting) => fitting.type === "inlet_swage")) {
+    normalized.push(createSwageFitting("inlet_swage"));
+  }
+
+  if (needsOutletSwage && !normalized.some((fitting) => fitting.type === "outlet_swage")) {
+    normalized.push(createSwageFitting("outlet_swage"));
+  }
+
+  return normalized;
+}
+
+function createSwageFitting(type: "inlet_swage" | "outlet_swage"): FittingType {
+  return {
+    type,
+    count: 1,
+    k_each: 0,
+    k_total: 0,
+  };
+}
+
+function shouldAddSwage(upstream?: number, downstream?: number): boolean {
+  if (!isPositive(upstream) || !isPositive(downstream)) {
+    return false;
+  }
+  return !diametersWithinTolerance(upstream, downstream);
+}
+
+function diametersWithinTolerance(a: number, b: number): boolean {
+  const diff = Math.abs(a - b);
+  const scale = Math.max(Math.abs(a), Math.abs(b), 1);
+  const tolerance = Math.max(SWAGE_ABSOLUTE_TOLERANCE, SWAGE_RELATIVE_TOLERANCE * scale);
+  return diff <= tolerance;
 }
