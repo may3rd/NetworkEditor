@@ -344,33 +344,47 @@ function calculateControlValvePressureDrop(
 
   const controlValve = pipe.controlValve;
   const density = context.density;
-  const volumetricFlowGpm = context.volumetricFlowRate * 264.172; // m³/s to gpm
-  const specificGravity = density / 1000; // kg/m³ to SG (water = 1000)
+  const volumetricFlowM3h = context.volumetricFlowRate * 3600; // convert from m³/s to m³/h
+  const specificGravity = density / 1000; // SG relative to water
 
   let pressureDrop: number | undefined;
   let calculatedCv: number | undefined;
   let updatedControlValve = { ...controlValve };
 
-  if (controlValve.pressureDrop !== undefined && controlValve.pressureDrop > 0) {
-    // Calculate Cv from pressure drop
-    const pressureDropPa = convertScalar(controlValve.pressureDrop, controlValve.pressureDropUnit ?? "Pa", "Pa") ?? controlValve.pressureDrop;
-    const pressureDropPsi = pressureDropPa / 6894.76; // Pa to psi
-    calculatedCv = volumetricFlowGpm / Math.sqrt(pressureDropPsi / specificGravity);
-    pressureDrop = pressureDropPa;
-    updatedControlValve.cv = calculatedCv;
-  } else if (controlValve.cv && controlValve.cv > 0) {
-    // Calculate pressure drop from Cv
-    const pressureDropPsi = (volumetricFlowGpm / controlValve.cv) ** 2 * specificGravity;
-    pressureDrop = pressureDropPsi * 6894.76; // psi to Pa
-    calculatedCv = controlValve.cv;
-    const displayUnit = controlValve.pressureDropUnit ?? "kPa";
-    const convertedPressureDrop = convertScalar(pressureDrop, "Pa", displayUnit);
-    if (convertedPressureDrop === undefined) {
-      updatedControlValve.pressureDrop = pressureDrop;
-      updatedControlValve.pressureDropUnit = "Pa";
-    } else {
-      updatedControlValve.pressureDrop = convertedPressureDrop;
-      updatedControlValve.pressureDropUnit = displayUnit;
+  const canCalculate = isPositive(volumetricFlowM3h) && isPositive(specificGravity);
+
+  if (canCalculate && controlValve.pressureDrop !== undefined && controlValve.pressureDrop > 0) {
+    // Calculate Cv from pressure drop using liquid formula (Cv = 11.56 * Q_m3h * sqrt(SG / ΔP_kPa))
+    const pressureDropKPa =
+      convertScalar(controlValve.pressureDrop, controlValve.pressureDropUnit ?? "kPa", "kPa") ??
+      controlValve.pressureDrop;
+    if (isPositive(pressureDropKPa)) {
+      calculatedCv = 11.56 * volumetricFlowM3h * Math.sqrt(specificGravity / pressureDropKPa);
+      const pressureDropPa =
+        convertScalar(pressureDropKPa, "kPa", "Pa") ?? pressureDropKPa * 1000;
+      pressureDrop = pressureDropPa;
+      updatedControlValve.cv = Number.isFinite(calculatedCv) ? calculatedCv : undefined;
+    }
+  } else if (canCalculate && controlValve.cv && controlValve.cv > 0) {
+    // Calculate pressure drop from Cv rearranging the same formula
+    const pressureDropKPa =
+      specificGravity *
+      ((11.56 * volumetricFlowM3h) / controlValve.cv) *
+      ((11.56 * volumetricFlowM3h) / controlValve.cv);
+    if (isPositive(pressureDropKPa)) {
+      const pressureDropPa =
+        convertScalar(pressureDropKPa, "kPa", "Pa") ?? pressureDropKPa * 1000;
+      pressureDrop = pressureDropPa;
+      calculatedCv = controlValve.cv;
+      const displayUnit = controlValve.pressureDropUnit ?? "kPa";
+      const convertedPressureDrop = convertScalar(pressureDropPa, "Pa", displayUnit);
+      if (convertedPressureDrop === undefined) {
+        updatedControlValve.pressureDrop = pressureDropPa;
+        updatedControlValve.pressureDropUnit = "Pa";
+      } else {
+        updatedControlValve.pressureDrop = convertedPressureDrop;
+        updatedControlValve.pressureDropUnit = displayUnit;
+      }
     }
   }
 
@@ -606,23 +620,33 @@ function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {
 }
 
 function resolveMassFlow(pipe: PipeProps): number | undefined {
-  const { massFlowRate, massFlowRateUnit, designMassFlowRate, designMassFlowRateUnit } = pipe;
-  const value =
-    typeof massFlowRate === "number"
-      ? massFlowRate
-      : typeof designMassFlowRate === "number"
-        ? designMassFlowRate
-        : undefined;
-  if (value === undefined) {
+  const hasMassFlowRate =
+    typeof pipe.massFlowRate === "number" && Number.isFinite(pipe.massFlowRate);
+  const hasDesignMassFlowRate =
+    typeof pipe.designMassFlowRate === "number" && Number.isFinite(pipe.designMassFlowRate);
+
+  if (!hasMassFlowRate && !hasDesignMassFlowRate) {
     return undefined;
   }
 
-  const unit =
-    massFlowRate !== undefined
-      ? massFlowRateUnit ?? "kg/h"
-      : designMassFlowRateUnit ?? massFlowRateUnit ?? "kg/h";
+  if (hasMassFlowRate) {
+    const unit = pipe.massFlowRateUnit ?? "kg/h";
+    const converted = convertScalar(pipe.massFlowRate, unit, "kg/s");
+    if (!isPositive(converted)) {
+      return undefined;
+    }
+    const normalizedBase = Math.abs(converted);
+    const margin =
+      typeof pipe.designMargin === "number" && Number.isFinite(pipe.designMargin)
+        ? pipe.designMargin
+        : 0;
+    const multiplier = 1 + margin / 100;
+    const designFlow = normalizedBase * multiplier;
+    return isPositive(designFlow) ? designFlow : undefined;
+  }
 
-  const converted = convertScalar(value, unit, "kg/s");
+  const unit = pipe.designMassFlowRateUnit ?? pipe.massFlowRateUnit ?? "kg/h";
+  const converted = convertScalar(pipe.designMassFlowRate, unit, "kg/s");
   if (!isPositive(converted)) {
     return undefined;
   }
