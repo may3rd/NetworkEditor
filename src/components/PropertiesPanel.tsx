@@ -481,6 +481,20 @@ export function PropertiesPanel({
 
           <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
+              Pipe Section Type
+            </Text>
+            <Select
+              value={pipe.pipeSectionType ?? "pipeline"}
+              onChange={(event) => onUpdatePipe(pipe.id, { pipeSectionType: event.target.value as "pipeline" | "control valve" | "orifice" })}
+            >
+              <option value="pipeline">Pipeline</option>
+              <option value="control valve">Control Valve</option>
+              <option value="orifice">Orifice</option>
+            </Select>
+          </Stack>
+
+          <Stack gap={1}>
+            <Text fontSize="sm" color="gray.500">
               Diameter Input
             </Text>
             <RadioGroup
@@ -586,38 +600,6 @@ export function PropertiesPanel({
             onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { outletDiameterUnit: newUnit })}
           />
 
-          <QuantityInput
-            label="Pipe Roughness"
-            value={pipe.roughness ?? ""}
-            unit={pipe.roughnessUnit ?? "mm"}
-            units={["mm", "cm", "m", "ft", "in"]}
-            unitFamily="roughness"
-            onValueChange={(newValue) => onUpdatePipe(pipe.id, { roughness: newValue })}
-            onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { roughnessUnit: newUnit })}
-          />
-
-          <QuantityInput
-            label="Length"
-            value={pipe.length ?? ""}
-            unit={pipe.lengthUnit ?? "m"}
-            units={QUANTITY_UNIT_OPTIONS.length}
-            unitFamily="length"
-            onValueChange={(newValue) => onUpdatePipe(pipe.id, { length: newValue })}
-            onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { lengthUnit: newUnit })}
-          />
-
-          {pipeFluidPhase === "liquid" && (
-            <QuantityInput
-              label="Elevation Change"
-              value={pipe.elevation ?? ""}
-              unit={pipe.elevationUnit ?? "m"}
-              units={QUANTITY_UNIT_OPTIONS.length}
-              unitFamily="length"
-              onValueChange={(newValue) => onUpdatePipe(pipe.id, { elevation: newValue })}
-              onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { elevationUnit: newUnit })}
-            />
-          )}
-
           <Stack gap={1}>
             <Text fontSize="sm" color="gray.500">
               Erosional Constant
@@ -633,171 +615,223 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack gap={3}>
-            <Stack gap={1}>
-              <Text fontSize="sm" color="gray.500">
-                Fitting Type
-              </Text>
-              <Select
-                value={pipe.fittingType ?? "LR"}
-                onChange={(event) => onUpdatePipe(pipe.id, { fittingType: event.target.value })}
-                w="full"
-              >
-                {FITTING_TYPE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </Select>
-            </Stack>
-
-            <Stack gap={1}>
-              <Text fontSize="sm" color="gray.500">
-                Safety Factor
-              </Text>
-              <Input
-                type="number"
-                step="any"
-                value={pipe.pipingFittingSafetyFactor ?? 1}
-                onChange={(event) => {
-                  const value = event.target.value === "" ? undefined : Number(event.target.value);
-                  onUpdatePipe(pipe.id, { pipingFittingSafetyFactor: value });
-                }}
+          {pipe?.pipeSectionType === "pipeline" && (
+            <>
+              <QuantityInput
+                label="Pipe Roughness"
+                value={pipe.roughness ?? ""}
+                unit={pipe.roughnessUnit ?? "mm"}
+                units={["mm", "cm", "m", "ft", "in"]}
+                unitFamily="roughness"
+                onValueChange={(newValue) => onUpdatePipe(pipe.id, { roughness: newValue })}
+                onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { roughnessUnit: newUnit })}
               />
-            </Stack>
-            
-            <Stack gap={2}>
-              <Stack direction="row" justify="space-between" align="center">
-                <Text fontSize="sm" color="gray.500">
-                  Fittings
-                </Text>
-                <Stack direction="row" gap={2}>
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    onClick={handleResetFittings}
-                    isDisabled={pipeFittings.length === 0}
+
+              <QuantityInput
+                label="Length"
+                value={pipe.length ?? ""}
+                unit={pipe.lengthUnit ?? "m"}
+                units={QUANTITY_UNIT_OPTIONS.length}
+                unitFamily="length"
+                onValueChange={(newValue) => onUpdatePipe(pipe.id, { length: newValue })}
+                onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { lengthUnit: newUnit })}
+              />
+
+              {pipeFluidPhase === "liquid" && (
+                <QuantityInput
+                  label="Elevation Change"
+                  value={pipe.elevation ?? ""}
+                  unit={pipe.elevationUnit ?? "m"}
+                  units={QUANTITY_UNIT_OPTIONS.length}
+                  unitFamily="length"
+                  onValueChange={(newValue) => onUpdatePipe(pipe.id, { elevation: newValue })}
+                  onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { elevationUnit: newUnit })}
+                />
+              )}
+
+              <Stack gap={3}>
+                <Stack gap={1}>
+                  <Text fontSize="sm" color="gray.500">
+                    Fitting Type
+                  </Text>
+                  <Select
+                    value={pipe.fittingType ?? "LR"}
+                    onChange={(event) => onUpdatePipe(pipe.id, { fittingType: event.target.value })}
+                    w="full"
                   >
-                    Reset
-                  </Button>
-                  <Button size="xs" onClick={handleAddFitting}>
-                    Add
-                  </Button>
+                    {FITTING_TYPE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Select>
+                </Stack>
+
+                <Stack gap={1}>
+                  <Text fontSize="sm" color="gray.500">
+                    Safety Factor
+                  </Text>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={pipe.pipingFittingSafetyFactor ?? 1}
+                    onChange={(event) => {
+                      const value = event.target.value === "" ? undefined : Number(event.target.value);
+                      onUpdatePipe(pipe.id, { pipingFittingSafetyFactor: value });
+                    }}
+                  />
+                </Stack>
+
+                <Stack gap={2}>
+                  <Stack direction="row" justify="space-between" align="center">
+                    <Text fontSize="sm" color="gray.500">
+                      Fittings
+                    </Text>
+                    <Stack direction="row" gap={2}>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={handleResetFittings}
+                        isDisabled={pipeFittings.length === 0}
+                      >
+                        Reset
+                      </Button>
+                      <Button size="xs" onClick={handleAddFitting}>
+                        Add
+                      </Button>
+                    </Stack>
+                  </Stack>
+
+                  {pipeFittings.length === 0 ? (
+                    <Text fontSize="sm" color="gray.400">
+                      No fittings added.
+                    </Text>
+                  ) : (
+                    <Stack gap={2}>
+                      {pipeFittings.map((fitting, index) => {
+                        const isSwage =
+                          fitting.type === "inlet_swage" || fitting.type === "outlet_swage";
+                        return (
+                          <Stack
+                            key={`${fitting.type}-${index}`}
+                            direction="row"
+                            gap={2}
+                            align="flex-end"
+                          >
+                            <Stack flex="1" gap={1}>
+                              <Text fontSize="sm" color="gray.500">
+                                Type
+                              </Text>
+                              <Select
+                                value={fitting.type}
+                                isDisabled={isSwage}
+                                onChange={(event) =>
+                                  handleFittingFieldChange(index, {
+                                    type: event.target.value,
+                                    k_each: 0,
+                                    k_total: 0,
+                                  })
+                                }
+                                w="full"
+                              >
+                                {PIPE_FITTING_OPTIONS.filter(
+                                  (option) => !option.autoOnly || option.value === fitting.type
+                                ).map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </Select>
+                            </Stack>
+                            <Stack w="80px" gap={1}>
+                              <Text fontSize="sm" color="gray.500">
+                                Count
+                              </Text>
+                              <NumberInput
+                                min={0}
+                                step={1}
+                                isDisabled={isSwage}
+                                value={fitting.count ?? 0}
+                                onChange={(_, valueNumber) => {
+                                  if (!Number.isFinite(valueNumber)) {
+                                    return;
+                                  }
+                                  const normalized = Math.max(0, Math.floor(valueNumber));
+                                  handleFittingFieldChange(index, {
+                                    count: normalized,
+                                    k_total: normalized * (fitting.k_each ?? 0),
+                                  });
+                                }}
+                              >
+                                <NumberInputField />
+                                <NumberInputStepper>
+                                  <NumberIncrementStepper />
+                                  <NumberDecrementStepper />
+                                </NumberInputStepper>
+                              </NumberInput>
+                            </Stack>
+                            <IconButton
+                              aria-label="Remove fitting"
+                              icon={<CloseIcon />}
+                              size="sm"
+                              variant="ghost"
+                              isDisabled={isSwage}
+                              onClick={() => handleRemoveFitting(index)}
+                            />
+                          </Stack>
+                        );
+                      })}
+                    </Stack>
+                  )}
+                </Stack>
+                <Stack gap={1}>
+                  <Text fontSize="sm" color="gray.500">
+                    User K
+                  </Text>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={pipe.userK ?? ""}
+                    onChange={(event) => {
+                      const value = event.target.value === "" ? undefined : Number(event.target.value);
+                      onUpdatePipe(pipe.id, { userK: value });
+                    }}
+                  />
                 </Stack>
               </Stack>
 
-              {pipeFittings.length === 0 ? (
-                <Text fontSize="sm" color="gray.400">
-                  No fittings added.
-                </Text>
-              ) : (
-                <Stack gap={2}>
-                  {pipeFittings.map((fitting, index) => {
-                    const isSwage =
-                      fitting.type === "inlet_swage" || fitting.type === "outlet_swage";
-                    return (
-                      <Stack
-                        key={`${fitting.type}-${index}`}
-                        direction="row"
-                        gap={2}
-                        align="flex-end"
-                      >
-                        <Stack flex="1" gap={1}>
-                          <Text fontSize="sm" color="gray.500">
-                            Type
-                          </Text>
-                          <Select
-                            value={fitting.type}
-                            isDisabled={isSwage}
-                            onChange={(event) =>
-                              handleFittingFieldChange(index, {
-                                type: event.target.value,
-                                k_each: 0,
-                                k_total: 0,
-                              })
-                            }
-                            w="full"
-                          >
-                            {PIPE_FITTING_OPTIONS.filter(
-                              (option) => !option.autoOnly || option.value === fitting.type
-                            ).map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </Select>
-                        </Stack>
-                        <Stack w="80px" gap={1}>
-                          <Text fontSize="sm" color="gray.500">
-                            Count
-                          </Text>
-                          <NumberInput
-                            min={0}
-                            step={1}
-                            isDisabled={isSwage}
-                            value={fitting.count ?? 0}
-                            onChange={(_, valueNumber) => {
-                              if (!Number.isFinite(valueNumber)) {
-                                return;
-                              }
-                              const normalized = Math.max(0, Math.floor(valueNumber));
-                              handleFittingFieldChange(index, {
-                                count: normalized,
-                                k_total: normalized * (fitting.k_each ?? 0),
-                              });
-                            }}
-                          >
-                            <NumberInputField />
-                            <NumberInputStepper>
-                              <NumberIncrementStepper />
-                              <NumberDecrementStepper />
-                            </NumberInputStepper>
-                          </NumberInput>
-                        </Stack>
-                        <IconButton
-                          aria-label="Remove fitting"
-                          icon={<CloseIcon />}
-                          size="sm"
-                          variant="ghost"
-                          isDisabled={isSwage}
-                          onClick={() => handleRemoveFitting(index)}
-                        />
-                      </Stack>
-                    );
-                  })}
-                </Stack>
-              )}
-            </Stack>
+              <QuantityInput
+                label="User Pressure Loss"
+                value={pipe.userSpecifiedPressureLoss ?? ""}
+                unit={pipe.userSpecifiedPressureLossUnit ?? "kPa"}
+                units={QUANTITY_UNIT_OPTIONS.pressureDrop}
+                unitFamily="pressureDrop"
+                onValueChange={(newValue) =>
+                  onUpdatePipe(pipe.id, {
+                    userSpecifiedPressureLoss: newValue,
+                    userSpecifiedPressureLossUnit: pipe.userSpecifiedPressureLossUnit ?? "kPa",
+                  })
+                }
+                onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { userSpecifiedPressureLossUnit: newUnit })}
+              />
+            </>
+          )}
+
+          {pipe?.pipeSectionType === "control valve" && (
             <Stack gap={1}>
               <Text fontSize="sm" color="gray.500">
-                User K
+                Control Valve
               </Text>
-              <Input
-                type="number"
-                step="any"
-                value={pipe.userK ?? ""}
-                onChange={(event) => {
-                  const value = event.target.value === "" ? undefined : Number(event.target.value);
-                  onUpdatePipe(pipe.id, { userK: value });
-                }}
-              />
             </Stack>
-          </Stack>
+          )}
 
-          <QuantityInput
-            label="User Pressure Loss"
-            value={pipe.userSpecifiedPressureLoss ?? ""}
-            unit={pipe.userSpecifiedPressureLossUnit ?? "kPa"}
-            units={QUANTITY_UNIT_OPTIONS.pressureDrop}
-            unitFamily="pressureDrop"
-            onValueChange={(newValue) =>
-              onUpdatePipe(pipe.id, {
-                userSpecifiedPressureLoss: newValue,
-                userSpecifiedPressureLossUnit: pipe.userSpecifiedPressureLossUnit ?? "kPa",
-              })
-            }
-            onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { userSpecifiedPressureLossUnit: newUnit })}
-          />
+          {pipe?.pipeSectionType === "orifice" && (
+            <Stack gap={1}>
+              <Text fontSize="sm" color="gray.500">
+                Orifice
+              </Text>
+            </Stack>
+          )}
         </Stack>
       )}
 
@@ -809,3 +843,4 @@ export function PropertiesPanel({
     </Stack>
   );
 }
+

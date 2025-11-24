@@ -66,6 +66,7 @@ export type PipeProps = {
   id: string;
   startNodeId: string;
   endNodeId: string;
+  pipeSectionType?: "pipeline" | "control valve" | "orifice";
   pipeNPD?: number,
   pipeSchedule?: string,
   diameter?: number;
@@ -348,6 +349,7 @@ export const createInitialNetwork = (): NetworkState => {
       boundaryPressureUnit: boundaryNode?.pressureUnit,
       boundaryTemperature: boundaryNode?.temperature,
       boundaryTemperatureUnit: boundaryNode?.temperatureUnit,
+      pipeSectionType: "pipeline" as const,
     };
   });
 

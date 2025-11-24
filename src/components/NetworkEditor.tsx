@@ -212,6 +212,7 @@ export function NetworkEditor({
         id: `pipe-${connection.source}-${connection.target}-${Date.now()}`,
         startNodeId: connection.source,
         endNodeId: connection.target,
+        pipeSectionType: "pipeline" as "pipeline" | "control valve" | "orifice",
         massFlowRate: 1000, // Default mass flow rate
         massFlowRateUnit: "kg/h",
         length: 100, // Default length
@@ -410,6 +411,7 @@ function EditorCanvas({
         id: `pipe-${startsFromSourceHandle ? fromId : newNodeId}-${startsFromSourceHandle ? newNodeId : fromId}-${Date.now()}`,
         startNodeId: pipeStartNodeId,
         endNodeId: startsFromSourceHandle ? newNodeId : fromId,
+        pipeSectionType: "pipeline" as "pipeline" | "control valve" | "orifice",
         massFlowRate: 1000, // Default mass flow rate
         massFlowRateUnit: "kg/h",
         length: 100, // Default length
