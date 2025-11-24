@@ -732,7 +732,20 @@ export function PropertiesPanel({
             </Stack>
           </Stack>
 
-          // todo add the input user pressure loss that will be added to the total pressure loss.
+          <QuantityInput
+            label="User Pressure Loss"
+            value={pipe.userSpecifiedPressureLoss ?? ""}
+            unit={pipe.userSpecifiedPressureLossUnit ?? "kPa"}
+            units={QUANTITY_UNIT_OPTIONS.pressureDrop}
+            unitFamily="pressureDrop"
+            onValueChange={(newValue) =>
+              onUpdatePipe(pipe.id, {
+                userSpecifiedPressureLoss: newValue,
+                userSpecifiedPressureLossUnit: pipe.userSpecifiedPressureLossUnit ?? "kPa",
+              })
+            }
+            onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { userSpecifiedPressureLossUnit: newUnit })}
+          />
         </Stack>
       )}
 

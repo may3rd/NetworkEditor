@@ -6,6 +6,10 @@ import { i } from "framer-motion/client";
 export type UnitFamily = string;
 
 const atmInkPa = 101.325;
+const UNIT_ALIASES: Record<string, string> = {
+  "tonn/day": "ton/day",
+  "kg_cm2": "kg/cm2",
+};
 
 const extendedPressure = {
   systems: {
@@ -230,9 +234,20 @@ const convert = configureMeasurements({
   massFlowRate: massFlowRateMeasure,
 } as any);
 
-export function convertUnit(value: number, fromUnit: string, toUnit: string, _family?: UnitFamily) {
+export function normalizeUnit(unit?: string | null): string | undefined {
+  if (!unit) return unit ?? undefined;
+  const trimmed = unit.trim();
+  return UNIT_ALIASES[trimmed] ?? trimmed;
+}
+
+export function convertUnit(value: number, fromUnit?: string, toUnit?: string, _family?: UnitFamily) {
   try {
-    return convert(value).from(fromUnit).to(toUnit);
+    const normalizedFrom = normalizeUnit(fromUnit);
+    const normalizedTo = normalizeUnit(toUnit);
+    if (!normalizedFrom || !normalizedTo) {
+      return value;
+    }
+    return convert(value).from(normalizedFrom).to(normalizedTo);
   } catch {
     return value;
   }

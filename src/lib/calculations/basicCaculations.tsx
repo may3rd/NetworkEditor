@@ -102,44 +102,35 @@ export function relativeRoughness(roughness: number | null | undefined, diameter
 }
 
 /**
- * Estimate the Darcy friction factor using a Colebrook-White fixed-point iteration.
- * This mirrors the backend's call to the fluids Shacham_1980 approximation.
+ * Estimate the Darcy friction factor using the Shacham (1980) explicit approximation.
+ * Mirrors the backend's `fluids.friction.Shacham_1980` implementation.
  */
 export function darcyFrictionFactor({
   reynolds,
   relativeRoughness: eD = 0,
-  initialGuess,
-  maxIterations = 20,
-  tolerance = 1e-7,
 }: FrictionFactorArgs): number {
   const re = requirePositive(reynolds, "reynolds");
-  const rough = Math.max(0, eD);
   if (re < 2000) {
     return 64 / re;
   }
 
-  // Start from the Haaland approximation to speed up convergence.
-  let darcy =
-    initialGuess ??
-    1 /
-      Math.pow(
-        -1.8 * Math.log10(Math.pow(rough / 3.7, 1.11) + 6.9 / re),
-        2
-      );
-
-  for (let i = 0; i < maxIterations; i++) {
-    const invSqrt = -2.0 * Math.log10(rough / 3.7 + 2.51 / (re * Math.sqrt(darcy)));
-    const next = 1 / (invSqrt * invSqrt);
-    if (Number.isFinite(next) && Math.abs(next - darcy) <= tolerance) {
-      return next;
-    }
-    darcy = next;
+  const rough = Math.max(0, eD);
+  const base = rough / 3.7;
+  const inner = base + 14.5 / re;
+  if (inner <= 0) {
+    throw new Error("Shacham_1980 requires a positive inner logarithm argument");
   }
 
-  if (!Number.isFinite(darcy) || darcy <= 0) {
-    throw new Error("Unable to converge Darcy friction factor for provided inputs");
+  const innerLog10 = Math.log10(inner);
+  const bracket = base - (5.02 / re) * innerLog10;
+  if (bracket <= 0) {
+    throw new Error("Shacham_1980 requires a positive outer logarithm argument");
   }
-  return darcy;
+  const term = -4 * Math.log10(bracket);
+  if (!Number.isFinite(term) || term === 0) {
+    throw new Error("Invalid Darcy friction factor result from Shacham_1980");
+  }
+  return 4 / (term * term);
 }
 
 /**

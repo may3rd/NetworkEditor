@@ -16,10 +16,6 @@ import type {
 
 const DEFAULT_TEMPERATURE_K = 298.15;
 const DEFAULT_PRESSURE_PA = 101_325;
-const UNIT_ALIASES: Record<string, string> = {
-  "tonn/day": "ton/day",
-};
-
 const SWAGE_ABSOLUTE_TOLERANCE = 1e-6;
 const SWAGE_RELATIVE_TOLERANCE = 1e-3;
 
@@ -235,6 +231,11 @@ function calculatePressureDropResults(
   const totalK = lengthResult.totalK;
   const density = context.density;
   const velocity = lengthResult.velocity;
+  const userSpecifiedPressureDrop = convertScalar(
+    pipe.userSpecifiedPressureLoss,
+    pipe.userSpecifiedPressureLossUnit ?? "Pa",
+    "Pa"
+  );
 
   let pipeAndFittingPressureDrop: number | undefined;
   if (isPositive(totalK) && typeof velocity === "number") {
@@ -252,9 +253,13 @@ function calculatePressureDropResults(
       : undefined;
 
   const totalSegmentPressureDrop =
-    pipeAndFittingPressureDrop === undefined && elevationPressureDrop === undefined
+    pipeAndFittingPressureDrop === undefined &&
+    elevationPressureDrop === undefined &&
+    userSpecifiedPressureDrop === undefined
       ? undefined
-      : (pipeAndFittingPressureDrop ?? 0) + (elevationPressureDrop ?? 0);
+      : (pipeAndFittingPressureDrop ?? 0) +
+        (elevationPressureDrop ?? 0) +
+        (userSpecifiedPressureDrop ?? 0);
 
   const normalizedPressureDrop =
     pipeAndFittingPressureDrop !== undefined &&
@@ -287,7 +292,7 @@ function calculatePressureDropResults(
     elevationPressureDrop,
     controlValvePressureDrop: undefined,
     orificePressureDrop: undefined,
-    userSpecifiedPressureDrop: undefined,
+    userSpecifiedPressureDrop,
     totalSegmentPressureDrop,
     normalizedPressureDrop,
     gasFlowCriticalPressure: undefined,
@@ -427,9 +432,10 @@ function convertScalar(
     return numericValue;
   }
   const sourceUnit = unit ?? targetUnit;
-  const normalizedSource =
-    sourceUnit && UNIT_ALIASES[sourceUnit] ? UNIT_ALIASES[sourceUnit] : sourceUnit;
-  const converted = convertUnit(numericValue, normalizedSource, targetUnit);
+  if (!sourceUnit) {
+    return numericValue;
+  }
+  const converted = convertUnit(numericValue, sourceUnit, targetUnit);
   const result = Number(converted);
   if (!Number.isFinite(result)) {
     return undefined;
