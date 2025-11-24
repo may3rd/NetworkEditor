@@ -179,8 +179,14 @@ export function NetworkEditor({
         id: `pipe-${connection.source}-${connection.target}-${Date.now()}`,
         startNodeId: connection.source,
         endNodeId: connection.target,
+        massFlowRate: 1000, // Default mass flow rate
+        massFlowRateUnit: "kg/h",
         length: 100, // Default length
-        diameter: 0.1, // Default diameter
+        lengthUnit: "m",
+        diameter: 102.26, // Default diameter
+        diameterUnit: "mm",
+        roughness: 0.0457, // Default roughness
+        roughnessUnit: "mm",
         fluid: startNode?.fluid ? { ...startNode.fluid } : undefined,
         direction: "forward",
         boundaryPressure: startNode?.pressure,
@@ -354,8 +360,14 @@ function EditorCanvas({
         id: `pipe-${startsFromSourceHandle ? fromId : newNodeId}-${startsFromSourceHandle ? newNodeId : fromId}-${Date.now()}`,
         startNodeId: pipeStartNodeId,
         endNodeId: startsFromSourceHandle ? newNodeId : fromId,
+        massFlowRate: 1000, // Default mass flow rate
+        massFlowRateUnit: "kg/h",
         length: 100, // Default length
-        diameter: 0.1, // Default diameter
+        lengthUnit: "m",
+        diameter: 102.26, // Default diameter
+        diameterUnit: "mm",
+        roughness: 0.0457, // Default roughness
+        roughnessUnit: "mm",
         fluid: pipeStartNode?.fluid ? { ...pipeStartNode.fluid } : undefined,
         direction: "forward",
         boundaryPressure: pipeStartNode?.pressure,
