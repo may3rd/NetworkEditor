@@ -360,6 +360,8 @@ export function PropertiesPanel({
                   direction: nextDirection,
                   boundaryPressure: boundaryNode?.pressure,
                   boundaryPressureUnit: boundaryNode?.pressureUnit,
+                  boundaryTemperature: boundaryNode?.temperature,
+                  boundaryTemperatureUnit: boundaryNode?.temperatureUnit,
                 });
               }}
             >

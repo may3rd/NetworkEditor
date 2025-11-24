@@ -202,6 +202,8 @@ export default function Home() {
                 if (shouldUpdateBoundary) {
                   pipePatch.boundaryPressure = updatedNode?.pressure;
                   pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
+                  pipePatch.boundaryTemperature = updatedNode?.temperature;
+                  pipePatch.boundaryTemperatureUnit = updatedNode?.temperatureUnit;
                 }
 
                 if (Object.keys(pipePatch).length === 0) {

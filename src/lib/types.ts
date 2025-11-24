@@ -99,6 +99,8 @@ export type PipeProps = {
   direction?: string,
   boundaryPressure?: number,
   boundaryPressureUnit?: string,
+  boundaryTemperature?: number,
+  boundaryTemperatureUnit?: string,
   designMassFlowRate?: number,
   designMassFlowRateUnit?: string,
   equivalentLength?: number,
@@ -262,6 +264,7 @@ const baseNetwork: NetworkState = {
       pipeSchedule: "40",
       roughness: 0.0457,
       roughnessUnit: "mm",
+      erosionalConstant: 100,
       fluid: {
         id: "HC",
         phase: "liquid",
@@ -287,6 +290,7 @@ const baseNetwork: NetworkState = {
       pipeSchedule: "40",
       roughness: 0.0457,
       roughnessUnit: "mm",
+      erosionalConstant: 100,
       fluid: {
         id: "HC",
         phase: "liquid",
@@ -312,6 +316,7 @@ const baseNetwork: NetworkState = {
       pipeSchedule: "40",
       roughness: 0.0457,
       roughnessUnit: "mm",
+      erosionalConstant: 100,
       fluid: {
         id: "HC",
         phase: "liquid",

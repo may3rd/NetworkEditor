@@ -12,6 +12,8 @@ import type {
   FittingType,
   PipeProps,
   PressureDropCalculationResults,
+  resultSummary,
+  pipeState,
 } from "./types";
 
 const DEFAULT_TEMPERATURE_K = 298.15;
@@ -52,6 +54,8 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
     fittingResult.fittingK
   );
 
+  const resultSummary = calculateResultSummary(pipe, context, pipeResult, pressureDropResults);
+
   return {
     ...pipe,
     fittingK: fittingResult.fittingK,
@@ -60,6 +64,7 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
     equivalentLength: pipeResult.equivalentLength,
     fittings: fittingResult.fittings,
     pressureDropCalculationResults: pressureDropResults,
+    resultSummary,
   };
 }
 
@@ -301,6 +306,66 @@ function calculatePressureDropResults(
   return results;
 }
 
+function calculateResultSummary(
+  pipe: PipeProps,
+  context: HydraulicContext | null,
+  lengthResult: PipeLengthComputation,
+  pressureDropResults: PressureDropCalculationResults | undefined
+): resultSummary | undefined {
+  if (!context || !pressureDropResults) {
+    return undefined;
+  }
+
+  const inletPressurePa = context.pressure;
+  const totalDrop = pressureDropResults.totalSegmentPressureDrop;
+  const direction = pipe.direction ?? "forward";
+
+  const outletPressurePa = totalDrop !== undefined
+    ? (direction === "forward" ? inletPressurePa - totalDrop : inletPressurePa + totalDrop)
+    : undefined;
+
+  const velocity = lengthResult.velocity;
+  const erosionalConstant = pipe.erosionalConstant ?? 100; // Default erosional constant in imperial units
+  const erosionalVelocity = context.density
+    ? (() => {
+        // Convert density from kg/m³ to lb/ft³ for imperial calculation
+        const densityLbPerFt3 = context.density / 16.018463;
+        const sqrtDensityImp = Math.sqrt(densityLbPerFt3);
+        const velocityFtPerS = erosionalConstant / sqrtDensityImp;
+        // Convert velocity from ft/s to m/s
+        return velocityFtPerS * 0.3048;
+      })()
+    : undefined;
+  const flowMomentum = velocity && context.density
+    ? context.density * velocity * velocity
+    : undefined;
+
+  const inletState: pipeState = {
+    pressure: inletPressurePa,
+    temprature: context.temperature,
+    density: context.density,
+    velocity,
+    erosionalVelocity,
+    flowMomentum,
+    // machNumber undefined for liquid
+  };
+
+  const outletState: pipeState = {
+    pressure: outletPressurePa,
+    temprature: context.temperature,
+    density: context.density,
+    velocity,
+    erosionalVelocity,
+    flowMomentum,
+    // machNumber undefined for liquid
+  };
+
+  return {
+    inletState,
+    outletState,
+  };
+}
+
 function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {
   const fluid = pipe.fluid;
   if (!fluid) {
@@ -334,7 +399,9 @@ function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {
   const pressure =
     convertScalar(pipe.boundaryPressure, pipe.boundaryPressureUnit, "Pa") ??
     DEFAULT_PRESSURE_PA;
-  const temperature = DEFAULT_TEMPERATURE_K;
+  const temperature =
+    convertScalar(pipe.boundaryTemperature, pipe.boundaryTemperatureUnit, "K") ??
+    DEFAULT_TEMPERATURE_K;
 
   const sectionBase: HydraulicContext["sectionBase"] = {
     volumetricFlowRate,
