@@ -15,6 +15,7 @@ import type {
   resultSummary,
   pipeState,
   ControlValve,
+  Orifice,
 } from "./types";
 
 const DEFAULT_TEMPERATURE_K = 298.15;
@@ -56,6 +57,13 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
     resultSummary = calculateResultSummary(pipe, context, {}, pressureDropResults);
     if (updatedControlValve) {
       pipe = { ...pipe, controlValve: updatedControlValve };
+    }
+  } else if (pipe.pipeSectionType === "orifice") {
+    const { results, updatedOrifice } = calculateOrificePressureDrop(pipe, context);
+    pressureDropResults = results;
+    resultSummary = calculateResultSummary(pipe, context, {}, pressureDropResults);
+    if (updatedOrifice) {
+      pipe = { ...pipe, orifice: updatedOrifice };
     }
   } else {
     // Default to pipeline calculation
@@ -386,6 +394,83 @@ function calculateControlValvePressureDrop(
   };
 
   return { results, updatedControlValve };
+}
+
+function calculateOrificePressureDrop(
+  pipe: PipeProps,
+  context: HydraulicContext | null
+): { results: PressureDropCalculationResults | undefined; updatedOrifice: Orifice | undefined } {
+  if (!context || !pipe.orifice) {
+    return { results: undefined, updatedOrifice: undefined };
+  }
+
+  const orifice = pipe.orifice;
+  const betaRatio = orifice.betaRatio;
+  const pipeDiameter = context.pipeDiameter;
+  const viscosity = context.viscosity;
+
+  if (!isPositive(betaRatio) || betaRatio >= 1 || !isPositive(pipeDiameter) || !isPositive(viscosity)) {
+    return { results: undefined, updatedOrifice: orifice };
+  }
+
+  const area = (Math.PI * pipeDiameter * pipeDiameter) / 4;
+  if (!isPositive(area)) {
+    return { results: undefined, updatedOrifice: orifice };
+  }
+
+  const velocity = context.volumetricFlowRate / area;
+  if (!Number.isFinite(velocity)) {
+    return { results: undefined, updatedOrifice: orifice };
+  }
+
+  const reynolds = (context.density * velocity * pipeDiameter) / viscosity;
+  if (!isPositive(reynolds)) {
+    return { results: undefined, updatedOrifice: orifice };
+  }
+
+  const orificeResult = calculateSharpEdgedPlateOrificePressureDrop({
+    beta: betaRatio,
+    reynolds,
+    density: context.density,
+    velocity,
+  });
+
+  if (!orificeResult) {
+    return { results: undefined, updatedOrifice: orifice };
+  }
+
+  const pressureDrop = orificeResult.pressureDrop;
+  const updatedOrifice: Orifice = { ...orifice };
+  const displayUnit = updatedOrifice.pressureDropUnit ?? "kPa";
+  const convertedPressureDrop = convertScalar(pressureDrop, "Pa", displayUnit);
+  if (convertedPressureDrop === undefined) {
+    updatedOrifice.pressureDrop = pressureDrop;
+    updatedOrifice.pressureDropUnit = "Pa";
+  } else {
+    updatedOrifice.pressureDrop = convertedPressureDrop;
+    updatedOrifice.pressureDropUnit = displayUnit;
+  }
+
+  const results: PressureDropCalculationResults = {
+    pipeLengthK: 0,
+    fittingK: 0,
+    userK: 0,
+    pipingFittingSafetyFactor: 1,
+    totalK: 0,
+    reynoldsNumber: reynolds,
+    frictionalFactor: 0,
+    flowScheme: reynolds <= 2500 ? "laminar" : "turbulent",
+    pipeAndFittingPressureDrop: 0,
+    elevationPressureDrop: 0,
+    controlValvePressureDrop: 0,
+    orificePressureDrop: pressureDrop,
+    userSpecifiedPressureDrop: 0,
+    totalSegmentPressureDrop: pressureDrop,
+    normalizedPressureDrop: 0,
+    gasFlowCriticalPressure: 0,
+  };
+
+  return { results, updatedOrifice };
 }
 
 function calculateResultSummary(

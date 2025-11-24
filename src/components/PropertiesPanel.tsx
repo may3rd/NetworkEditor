@@ -92,6 +92,16 @@ export function PropertiesPanel({
     controlValveCalculatedPressureDropPa === undefined
       ? ""
       : convertUnit(controlValveCalculatedPressureDropPa, "Pa", controlValvePressureDropUnit);
+  const orificePressureDropUnit = pipe?.orifice?.pressureDropUnit ?? "kPa";
+  const orificeCalculatedPressureDropPa =
+    pipe?.pressureDropCalculationResults?.orificePressureDrop ??
+    (pipe?.orifice?.pressureDrop !== undefined
+      ? convertUnit(pipe.orifice.pressureDrop, pipe.orifice.pressureDropUnit ?? "kPa", "Pa")
+      : undefined);
+  const orificePressureDropDisplayValue =
+    orificeCalculatedPressureDropPa === undefined
+      ? ""
+      : convertUnit(orificeCalculatedPressureDropPa, "Pa", orificePressureDropUnit);
 
   const updatePipeFittings = (nextFittings: FittingType[]) => {
     if (!pipe) return;
@@ -1000,11 +1010,92 @@ export function PropertiesPanel({
           )}
 
           {pipe?.pipeSectionType === "orifice" && (
-            <Stack gap={1}>
-              <Text fontSize="sm" color="gray.500">
-                Orifice
-              </Text>
-            </Stack>
+            <>
+              <Stack gap={1}>
+                <Text fontSize="sm" color="gray.500">
+                  Beta Ratio (β = d / D)
+                </Text>
+                <Input
+                  type="number"
+                  step="any"
+                  min="0"
+                  max="1"
+                  value={pipe.orifice?.betaRatio ?? ""}
+                  onChange={(event) => {
+                    const value =
+                      event.target.value === "" ? undefined : Number(event.target.value);
+                    const normalizedValue =
+                      value !== undefined && Number.isFinite(value) ? value : undefined;
+                    onUpdatePipe(pipe.id, (currentPipe) => {
+                      const currentOrifice =
+                        currentPipe.orifice ?? {
+                          id: currentPipe.id,
+                          tag: currentPipe.id,
+                        };
+                      return {
+                        orifice: {
+                          ...currentOrifice,
+                          betaRatio: normalizedValue,
+                          pressureDrop: undefined,
+                        },
+                        pressureDropCalculationResults: undefined,
+                        resultSummary: undefined,
+                      };
+                    });
+                  }}
+                />
+              </Stack>
+
+              <Stack gap={1}>
+                <Text fontSize="sm" color="gray.500">
+                  Calculated Pressure Drop
+                </Text>
+                <Stack direction="row" gap={2}>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={orificePressureDropDisplayValue}
+                    readOnly
+                  />
+                  <Select
+                    value={orificePressureDropUnit}
+                    onChange={(event) => {
+                      const nextUnit = event.target.value;
+                      onUpdatePipe(pipe.id, (currentPipe) => {
+                        const currentOrifice =
+                          currentPipe.orifice ?? {
+                            id: currentPipe.id,
+                            tag: currentPipe.id,
+                          };
+                        const orificeUnit = currentOrifice.pressureDropUnit ?? "kPa";
+                        const pressureDropPa =
+                          currentPipe.pressureDropCalculationResults?.orificePressureDrop ??
+                          (currentOrifice.pressureDrop !== undefined
+                            ? convertUnit(currentOrifice.pressureDrop, orificeUnit, "Pa")
+                            : undefined);
+                        const converted =
+                          pressureDropPa === undefined
+                            ? undefined
+                            : convertUnit(pressureDropPa, "Pa", nextUnit);
+                        return {
+                          orifice: {
+                            ...currentOrifice,
+                            pressureDrop: converted,
+                            pressureDropUnit: nextUnit,
+                          },
+                        };
+                      });
+                    }}
+                  >
+                    {QUANTITY_UNIT_OPTIONS.pressureDrop.map((unitOption) => (
+                      <option key={unitOption} value={unitOption}>
+                        {unitOption}
+                      </option>
+                    ))}
+                  </Select>
+                </Stack>
+              </Stack>
+            </>
           )}
         </Stack>
       )}
