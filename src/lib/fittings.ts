@@ -2,9 +2,17 @@ import {
   calculateFittingLosses,
   type FittingCalculationArgs,
 } from "./calculations/fittingCalculation";
-import { darcyFrictionFactor } from "./calculations/basicCaculations";
+import {
+  STANDARD_GRAVITY,
+  darcyFrictionFactor,
+  determineFlowScheme,
+} from "./calculations/basicCaculations";
 import { convertUnit } from "./unitConversion";
-import type { FittingType, PipeProps } from "./types";
+import type {
+  FittingType,
+  PipeProps,
+  PressureDropCalculationResults,
+} from "./types";
 
 const DEFAULT_TEMPERATURE_K = 298.15;
 const DEFAULT_PRESSURE_PA = 101_325;
@@ -25,10 +33,25 @@ type HydraulicContext = {
   roughness?: number;
 };
 
+type PipeLengthComputation = {
+  pipeLengthK?: number;
+  totalK?: number;
+  equivalentLength?: number;
+  reynolds?: number;
+  frictionFactor?: number;
+  velocity?: number;
+};
+
 export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
   const context = buildHydraulicContext(pipe);
   const fittingResult = computeFittingContribution(pipe, context);
   const pipeResult = computePipeLengthContribution(pipe, context, fittingResult.fittingK);
+  const pressureDropResults = calculatePressureDropResults(
+    pipe,
+    context,
+    pipeResult,
+    fittingResult.fittingK
+  );
 
   return {
     ...pipe,
@@ -37,6 +60,7 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
     totalK: pipeResult.totalK,
     equivalentLength: pipeResult.equivalentLength,
     fittings: fittingResult.fittings,
+    pressureDropCalculationResults: pressureDropResults,
   };
 }
 
@@ -116,13 +140,9 @@ function computePipeLengthContribution(
   pipe: PipeProps,
   context: HydraulicContext | null,
   fittingK?: number
-) {
+): PipeLengthComputation {
   if (!context) {
-    return {
-      pipeLengthK: undefined,
-      totalK: undefined,
-      equivalentLength: undefined,
-    };
+    return {};
   }
 
   const length = context.length;
@@ -130,11 +150,7 @@ function computePipeLengthContribution(
 
   if (length === undefined) {
     const totalK = applyUserAndSafety(pipe, undefined, fittingK);
-    return {
-      pipeLengthK: undefined,
-      totalK,
-      equivalentLength: undefined,
-    };
+    return { totalK };
   }
 
   if (length === 0) {
@@ -143,34 +159,25 @@ function computePipeLengthContribution(
       pipeLengthK: 0,
       totalK,
       equivalentLength: undefined,
+      velocity: undefined,
+      reynolds: undefined,
+      frictionFactor: undefined,
     };
   }
 
   const area = 0.25 * Math.PI * diameter * diameter;
   if (area <= 0) {
-    return {
-      pipeLengthK: undefined,
-      totalK: undefined,
-      equivalentLength: undefined,
-    };
+    return {};
   }
 
   const velocity = context.volumetricFlowRate / area;
   if (!Number.isFinite(velocity)) {
-    return {
-      pipeLengthK: undefined,
-      totalK: undefined,
-      equivalentLength: undefined,
-    };
+    return {};
   }
 
   const reynolds = (context.density * Math.abs(velocity) * diameter) / context.viscosity;
   if (!isPositive(reynolds)) {
-    return {
-      pipeLengthK: undefined,
-      totalK: undefined,
-      equivalentLength: undefined,
-    };
+    return { velocity };
   }
 
   const relativeRoughness =
@@ -183,11 +190,7 @@ function computePipeLengthContribution(
       relativeRoughness,
     });
   } catch {
-    return {
-      pipeLengthK: undefined,
-      totalK: undefined,
-      equivalentLength: undefined,
-    };
+    return { velocity, reynolds };
   }
 
   if (!Number.isFinite(friction) || friction <= 0) {
@@ -195,7 +198,9 @@ function computePipeLengthContribution(
     return {
       pipeLengthK: 0,
       totalK,
-      equivalentLength: undefined,
+      velocity,
+      reynolds,
+      frictionFactor: friction,
     };
   }
 
@@ -208,7 +213,84 @@ function computePipeLengthContribution(
     pipeLengthK,
     totalK,
     equivalentLength,
+    velocity,
+    reynolds,
+    frictionFactor: friction,
   };
+}
+
+function calculatePressureDropResults(
+  pipe: PipeProps,
+  context: HydraulicContext | null,
+  lengthResult: PipeLengthComputation,
+  fittingK?: number
+): PressureDropCalculationResults | undefined {
+  if (!context) {
+    return undefined;
+  }
+
+  const totalK = lengthResult.totalK;
+  const density = context.density;
+  const velocity = lengthResult.velocity;
+
+  let pipeAndFittingPressureDrop: number | undefined;
+  if (isPositive(totalK) && typeof velocity === "number") {
+    pipeAndFittingPressureDrop = totalK * density * velocity * velocity * 0.5;
+  }
+
+  const elevationMeters = convertScalar(
+    pipe.elevation,
+    pipe.elevationUnit ?? "m",
+    "m"
+  );
+  const elevationPressureDrop =
+    typeof elevationMeters === "number"
+      ? density * STANDARD_GRAVITY * elevationMeters
+      : undefined;
+
+  const totalSegmentPressureDrop =
+    pipeAndFittingPressureDrop === undefined && elevationPressureDrop === undefined
+      ? undefined
+      : (pipeAndFittingPressureDrop ?? 0) + (elevationPressureDrop ?? 0);
+
+  const normalizedPressureDrop =
+    pipeAndFittingPressureDrop !== undefined &&
+    typeof lengthResult.equivalentLength === "number" &&
+    lengthResult.equivalentLength > 0
+      ? pipeAndFittingPressureDrop / lengthResult.equivalentLength
+      : undefined;
+
+  const reynoldsNumber = lengthResult.reynolds;
+  const flowScheme =
+    typeof reynoldsNumber === "number"
+      ? determineFlowScheme(reynoldsNumber)
+      : undefined;
+
+  const userK =
+    typeof pipe.userK === "number" && Number.isFinite(pipe.userK)
+      ? pipe.userK
+      : undefined;
+
+  const results: PressureDropCalculationResults = {
+    pipeLengthK: lengthResult.pipeLengthK,
+    fittingK,
+    userK,
+    pipingFittingSafetyFactor: pipe.pipingFittingSafetyFactor,
+    totalK,
+    reynoldsNumber,
+    frictionalFactor: lengthResult.frictionFactor,
+    flowScheme,
+    pipeAndFittingPressureDrop,
+    elevationPressureDrop,
+    controlValvePressureDrop: undefined,
+    orificePressureDrop: undefined,
+    userSpecifiedPressureDrop: undefined,
+    totalSegmentPressureDrop,
+    normalizedPressureDrop,
+    gasFlowCriticalPressure: undefined,
+  };
+
+  return results;
 }
 
 function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {

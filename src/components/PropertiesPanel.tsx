@@ -514,6 +514,8 @@ export function PropertiesPanel({
             </Stack>
           )}
 
+          // todo
+
           <QuantityInput
             label="Pipe Roughness"
             value={pipe.roughness ?? ""}
