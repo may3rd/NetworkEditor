@@ -62,6 +62,8 @@ export type PressureDropCalculationResults = {
 
 export type NodePatch = Partial<NodeProps> | ((node: NodeProps) => Partial<NodeProps>);
 
+export type PipePatch = Partial<PipeProps> | ((pipe: PipeProps) => Partial<PipeProps>);
+
 export type PipeProps = {
   id: string;
   startNodeId: string;

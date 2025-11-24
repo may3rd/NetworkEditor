@@ -124,9 +124,22 @@ export function NetworkEditor({
   const rfEdges = useMemo<Edge[]>(
     () =>
       network.pipes.map((pipe) => {
-        const roundedLength = typeof pipe.length === "number" ? pipe.length.toFixed(3) : Number(pipe.length ?? 0).toFixed(3);
-        let label = `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim();
-        if (showPressures && pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined) {
+        let label: string;
+        if (pipe.pipeSectionType === "control valve") {
+          label = "CV";
+        } else if (pipe.pipeSectionType === "orifice") {
+          label = "RO";
+        } else {
+          const roundedLength =
+            typeof pipe.length === "number"
+              ? pipe.length.toFixed(3)
+              : Number(pipe.length ?? 0).toFixed(3);
+          label = `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim();
+        }
+        if (
+          showPressures &&
+          pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined
+        ) {
           const deltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000; // Pa to kPa
           label += `\nΔP: ${deltaP.toFixed(1)} kPa`;
         }

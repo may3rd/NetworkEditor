@@ -355,8 +355,15 @@ function calculateControlValvePressureDrop(
     const pressureDropPsi = (volumetricFlowGpm / controlValve.cv) ** 2 * specificGravity;
     pressureDrop = pressureDropPsi * 6894.76; // psi to Pa
     calculatedCv = controlValve.cv;
-    updatedControlValve.pressure_drop = pressureDrop;
-    updatedControlValve.pressureDropUnit = "Pa";
+    const displayUnit = controlValve.pressureDropUnit ?? "kPa";
+    const convertedPressureDrop = convertScalar(pressureDrop, "Pa", displayUnit);
+    if (convertedPressureDrop === undefined) {
+      updatedControlValve.pressure_drop = pressureDrop;
+      updatedControlValve.pressureDropUnit = "Pa";
+    } else {
+      updatedControlValve.pressure_drop = convertedPressureDrop;
+      updatedControlValve.pressureDropUnit = displayUnit;
+    }
   }
 
   const results: PressureDropCalculationResults = {

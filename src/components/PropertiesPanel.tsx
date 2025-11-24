@@ -28,7 +28,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
-import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, SelectedElement } from "@/lib/types";
+import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, PipePatch, SelectedElement } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 
 const PIPE_SECTION_TYPE = ["pipeline", "control valve", "orifice"] as const;
@@ -38,7 +38,7 @@ type Props = {
   network: NetworkState;
   selected: SelectedElement;
   onUpdateNode: (id: string, patch: NodePatch) => void;
-  onUpdatePipe: (id: string, patch: Partial<PipeProps>) => void;
+  onUpdatePipe: (id: string, patch: PipePatch) => void;
   onReset: () => void;
 };
 
@@ -78,6 +78,20 @@ export function PropertiesPanel({
       : "";
   const pipeFittings = pipe?.fittings ?? [];
   const defaultFittingOption = PIPE_FITTING_OPTIONS[0]?.value ?? "elbow_45";
+  const controlValvePressureDropUnit = pipe?.controlValve?.pressureDropUnit ?? "kPa";
+  const controlValveCalculatedPressureDropPa =
+    pipe?.pressureDropCalculationResults?.controlValvePressureDrop ??
+    (pipe?.controlValve?.pressure_drop !== undefined
+      ? convertUnit(
+          pipe.controlValve.pressure_drop,
+          pipe.controlValve.pressureDropUnit ?? "kPa",
+          "Pa"
+        )
+      : undefined);
+  const controlValvePressureDropDisplayValue =
+    controlValveCalculatedPressureDropPa === undefined
+      ? ""
+      : convertUnit(controlValveCalculatedPressureDropPa, "Pa", controlValvePressureDropUnit);
 
   const updatePipeFittings = (nextFittings: FittingType[]) => {
     if (!pipe) return;
@@ -853,28 +867,73 @@ export function PropertiesPanel({
                       value={pipe.controlValve?.cv ?? ""}
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
-                        onUpdatePipe(pipe.id, {
-                          controlValve: {
-                            id: pipe.controlValve?.id || pipe.id,
-                            tag: pipe.controlValve?.tag || pipe.id,
-                            ...pipe.controlValve,
-                            cv: value,
-                            pressure_drop: undefined, // Clear the other input
-                          },
+                        onUpdatePipe(pipe.id, (currentPipe) => {
+                          const currentValve =
+                            currentPipe.controlValve ?? {
+                              id: currentPipe.id,
+                              tag: currentPipe.id,
+                            };
+                          return {
+                            controlValve: {
+                              ...currentValve,
+                              cv: value,
+                              pressure_drop: undefined, // Clear the other input
+                            },
+                            pressureDropCalculationResults: undefined,
+                            resultSummary: undefined,
+                          };
                         });
                       }}
                     />
                   </Stack>
                   <Stack gap={1}>
                     <Text fontSize="sm" color="gray.500">
-                      Calculated Pressure Drop (Pa)
+                      Calculated Pressure Drop
                     </Text>
-                    <Input
-                      type="number"
-                      step="any"
-                      value={pipe.pressureDropCalculationResults?.controlValvePressureDrop ?? ""}
-                      readOnly
-                    />
+                    <Stack direction="row" gap={2}>
+                      <Input
+                        type="number"
+                        step="any"
+                        value={controlValvePressureDropDisplayValue}
+                        readOnly
+                      />
+                      <Select
+                        value={controlValvePressureDropUnit}
+                        onChange={(event) => {
+                          const nextUnit = event.target.value;
+                          onUpdatePipe(pipe.id, (currentPipe) => {
+                            const currentValve =
+                              currentPipe.controlValve ?? {
+                                id: currentPipe.id,
+                                tag: currentPipe.id,
+                              };
+                            const valveUnit = currentValve.pressureDropUnit ?? "kPa";
+                            const pressureDropPa =
+                              currentPipe.pressureDropCalculationResults?.controlValvePressureDrop ??
+                              (currentValve.pressure_drop !== undefined
+                                ? convertUnit(currentValve.pressure_drop, valveUnit, "Pa")
+                                : undefined);
+                            const converted =
+                              pressureDropPa === undefined
+                                ? undefined
+                                : convertUnit(pressureDropPa, "Pa", nextUnit);
+                            return {
+                              controlValve: {
+                                ...currentValve,
+                                pressure_drop: converted,
+                                pressureDropUnit: nextUnit,
+                              },
+                            };
+                          });
+                        }}
+                      >
+                        {QUANTITY_UNIT_OPTIONS.pressureDrop.map((unitOption) => (
+                          <option key={unitOption} value={unitOption}>
+                            {unitOption}
+                          </option>
+                        ))}
+                      </Select>
+                    </Stack>
                   </Stack>
                 </>
               )}
@@ -884,31 +943,43 @@ export function PropertiesPanel({
                   <QuantityInput
                     label="Pressure Drop"
                     value={pipe.controlValve?.pressure_drop ?? ""}
-                    unit={pipe.controlValve?.pressureDropUnit ?? "kPa"}
+                    unit={controlValvePressureDropUnit}
                     units={QUANTITY_UNIT_OPTIONS.pressureDrop}
                     unitFamily="pressureDrop"
                     onValueChange={(newValue) => {
-                      const normalizedValue = Number.isFinite(newValue) ? newValue : undefined;
-                      const hasUnit = Boolean(pipe.controlValve?.pressureDropUnit);
-                      onUpdatePipe(pipe.id, {
-                        controlValve: {
-                          id: pipe.controlValve?.id || pipe.id,
-                          tag: pipe.controlValve?.tag || pipe.id,
-                          ...pipe.controlValve,
-                          pressure_drop: normalizedValue,
-                          ...(hasUnit ? {} : { pressureDropUnit: "kPa" }),
-                          cv: undefined, // Clear the other input
-                        },
+                      onUpdatePipe(pipe.id, (currentPipe) => {
+                        const currentValve =
+                          currentPipe.controlValve ?? {
+                            id: currentPipe.id,
+                            tag: currentPipe.id,
+                          };
+                        return {
+                          controlValve: {
+                            ...currentValve,
+                            pressure_drop: newValue,
+                            pressureDropUnit: currentValve.pressureDropUnit ?? "kPa",
+                            cv: undefined,
+                          },
+                          pressureDropCalculationResults: undefined,
+                          resultSummary: undefined,
+                        };
                       });
                     }}
                     onUnitChange={(newUnit) => {
-                      onUpdatePipe(pipe.id, {
-                        controlValve: {
-                          id: pipe.controlValve?.id || pipe.id,
-                          tag: pipe.controlValve?.tag || pipe.id,
-                          ...pipe.controlValve,
-                          pressureDropUnit: newUnit,
-                        },
+                      onUpdatePipe(pipe.id, (currentPipe) => {
+                        const currentValve =
+                          currentPipe.controlValve ?? {
+                            id: currentPipe.id,
+                            tag: currentPipe.id,
+                          };
+                        return {
+                          controlValve: {
+                            ...currentValve,
+                            pressureDropUnit: newUnit,
+                          },
+                          pressureDropCalculationResults: undefined,
+                          resultSummary: undefined,
+                        };
                       });
                     }}
                   />

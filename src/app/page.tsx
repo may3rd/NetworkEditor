@@ -10,6 +10,7 @@ import {
   createInitialNetwork,
   NetworkState,
   NodePatch,
+  PipePatch,
   SelectedElement,
   NodeProps,
   PipeProps,
@@ -220,12 +221,18 @@ export default function Home() {
               };
             })
           }
-          onUpdatePipe={(id, patch) =>
+          onUpdatePipe={(id, patch: PipePatch) =>
             setNetwork(current => ({
               ...current,
-              pipes: current.pipes.map(pipe =>
-                pipe.id === id ? recalculatePipeFittingLosses({ ...pipe, ...patch }) : pipe
-              ),
+              pipes: current.pipes.map(pipe => {
+                if (pipe.id !== id) return pipe;
+                const pipePatch = typeof patch === "function" ? patch(pipe) : patch;
+                const updatedPipe = { ...pipe, ...pipePatch };
+                if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
+                  return updatedPipe;
+                }
+                return recalculatePipeFittingLosses(updatedPipe);
+              }),
             }))
           }
           onReset={handleReset}
