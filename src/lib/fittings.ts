@@ -14,6 +14,7 @@ import type {
   PressureDropCalculationResults,
   resultSummary,
   pipeState,
+  ControlValve,
 } from "./types";
 
 const DEFAULT_TEMPERATURE_K = 298.15;
@@ -45,24 +46,43 @@ type PipeLengthComputation = {
 
 export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
   const context = buildHydraulicContext(pipe);
-  const fittingResult = computeFittingContribution(pipe, context);
-  const pipeResult = computePipeLengthContribution(pipe, context, fittingResult.fittingK);
-  const pressureDropResults = calculatePressureDropResults(
-    pipe,
-    context,
-    pipeResult,
-    fittingResult.fittingK
-  );
 
-  const resultSummary = calculateResultSummary(pipe, context, pipeResult, pressureDropResults);
+  let pressureDropResults: PressureDropCalculationResults | undefined;
+  let resultSummary: resultSummary | undefined;
+
+  if (pipe.pipeSectionType === "control valve") {
+    const { results, updatedControlValve } = calculateControlValvePressureDrop(pipe, context);
+    pressureDropResults = results;
+    resultSummary = calculateResultSummary(pipe, context, {}, pressureDropResults);
+    if (updatedControlValve) {
+      pipe = { ...pipe, controlValve: updatedControlValve };
+    }
+  } else {
+    // Default to pipeline calculation
+    const fittingResult = computeFittingContribution(pipe, context);
+    const pipeResult = computePipeLengthContribution(pipe, context, fittingResult.fittingK);
+    pressureDropResults = calculatePressureDropResults(
+      pipe,
+      context,
+      pipeResult,
+      fittingResult.fittingK
+    );
+    resultSummary = calculateResultSummary(pipe, context, pipeResult, pressureDropResults);
+
+    return {
+      ...pipe,
+      fittingK: fittingResult.fittingK,
+      pipeLengthK: pipeResult.pipeLengthK,
+      totalK: pipeResult.totalK,
+      equivalentLength: pipeResult.equivalentLength,
+      fittings: fittingResult.fittings,
+      pressureDropCalculationResults: pressureDropResults,
+      resultSummary,
+    };
+  }
 
   return {
     ...pipe,
-    fittingK: fittingResult.fittingK,
-    pipeLengthK: pipeResult.pipeLengthK,
-    totalK: pipeResult.totalK,
-    equivalentLength: pipeResult.equivalentLength,
-    fittings: fittingResult.fittings,
     pressureDropCalculationResults: pressureDropResults,
     resultSummary,
   };
@@ -304,6 +324,61 @@ function calculatePressureDropResults(
   };
 
   return results;
+}
+
+function calculateControlValvePressureDrop(
+  pipe: PipeProps,
+  context: HydraulicContext | null
+): { results: PressureDropCalculationResults | undefined; updatedControlValve: ControlValve | undefined } {
+  if (!context || !pipe.controlValve) {
+    return { results: undefined, updatedControlValve: undefined };
+  }
+
+  const controlValve = pipe.controlValve;
+  const density = context.density;
+  const volumetricFlowGpm = context.volumetricFlowRate * 264.172; // m³/s to gpm
+  const specificGravity = density / 1000; // kg/m³ to SG (water = 1000)
+
+  let pressureDrop: number | undefined;
+  let calculatedCv: number | undefined;
+  let updatedControlValve = { ...controlValve };
+
+  if (controlValve.pressure_drop !== undefined && controlValve.pressure_drop > 0) {
+    // Calculate Cv from pressure drop
+    const pressureDropPa = convertScalar(controlValve.pressure_drop, controlValve.pressureDropUnit ?? "Pa", "Pa") ?? controlValve.pressure_drop;
+    const pressureDropPsi = pressureDropPa / 6894.76; // Pa to psi
+    calculatedCv = volumetricFlowGpm / Math.sqrt(pressureDropPsi / specificGravity);
+    pressureDrop = pressureDropPa;
+    updatedControlValve.cv = calculatedCv;
+  } else if (controlValve.cv && controlValve.cv > 0) {
+    // Calculate pressure drop from Cv
+    const pressureDropPsi = (volumetricFlowGpm / controlValve.cv) ** 2 * specificGravity;
+    pressureDrop = pressureDropPsi * 6894.76; // psi to Pa
+    calculatedCv = controlValve.cv;
+    updatedControlValve.pressure_drop = pressureDrop;
+    updatedControlValve.pressureDropUnit = "Pa";
+  }
+
+  const results: PressureDropCalculationResults = {
+    pipeLengthK: 0,
+    fittingK: 0,
+    userK: 0,
+    pipingFittingSafetyFactor: 1,
+    totalK: 0,
+    reynoldsNumber: 0,
+    frictionalFactor: 0,
+    flowScheme: "laminar",
+    pipeAndFittingPressureDrop: 0,
+    elevationPressureDrop: 0,
+    controlValvePressureDrop: pressureDrop,
+    orificePressureDrop: 0,
+    userSpecifiedPressureDrop: 0,
+    totalSegmentPressureDrop: pressureDrop,
+    normalizedPressureDrop: 0,
+    gasFlowCriticalPressure: 0,
+  };
+
+  return { results, updatedControlValve };
 }
 
 function calculateResultSummary(

@@ -886,7 +886,7 @@ export function PropertiesPanel({
                     value={pipe.controlValve?.pressure_drop ?? ""}
                     unit={pipe.controlValve?.pressureDropUnit ?? "kPa"}
                     units={QUANTITY_UNIT_OPTIONS.pressureDrop}
-                    unitFamily="pressure"
+                    unitFamily="pressureDrop"
                     onValueChange={(newValue) => {
                       const normalizedValue = Number.isFinite(newValue) ? newValue : undefined;
                       const hasUnit = Boolean(pipe.controlValve?.pressureDropUnit);

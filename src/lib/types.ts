@@ -138,6 +138,7 @@ export type ControlValve = {
   cv?: number,
   cg?: number,
   pressure_drop?: number,
+  pressureDropUnit?: string,
   C1?: number,
   FL?: number,
   Fd?: number,
