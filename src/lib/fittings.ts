@@ -1,0 +1,378 @@
+import {
+  calculateFittingLosses,
+  type FittingCalculationArgs,
+} from "./calculations/fittingCalculation";
+import { darcyFrictionFactor } from "./calculations/basicCaculations";
+import { convertUnit } from "./unitConversion";
+import type { FittingType, PipeProps } from "./types";
+
+const DEFAULT_TEMPERATURE_K = 298.15;
+const DEFAULT_PRESSURE_PA = 101_325;
+const UNIT_ALIASES: Record<string, string> = {
+  "tonn/day": "ton/day",
+};
+
+type HydraulicContext = {
+  fluidArgs: FittingCalculationArgs["fluid"];
+  sectionBase: Omit<FittingCalculationArgs["section"], "fittings">;
+  density: number;
+  viscosity: number;
+  pipeDiameter: number;
+  volumetricFlowRate: number;
+  temperature: number;
+  pressure: number;
+  length?: number;
+  roughness?: number;
+};
+
+export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
+  const context = buildHydraulicContext(pipe);
+  const fittingResult = computeFittingContribution(pipe, context);
+  const pipeResult = computePipeLengthContribution(pipe, context, fittingResult.fittingK);
+
+  return {
+    ...pipe,
+    fittingK: fittingResult.fittingK,
+    pipeLengthK: pipeResult.pipeLengthK,
+    totalK: pipeResult.totalK,
+    equivalentLength: pipeResult.equivalentLength,
+    fittings: fittingResult.fittings,
+  };
+}
+
+function computeFittingContribution(
+  pipe: PipeProps,
+  context: HydraulicContext | null
+): { fittingK?: number; fittings: FittingType[] } {
+  const fittings = pipe.fittings ?? [];
+  if (fittings.length === 0) {
+    return { fittingK: 0, fittings };
+  }
+
+  const activeEntries = fittings
+    .map((fitting, index) => ({ fitting, index }))
+    .filter(({ fitting }) => (fitting.count ?? 0) > 0);
+
+  if (activeEntries.length === 0) {
+    return {
+      fittingK: 0,
+      fittings: fittings.map(resetFittingValues),
+    };
+  }
+
+  if (!context) {
+    return {
+      fittingK: undefined,
+      fittings: fittings.map(resetFittingValues),
+    };
+  }
+
+  try {
+    const section = {
+      ...context.sectionBase,
+      fittings: activeEntries.map(({ fitting }) => ({
+        type: fitting.type,
+        count: Math.max(1, Math.floor(fitting.count ?? 1)),
+      })),
+    };
+    const { totalK, breakdown } = calculateFittingLosses({
+      fluid: context.fluidArgs,
+      section,
+    });
+
+    const breakdownByIndex = new Map<number, FittingType>();
+    breakdown.forEach((entry, idx) => {
+      const originalIndex = activeEntries[idx]?.index;
+      if (originalIndex !== undefined) {
+        breakdownByIndex.set(originalIndex, entry);
+      }
+    });
+
+    const nextFittings = fittings.map((fitting, idx) => {
+      const derived = breakdownByIndex.get(idx);
+      if (!derived) {
+        return resetFittingValues(fitting);
+      }
+      return {
+        ...fitting,
+        k_each: derived.k_each,
+        k_total: derived.k_total,
+      };
+    });
+
+    return {
+      fittingK: totalK,
+      fittings: nextFittings,
+    };
+  } catch {
+    return {
+      fittingK: undefined,
+      fittings: fittings.map(resetFittingValues),
+    };
+  }
+}
+
+function computePipeLengthContribution(
+  pipe: PipeProps,
+  context: HydraulicContext | null,
+  fittingK?: number
+) {
+  if (!context) {
+    return {
+      pipeLengthK: undefined,
+      totalK: undefined,
+      equivalentLength: undefined,
+    };
+  }
+
+  const length = context.length;
+  const diameter = context.pipeDiameter;
+
+  if (length === undefined) {
+    const totalK = applyUserAndSafety(pipe, undefined, fittingK);
+    return {
+      pipeLengthK: undefined,
+      totalK,
+      equivalentLength: undefined,
+    };
+  }
+
+  if (length === 0) {
+    const totalK = applyUserAndSafety(pipe, 0, fittingK);
+    return {
+      pipeLengthK: 0,
+      totalK,
+      equivalentLength: undefined,
+    };
+  }
+
+  const area = 0.25 * Math.PI * diameter * diameter;
+  if (area <= 0) {
+    return {
+      pipeLengthK: undefined,
+      totalK: undefined,
+      equivalentLength: undefined,
+    };
+  }
+
+  const velocity = context.volumetricFlowRate / area;
+  if (!Number.isFinite(velocity)) {
+    return {
+      pipeLengthK: undefined,
+      totalK: undefined,
+      equivalentLength: undefined,
+    };
+  }
+
+  const reynolds = (context.density * Math.abs(velocity) * diameter) / context.viscosity;
+  if (!isPositive(reynolds)) {
+    return {
+      pipeLengthK: undefined,
+      totalK: undefined,
+      equivalentLength: undefined,
+    };
+  }
+
+  const relativeRoughness =
+    context.roughness && context.roughness > 0 ? context.roughness / diameter : 0;
+
+  let friction: number;
+  try {
+    friction = darcyFrictionFactor({
+      reynolds,
+      relativeRoughness,
+    });
+  } catch {
+    return {
+      pipeLengthK: undefined,
+      totalK: undefined,
+      equivalentLength: undefined,
+    };
+  }
+
+  if (!Number.isFinite(friction) || friction <= 0) {
+    const totalK = applyUserAndSafety(pipe, 0, fittingK);
+    return {
+      pipeLengthK: 0,
+      totalK,
+      equivalentLength: undefined,
+    };
+  }
+
+  const pipeLengthK = friction * (length / diameter);
+  const totalK = applyUserAndSafety(pipe, pipeLengthK, fittingK);
+  const equivalentLength =
+    totalK && totalK > 0 ? (totalK * diameter) / friction : undefined;
+
+  return {
+    pipeLengthK,
+    totalK,
+    equivalentLength,
+  };
+}
+
+function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {
+  const fluid = pipe.fluid;
+  if (!fluid) {
+    return null;
+  }
+
+  const density = convertScalar(fluid.density, fluid.densityUnit, "kg/m3");
+  const viscosity = convertScalar(fluid.viscosity, fluid.viscosityUnit, "Pa.s");
+  const massFlow = resolveMassFlow(pipe);
+  const pipeDiameter = resolveDiameter(pipe);
+
+  if (!isPositive(density) || !isPositive(viscosity) || !isPositive(massFlow) || !isPositive(pipeDiameter)) {
+    return null;
+  }
+
+  const volumetricFlowRate = Math.abs(massFlow) / density;
+  if (!isPositive(volumetricFlowRate)) {
+    return null;
+  }
+
+  const inletDiameter = convertLength(
+    pipe.inletDiameter,
+    pipe.inletDiameterUnit ?? pipe.diameterUnit ?? "mm"
+  );
+  const outletDiameter = convertLength(
+    pipe.outletDiameter,
+    pipe.outletDiameterUnit ?? pipe.diameterUnit ?? "mm"
+  );
+  const roughness = convertLength(pipe.roughness, pipe.roughnessUnit ?? "mm", true);
+  const length = convertLength(pipe.length, pipe.lengthUnit ?? "m", true);
+  const pressure =
+    convertScalar(pipe.boundaryPressure, pipe.boundaryPressureUnit, "Pa") ??
+    DEFAULT_PRESSURE_PA;
+  const temperature = DEFAULT_TEMPERATURE_K;
+
+  const sectionBase: HydraulicContext["sectionBase"] = {
+    volumetricFlowRate,
+    temperature,
+    pressure,
+    pipeDiameter,
+    defaultPipeDiameter: pipeDiameter,
+    inletDiameter,
+    outletDiameter,
+    roughness,
+    fittingType: pipe.fittingType ?? "LR",
+    hasPipelineSegment: true,
+    controlValve: pipe.controlValve ?? null,
+    orifice: pipe.orifice ?? null,
+  };
+
+  const fluidArgs = {
+    ...fluid,
+    density,
+    viscosity,
+  };
+
+  return {
+    fluidArgs,
+    sectionBase,
+    density,
+    viscosity,
+    pipeDiameter,
+    volumetricFlowRate,
+    temperature,
+    pressure,
+    length,
+    roughness,
+  };
+}
+
+function resolveMassFlow(pipe: PipeProps): number | undefined {
+  const { massFlowRate, massFlowRateUnit, designMassFlowRate, designMassFlowRateUnit } = pipe;
+  const value =
+    typeof massFlowRate === "number"
+      ? massFlowRate
+      : typeof designMassFlowRate === "number"
+        ? designMassFlowRate
+        : undefined;
+  if (value === undefined) {
+    return undefined;
+  }
+
+  const unit =
+    massFlowRate !== undefined
+      ? massFlowRateUnit ?? "kg/h"
+      : designMassFlowRateUnit ?? massFlowRateUnit ?? "kg/h";
+
+  const converted = convertScalar(value, unit, "kg/s");
+  if (!isPositive(converted)) {
+    return undefined;
+  }
+  return Math.abs(converted);
+}
+
+function resolveDiameter(pipe: PipeProps): number | undefined {
+  if (typeof pipe.diameter === "number") {
+    return convertLength(pipe.diameter, pipe.diameterUnit ?? "mm");
+  }
+  if (typeof pipe.pipeDiameter === "number") {
+    return convertLength(pipe.pipeDiameter, pipe.pipeDiameterUnit ?? "mm");
+  }
+  return undefined;
+}
+
+function convertLength(value?: number, unit?: string, allowZero = false): number | undefined {
+  const converted = convertScalar(value, unit, "m");
+  if (converted === undefined) {
+    return undefined;
+  }
+  if (allowZero) {
+    return converted >= 0 ? converted : undefined;
+  }
+  return converted > 0 ? converted : undefined;
+}
+
+function convertScalar(
+  value?: number | null,
+  unit?: string | null,
+  targetUnit?: string
+): number | undefined {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return undefined;
+  }
+  if (!targetUnit) {
+    return numericValue;
+  }
+  const sourceUnit = unit ?? targetUnit;
+  const normalizedSource =
+    sourceUnit && UNIT_ALIASES[sourceUnit] ? UNIT_ALIASES[sourceUnit] : sourceUnit;
+  const converted = convertUnit(numericValue, normalizedSource, targetUnit);
+  const result = Number(converted);
+  if (!Number.isFinite(result)) {
+    return undefined;
+  }
+  return result;
+}
+
+function resetFittingValues(fitting: FittingType): FittingType {
+  return {
+    ...fitting,
+    k_each: 0,
+    k_total: 0,
+  };
+}
+
+function applyUserAndSafety(pipe: PipeProps, pipeLengthK?: number, fittingK?: number): number | undefined {
+  const userK = typeof pipe.userK === "number" && Number.isFinite(pipe.userK) ? pipe.userK : 0;
+  const base = (pipeLengthK ?? 0) + (fittingK ?? 0) + userK;
+  if (!Number.isFinite(base)) {
+    return undefined;
+  }
+  const safety = typeof pipe.pipingFittingSafetyFactor === "number" && pipe.pipingFittingSafetyFactor > 0
+    ? pipe.pipingFittingSafetyFactor
+    : 1;
+  const adjusted = base * safety;
+  return Number.isFinite(adjusted) ? adjusted : undefined;
+}
+
+function isPositive(value?: number): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
+}

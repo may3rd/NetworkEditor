@@ -15,9 +15,18 @@ import {
   PipeProps,
 } from "@/lib/types";
 import { runHydraulicCalculation } from "@/lib/solverClient";
+import { recalculatePipeFittingLosses } from "@/lib/fittings";
+
+const createNetworkWithDerivedValues = () =>
+  applyFittingLosses(createInitialNetwork());
+
+const applyFittingLosses = (network: NetworkState): NetworkState => ({
+  ...network,
+  pipes: network.pipes.map(recalculatePipeFittingLosses),
+});
 
 export default function Home() {
-  const [network, setNetwork] = useState<NetworkState>(() => createInitialNetwork());
+  const [network, setNetwork] = useState<NetworkState>(() => createNetworkWithDerivedValues());
   const [isSolving, setIsSolving] = useState(false);
 
   // Selection state
@@ -31,7 +40,7 @@ export default function Home() {
   // Multi-step Undo/Redo – fixed logic
   // ──────────────────────────────────────────────────────────────
   const HISTORY_LIMIT = 20;
-  const [history, setHistory] = useState<NetworkState[]>([createInitialNetwork()]);
+  const [history, setHistory] = useState<NetworkState[]>([createNetworkWithDerivedValues()]);
   const [historyIndex, setHistoryIndex] = useState<number>(0); // start at 0
 
   // Only push new state when the network actually changes (deep compare)
@@ -80,7 +89,7 @@ export default function Home() {
     try {
       setIsSolving(true);
       const response = await runHydraulicCalculation(network);
-      setNetwork(response.network);
+      setNetwork(applyFittingLosses(response.network));
       setLastSolvedAt(new Date().toLocaleTimeString());
     } finally {
       setIsSolving(false);
@@ -117,7 +126,7 @@ export default function Home() {
   }, []);
 
   const handleReset = () => {
-    setNetwork(createInitialNetwork());
+    setNetwork(createNetworkWithDerivedValues());
     setSelection(null);
     setSelectedId(null);
     setSelectedType(null);
@@ -195,7 +204,10 @@ export default function Home() {
                   pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
                 }
 
-                return Object.keys(pipePatch).length > 0 ? { ...pipe, ...pipePatch } : pipe;
+                if (Object.keys(pipePatch).length === 0) {
+                  return pipe;
+                }
+                return recalculatePipeFittingLosses({ ...pipe, ...pipePatch });
               });
 
               return {
@@ -209,7 +221,7 @@ export default function Home() {
             setNetwork(current => ({
               ...current,
               pipes: current.pipes.map(pipe =>
-                pipe.id === id ? { ...pipe, ...patch } : pipe
+                pipe.id === id ? recalculatePipeFittingLosses({ ...pipe, ...patch }) : pipe
               ),
             }))
           }
