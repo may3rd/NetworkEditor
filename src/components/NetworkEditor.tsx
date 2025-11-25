@@ -2,6 +2,8 @@
 
 import { useMemo, useCallback, useEffect, useState, useRef } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
+import { Button, ButtonGroup, Typography, Stack, Paper, Box, Checkbox, FormControlLabel, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
+import { Add, Delete, Undo, Redo, Grid3x3, GridOn, PanTool, Speed } from "@mui/icons-material";
 import {
   ReactFlow,
   Background,
@@ -283,13 +285,13 @@ export function NetworkEditor({
     (changes: NodeChange<Node>[]) => {
       // Update local nodes for smooth dragging feedback
       setLocalNodes((nds) => applyNodeChanges(changes, nds));
-  
+
       // Detect drag-end events (dragging: false + position exists)
       const dragEndedChanges = changes.filter(
         (c): c is { id: string; type: "position"; dragging: false; position: { x: number; y: number } } =>
           c.type === "position" && c.dragging === false && c.position !== undefined
       );
-  
+
       if (dragEndedChanges.length > 0) {
         // Persist positions to parent state
         if (onNetworkChange) {
@@ -747,192 +749,118 @@ function EditorCanvas({
       }}
     >
       {/* Toolbar */}
-      <div
-        style={{
-          height: 36,
+      <Stack
+        direction="row"
+        alignItems="center"
+        spacing={2}
+        sx={{
+          height: 48,
+          width: "100%",
           flexShrink: 0,
-          background: "#f8fafc",
-          borderBottom: "1px solid #e2e8f0",
-          display: "flex",
-          alignItems: "center",
-          padding: "0 16px",
+          bgcolor: "#f8fafc",
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          px: 2,
           zIndex: 10,
-          gap: 12,
         }}
       >
-        <button
-          onClick={() => setIsAddingNode((value) => !value)}
-          disabled={!canEditNetwork}
-          style={{
-            background: isAddingNode ? "#3b82f6" : "#0ea5e9",
-            color: "white",
-            border: "none",
-            padding: "4px 10px",
-            borderRadius: 6,
-            fontWeight: "600",
-            fontSize: "12px",
-            cursor: canEditNetwork ? "pointer" : "not-allowed",
-            opacity: canEditNetwork ? 1 : 0.6,
-          }}
-          title="Add node"
-        >
-          ＋ Add Node
-        </button>
-
-        <button
-          onClick={onDelete}
-          disabled={!canEditNetwork || !selectedId}
-          style={{
-            background: selectedId ? "#dc2626" : "#cbd5e1",
-            color: "white",
-            border: "none",
-            padding: "4px 10px",
-            borderRadius: 6,
-            fontWeight: "600",
-            fontSize: "12px",
-            cursor: canEditNetwork && selectedId ? "pointer" : "not-allowed",
-            opacity: canEditNetwork && selectedId ? 1 : 0.6,
-          }}
-          title="Delete selected item"
-        >
-          🗑️ Delete
-        </button>
-
-        <button
-          onClick={onUndo}
-          disabled={!canUndo}
-          style={{
-            background: canUndo ? "#f59e0b" : "#cbd5e1",
-            color: canUndo ? "#000" : "white",
-            border: "none",
-            padding: "4px 8px",
-            borderRadius: 6,
-            fontWeight: "600",
-            fontSize: "12px",
-            cursor: canUndo ? "pointer" : "not-allowed",
-          }}
-          title="Undo (Ctrl+Z)"
-        >
-          ↺ Undo
-        </button>
-
-        <button
-          onClick={onRedo}
-          disabled={!canRedo}
-          style={{
-            background: canRedo ? "#10b981" : "#cbd5e1",
-            color: "white",
-            border: "none",
-            padding: "4px 8px",
-            borderRadius: 6,
-            fontWeight: "600",
-            fontSize: "12px",
-            cursor: canRedo ? "pointer" : "not-allowed",
-          }}
-          title="Redo (Ctrl+Y)"
-        >
-          ↻ Redo
-        </button>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 12 }}>
-          <input
-            id="snap-to-grid"
-            type="checkbox"
-            checked={snapToGrid}
-            onChange={(e) => setSnapToGrid(e.target.checked)}
-            style={{ cursor: "pointer" }}
-          />
-          <label
-            htmlFor="snap-to-grid"
-            style={{
-              fontSize: "11px",
-              color: "#64748b",
-              cursor: "pointer",
-              userSelect: "none",
-            }}
+        <ButtonGroup variant="contained" size="small">
+          <Button
+            onClick={() => setIsAddingNode((value) => !value)}
+            disabled={!canEditNetwork}
+            color={isAddingNode ? "primary" : "info"}
+            startIcon={<Add />}
+            title="Add node"
           >
-            Snap to Grid
-          </label>
-        </div>
+            Add Node
+          </Button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <input
-            id="show-grid"
-            type="checkbox"
-            checked={showGrid}
-            onChange={(e) => setShowGrid(e.target.checked)}
-            style={{ cursor: "pointer" }}
-          />
-          <label
-            htmlFor="show-grid"
-            style={{
-              fontSize: "11px",
-              color: "#64748b",
-              cursor: "pointer",
-              userSelect: "none",
-            }}
+          <Button
+            onClick={onDelete}
+            disabled={!canEditNetwork || !selectedId}
+            color="error"
+            startIcon={<Delete />}
+            title="Delete selected item"
           >
-            Show Grid
-          </label>
-        </div>
+            Delete
+          </Button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <input
-            id="pan-mode-toggle"
-            type="checkbox"
-            checked={panModeEnabled}
-            onChange={(e) => setPanModeEnabled(e.target.checked)}
-            style={{ cursor: "pointer" }}
-          />
-          <label
-            htmlFor="pan-mode-toggle"
-            style={{
-              fontSize: "11px",
-              color: "#64748b",
-              cursor: "pointer",
-              userSelect: "none",
-            }}
+          <Button
+            onClick={onUndo}
+            disabled={!canUndo}
+            color="warning"
+            startIcon={<Undo />}
+            title="Undo (Ctrl+Z)"
           >
-            Pan mode
-          </label>
-        </div>
+            Undo
+          </Button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <input
-            id="show-pressures"
-            type="checkbox"
-            checked={showPressures}
-            onChange={(e) => setShowPressures(e.target.checked)}
-            style={{ cursor: "pointer" }}
-          />
-          <label
-            htmlFor="show-pressures"
-            style={{
-              fontSize: "11px",
-              color: "#64748b",
-              cursor: "pointer",
-              userSelect: "none",
-            }}
+          <Button
+            onClick={onRedo}
+            disabled={!canRedo}
+            color="success"
+            startIcon={<Redo />}
+            title="Redo (Ctrl+Y)"
           >
-            Show Pressures
-          </label>
-        </div>
+            Redo
+          </Button>
+        </ButtonGroup>
 
-        <div style={{ fontSize: "13px", color: "#64748b", marginLeft: "auto" }}>
+        <ToggleButtonGroup
+          value={[
+            snapToGrid && "snap",
+            showGrid && "grid",
+            panModeEnabled && "pan",
+            showPressures && "pressure",
+          ].filter(Boolean)}
+          onChange={(event, newFormats) => {
+            setSnapToGrid(newFormats.includes("snap"));
+            setShowGrid(newFormats.includes("grid"));
+            setPanModeEnabled(newFormats.includes("pan"));
+            setShowPressures(newFormats.includes("pressure"));
+          }}
+          size="small"
+          aria-label="Editor settings"
+        >
+          <ToggleButton value="snap" aria-label="Snap to Grid">
+            <Tooltip title="Snap to Grid">
+              <Grid3x3 fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton value="grid" aria-label="Show Grid">
+            <Tooltip title="Show Grid">
+              <GridOn fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton value="pan" aria-label="Pan Mode">
+            <Tooltip title="Pan Mode">
+              <PanTool fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+          <ToggleButton value="pressure" aria-label="Show Pressures">
+            <Tooltip title="Show Pressures">
+              <Speed fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
+        </ToggleButtonGroup>
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        <Box sx={{ fontSize: "13px", color: "text.secondary" }}>
           {canUndo || canRedo ? `${(historyIndex ?? 0) + 1} / ${historyLength ?? 0}` : "No history"}
-        </div>
-      </div>
+        </Box>
+      </Stack>
 
       {/* React Flow */}
       <div
         ref={reactFlowWrapperRef}
-        style={{ 
-        flex: 1,
-        minHeight: 0,
-        position: "relative",
-        width: "100%",
-        cursor: editorCursor,
-      }}>
+        style={{
+          flex: 1,
+          minHeight: 0,
+          position: "relative",
+          width: "100%",
+          cursor: editorCursor,
+        }}>
         <ReactFlow
           className={isPanMode ? "pan-mode" : "design-mode"}
           nodes={localNodes}
@@ -984,6 +912,6 @@ function EditorCanvas({
           }
         `}</style>
       </div>
-    </div>
+    </div >
   );
 }

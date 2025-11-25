@@ -14,15 +14,15 @@ export type Coordinate = {
 };
 
 export type NodeProps = {
-   id: string;
-   label: string;
-   position: Coordinate;
-   pressure?: number;
-   pressureUnit?: string;
-   temperature?: number;
-   temperatureUnit?: string;
-   fluid: Fluid,
- };
+  id: string;
+  label: string;
+  position: Coordinate;
+  pressure?: number;
+  pressureUnit?: string;
+  temperature?: number;
+  temperatureUnit?: string;
+  fluid: Fluid,
+};
 
 export type pipeState = {
   pressure?: number, // State pressure in Pa
@@ -35,8 +35,8 @@ export type pipeState = {
 }
 
 export type resultSummary = {
-	inletState: pipeState,
-	outletState: pipeState,
+  inletState: pipeState,
+  outletState: pipeState,
 }
 
 // Pressure Drop Caculation Results
@@ -66,6 +66,8 @@ export type PipePatch = Partial<PipeProps> | ((pipe: PipeProps) => Partial<PipeP
 
 export type PipeProps = {
   id: string;
+  label?: string;
+  description?: string;
   startNodeId: string;
   endNodeId: string;
   pipeSectionType?: "pipeline" | "control valve" | "orifice";

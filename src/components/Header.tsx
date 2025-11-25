@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Flex, Heading, Stack, Text, Box, ButtonGroup } from "@chakra-ui/react";
+import { Print, Image, FileOpen, Save } from "@mui/icons-material";
+import { Button, Box, Typography, Stack, ButtonGroup, Paper } from "@mui/material";
 
 type Props = {
   onReset: () => void;
@@ -12,37 +13,51 @@ type Props = {
 
 export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, onSaveNetwork }: Props) {
   return (
-    <Flex
-      direction="column"
-      bg="white"
-      borderRadius="lg"
-      border="1px solid"
-      borderColor="gray.200"
-      p={6}
-      gap={4}
-      justify="center"
+    <Paper
+      elevation={0}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        p: 3,
+        gap: 2,
+        justifyContent: "center",
+      }}
     >
-      <Flex align="center" gap={4} w="100%" wrap={{ base: "wrap", md: "nowrap" }}>
-        <Stack gap={1} flex="1 1 auto">
-          <Heading size="lg">Pipeline Network Builder</Heading>
-          <Text color="gray.600">
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%", flexWrap: { xs: "wrap", md: "nowrap" } }}>
+        <Stack gap={0.5} flex="1 1 auto">
+          <Typography variant="h5" component="h1" fontWeight="bold">Pipeline Network Builder</Typography>
+          <Typography color="text.secondary">
             Sketch networks, edit properties, then run the mock hydraulic solver.
-          </Text>
+          </Typography>
         </Stack>
 
-        <Flex ml={{ base: 0, md: "auto" }} align="flex-start" gap={4} wrap={{ base: "wrap", md: "nowrap" }} justify="flex-end">
-          <ButtonGroup variant="outline" size="sm" marginRight={"8"}>
-            <Button onClick={onClearNetwork} background={"red.400"} color="white" _hover={{ background: "red.500" }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <ButtonGroup variant="contained" sx={{ mr: 2 }}>
+            <Button
+              onClick={onClearNetwork}
+              color="error"
+            >
               Clear network
             </Button>
-            <Button onClick={onReset} marginRight={"4"} background={"orange"}>Load default</Button>
-            <Button onClick={() => window.print?.()}>Print</Button>
-            <Button onClick={onExportPng}>Export PNG</Button>
-            <Button onClick={onLoadNetwork}>Load .nhf</Button>
-            <Button onClick={onSaveNetwork}>Save .nhf</Button>
+            <Button
+              onClick={onReset}
+              color="warning"
+            >
+              Load default
+            </Button>
           </ButtonGroup>
-        </Flex>
-      </Flex>
-    </Flex>
+
+          <ButtonGroup variant="contained">
+            <Button onClick={() => window.print?.()} startIcon={<Print />}>Print</Button>
+            <Button onClick={onExportPng} startIcon={<Image />}>Export PNG</Button>
+            <Button onClick={onLoadNetwork} startIcon={<FileOpen />}>Load</Button>
+            <Button onClick={onSaveNetwork} startIcon={<Save />}>Save</Button>
+          </ButtonGroup>
+        </Box>
+      </Box>
+    </Paper>
   );
 }

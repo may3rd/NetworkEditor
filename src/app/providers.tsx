@@ -1,13 +1,22 @@
 "use client";
 
-import { CacheProvider } from "@chakra-ui/next-js";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ThemeProvider, createTheme, CssBaseline } from "@mui/material";
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ReactNode } from "react";
+
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+  },
+});
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <CacheProvider>
-      <ChakraProvider>{children}</ChakraProvider>
-    </CacheProvider>
+    <AppRouterCacheProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
+    </AppRouterCacheProvider>
   );
 }

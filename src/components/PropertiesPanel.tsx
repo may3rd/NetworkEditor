@@ -12,22 +12,18 @@ import {
 import {
   Box,
   Button,
-  Checkbox,
-  Heading,
+  Typography,
   IconButton,
-  Input,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
+  TextField,
   Radio,
   RadioGroup,
   Select,
   Stack,
-  Text,
-} from "@chakra-ui/react";
-import { CloseIcon } from "@chakra-ui/icons";
+  MenuItem,
+  FormControlLabel,
+  Paper,
+} from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, PipePatch, SelectedElement } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 
@@ -67,7 +63,7 @@ export function PropertiesPanel({
   const isGasPipe = normalizedPipeFluidPhase === "gas";
   const pipeDiameterInputMode: "nps" | "diameter" = pipe
     ? pipe.diameterInputMode ??
-      (pipe.pipeNPD !== undefined || pipe.pipeSchedule ? "nps" : "diameter")
+    (pipe.pipeNPD !== undefined || pipe.pipeSchedule ? "nps" : "diameter")
     : "diameter";
   const pipeScheduleValue: PipeSchedule | undefined = pipe
     ? normalizeSchedule(pipe.pipeSchedule ?? "STD") ?? "STD"
@@ -75,8 +71,8 @@ export function PropertiesPanel({
   const scheduleEntries = pipeScheduleValue ? getScheduleEntries(pipeScheduleValue) : [];
   const npsSelectValue =
     pipe &&
-    pipe.pipeNPD !== undefined &&
-    scheduleEntries.some((entry) => entry.nps === pipe.pipeNPD)
+      pipe.pipeNPD !== undefined &&
+      scheduleEntries.some((entry) => entry.nps === pipe.pipeNPD)
       ? String(pipe.pipeNPD)
       : "";
   const pipeFittings = pipe?.fittings ?? [];
@@ -86,10 +82,10 @@ export function PropertiesPanel({
     pipe?.pressureDropCalculationResults?.controlValvePressureDrop ??
     (pipe?.controlValve?.pressureDrop !== undefined
       ? convertUnit(
-          pipe.controlValve.pressureDrop,
-          pipe.controlValve.pressureDropUnit ?? "kPa",
-          "Pa"
-        )
+        pipe.controlValve.pressureDrop,
+        pipe.controlValve.pressureDropUnit ?? "kPa",
+        "Pa"
+      )
       : undefined);
   const controlValvePressureDropDisplayValue =
     controlValveCalculatedPressureDropPa === undefined
@@ -175,33 +171,38 @@ export function PropertiesPanel({
   };
 
   return (
-    <Stack
-      w="320px"
-      bg="white"
-      borderRadius="lg"
-      border="1px solid"
-      borderColor="gray.200"
-      p={4}
-      gap={4}
+    <Paper
+      elevation={0}
+      sx={{
+        width: "320px",
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
+        p: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
     >
-      <Heading size="md">Properties</Heading>
+      <Typography variant="h6">Properties</Typography>
 
       {node && (
-        <Stack gap={3}>
-          <Stack gap={1}>
-            <Text fontSize="sm" color="gray.500">
+        <Stack spacing={3}>
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
               Label
-            </Text>
-            <Input
+            </Typography>
+            <TextField
+              size="small"
               value={node.label}
               onChange={(event) => onUpdateNode(node.id, { label: event.target.value })}
             />
           </Stack>
 
-          <Stack gap={1}>
-            <Text fontSize="sm" color="gray.500">
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
               Conditions
-            </Text>
+            </Typography>
 
             <QuantityInput
               label="Temperature"
@@ -230,9 +231,9 @@ export function PropertiesPanel({
             />
 
             <Button
-              size="sm"
+              size="small"
+              variant="contained"
               onClick={() => {
-                // Find connected pipes and update node with the lowest pressure from matching port
                 const connectedPipes = network.pipes.filter(
                   (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id,
                 );
@@ -307,12 +308,13 @@ export function PropertiesPanel({
             </Button>
           </Stack>
 
-          <Stack gap={1}>
-            <Stack gap={1}>
-              <Text fontSize="sm" color="gray.500">
+          <Stack spacing={1}>
+            <Stack spacing={1}>
+              <Typography color="text.secondary">
                 Fluid ID
-              </Text>
-              <Input
+              </Typography>
+              <TextField
+                size="small"
                 value={node.fluid?.id ?? ""}
                 onChange={(event) =>
                   onUpdateNode(node.id, (current) => ({
@@ -325,23 +327,23 @@ export function PropertiesPanel({
               />
             </Stack>
 
-            <Text fontSize="sm" color="gray.500">
+            <Typography color="text.secondary">
               Fluid Phase
-            </Text>
+            </Typography>
             <RadioGroup
               value={nodeFluidPhase}
-              onChange={(value) =>
+              onChange={(event) =>
                 onUpdateNode(node.id, current => ({
                   fluid: {
                     ...(current.fluid ?? {}),
-                    phase: value as "liquid" | "gas",
+                    phase: event.target.value as "liquid" | "gas",
                   },
                 }))
               }
             >
               <Stack direction="row">
-                <Radio value="liquid">Liquid</Radio>
-                <Radio value="gas">Gas</Radio>
+                <FormControlLabel value="liquid" control={<Radio size="small" />} label="Liquid" />
+                <FormControlLabel value="gas" control={<Radio size="small" />} label="Gas" />
               </Stack>
             </RadioGroup>
 
@@ -371,14 +373,15 @@ export function PropertiesPanel({
               />
             )}
             {nodeFluidPhase === "gas" && (
-              <Stack gap={2}>
-                <Stack gap={1}>
-                  <Text fontSize="sm" color="gray.500">
+              <Stack spacing={2}>
+                <Stack spacing={1}>
+                  <Typography color="text.secondary">
                     Gas Molecular Weight
-                  </Text>
-                  <Input
+                  </Typography>
+                  <TextField
+                    size="small"
                     type="number"
-                    step="any"
+                    inputProps={{ step: "any" }}
                     value={node.fluid?.molecularWeight ?? ""}
                     onChange={(event) => {
                       const value =
@@ -393,13 +396,14 @@ export function PropertiesPanel({
                   />
                 </Stack>
 
-                <Stack gap={1}>
-                  <Text fontSize="sm" color="gray.500">
+                <Stack spacing={1}>
+                  <Typography color="text.secondary">
                     Z Factor
-                  </Text>
-                  <Input
+                  </Typography>
+                  <TextField
+                    size="small"
                     type="number"
-                    step="any"
+                    inputProps={{ step: "any" }}
                     value={node.fluid?.zFactor ?? ""}
                     onChange={(event) => {
                       const value =
@@ -414,13 +418,14 @@ export function PropertiesPanel({
                   />
                 </Stack>
 
-                <Stack gap={1}>
-                  <Text fontSize="sm" color="gray.500">
+                <Stack spacing={1}>
+                  <Typography color="text.secondary">
                     Specific Heat Ratio
-                  </Text>
-                  <Input
+                  </Typography>
+                  <TextField
+                    size="small"
                     type="number"
-                    step="any"
+                    inputProps={{ step: "any" }}
                     value={node.fluid?.specificHeatRatio ?? ""}
                     onChange={(event) => {
                       const value =
@@ -467,20 +472,46 @@ export function PropertiesPanel({
       )}
 
       {pipe && (
-        <Stack gap={3}>
-          <Text fontWeight="semibold">Pipe Section</Text>
-          <Text fontSize="sm" color="gray.500">
+        <Stack spacing={3}>
+          <Typography fontWeight="bold">Pipe Section</Typography>
+          <Typography color="text.secondary">
             {startNode?.label ?? "Unknown"} → {endNode?.label ?? "Unknown"}
-          </Text>
+          </Typography>
 
-          <Stack gap={1}>
-            <Text fontSize="sm" color="gray.500">
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
+              Label
+            </Typography>
+            <TextField
+              size="small"
+              value={pipe.label ?? ""}
+              onChange={(e) => onUpdatePipe(pipe.id, { label: e.target.value })}
+              placeholder="Enter label"
+              fullWidth
+            />
+          </Stack>
+
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
+              Description
+            </Typography>
+            <TextField
+              size="small"
+              value={pipe.description ?? ""}
+              onChange={(e) => onUpdatePipe(pipe.id, { description: e.target.value })}
+              placeholder="Enter description"
+              fullWidth
+            />
+          </Stack>
+
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
               Calculation Direction
-            </Text>
+            </Typography>
             <RadioGroup
               value={pipe.direction ?? "forward"}
-              onChange={(value) => {
-                const nextDirection = value as "forward" | "backward";
+              onChange={(event) => {
+                const nextDirection = event.target.value as "forward" | "backward";
                 const boundaryNode = nextDirection === "forward" ? startNode : endNode;
 
                 onUpdatePipe(pipe.id, {
@@ -493,8 +524,8 @@ export function PropertiesPanel({
               }}
             >
               <Stack direction="row">
-                <Radio value="forward">Forward</Radio>
-                <Radio value="backward">Backward</Radio>
+                <FormControlLabel value="forward" control={<Radio size="small" />} label="Forward" />
+                <FormControlLabel value="backward" control={<Radio size="small" />} label="Backward" />
               </Stack>
             </RadioGroup>
           </Stack>
@@ -525,13 +556,14 @@ export function PropertiesPanel({
             }
           />
 
-          <Stack gap={1}>
-            <Text fontSize="sm" color="gray.500">
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
               Design Margin (%)
-            </Text>
-            <Input
+            </Typography>
+            <TextField
+              size="small"
               type="number"
-              step="any"
+              inputProps={{ step: "any" }}
               value={pipe.designMargin ?? ""}
               onChange={(event) => {
                 const parsedValue =
@@ -556,27 +588,29 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack gap={1}>
-            <Text fontSize="sm" color="gray.500">
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
               Pipe Section Type
-            </Text>
+            </Typography>
             <Select
+              size="small"
               value={pipe.pipeSectionType ?? "pipeline"}
               onChange={(event) => onUpdatePipe(pipe.id, { pipeSectionType: event.target.value as "pipeline" | "control valve" | "orifice" })}
             >
-              <option value="pipeline">Pipeline</option>
-              <option value="control valve">Control Valve</option>
-              <option value="orifice">Orifice</option>
+              <MenuItem value="pipeline">Pipeline</MenuItem>
+              <MenuItem value="control valve">Control Valve</MenuItem>
+              <MenuItem value="orifice">Orifice</MenuItem>
             </Select>
           </Stack>
 
 
           {pipeFluidPhase === "gas" && (
-            <Stack gap={1}>
-              <Text fontSize="sm" color="gray.500">
+            <Stack spacing={1}>
+              <Typography color="text.secondary">
                 Gas Flow Model
-              </Text>
+              </Typography>
               <Select
+                size="small"
                 value={pipe.gasFlowModel ?? "adiabatic"}
                 onChange={(event) =>
                   onUpdatePipe(pipe.id, {
@@ -584,25 +618,25 @@ export function PropertiesPanel({
                   })
                 }
               >
-                <option value="adiabatic">Adiabatic</option>
-                <option value="isothermal">Isothermal</option>
+                <MenuItem value="adiabatic">Adiabatic</MenuItem>
+                <MenuItem value="isothermal">Isothermal</MenuItem>
               </Select>
             </Stack>
           )}
 
-          <Stack gap={1}>
-            <Text fontSize="sm" color="gray.500">
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
               Diameter Input
-            </Text>
+            </Typography>
             <RadioGroup
               value={pipeDiameterInputMode}
-              onChange={(value) =>
-                onUpdatePipe(pipe.id, { diameterInputMode: value as "nps" | "diameter" })
+              onChange={(event) =>
+                onUpdatePipe(pipe.id, { diameterInputMode: event.target.value as "nps" | "diameter" })
               }
             >
               <Stack direction="row">
-                <Radio value="nps">NPS</Radio>
-                <Radio value="diameter">Diameter</Radio>
+                <FormControlLabel value="nps" control={<Radio size="small" />} label="NPS" />
+                <FormControlLabel value="diameter" control={<Radio size="small" />} label="Diameter" />
               </Stack>
             </RadioGroup>
           </Stack>
@@ -618,13 +652,14 @@ export function PropertiesPanel({
               onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { diameterUnit: newUnit })}
             />
           ) : (
-            <Stack gap={2}>
-              <Stack gap={1}>
-                <Text fontSize="sm" color="gray.500">
+            <Stack spacing={2}>
+              <Stack spacing={1}>
+                <Typography color="text.secondary">
                   Nominal Pipe Size (NPS)
-                </Text>
+                </Typography>
                 <Select
-                  placeholder="Select NPS"
+                  size="small"
+                  displayEmpty
                   value={npsSelectValue}
                   onChange={(event) => {
                     const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -637,18 +672,20 @@ export function PropertiesPanel({
                     });
                   }}
                 >
+                  <MenuItem value="" disabled>Select NPS</MenuItem>
                   {scheduleEntries.map((entry) => (
-                    <option key={`${pipeScheduleValue}-${entry.nps}`} value={entry.nps}>
+                    <MenuItem key={`${pipeScheduleValue}-${entry.nps}`} value={entry.nps}>
                       {entry.nps}
-                    </option>
+                    </MenuItem>
                   ))}
                 </Select>
               </Stack>
-              <Stack gap={1}>
-                <Text fontSize="sm" color="gray.500">
+              <Stack spacing={1}>
+                <Typography color="text.secondary">
                   Pipe Schedule
-                </Text>
+                </Typography>
                 <Select
+                  size="small"
                   value={pipeScheduleValue ?? "STD"}
                   onChange={(event) => {
                     const scheduleValue = event.target.value as PipeSchedule;
@@ -668,9 +705,9 @@ export function PropertiesPanel({
                   }}
                 >
                   {PIPE_SCHEDULES.map((schedule) => (
-                    <option key={schedule} value={schedule}>
+                    <MenuItem key={schedule} value={schedule}>
                       {schedule}
-                    </option>
+                    </MenuItem>
                   ))}
                 </Select>
               </Stack>
@@ -697,13 +734,14 @@ export function PropertiesPanel({
             onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { outletDiameterUnit: newUnit })}
           />
 
-          <Stack gap={1}>
-            <Text fontSize="sm" color="gray.500">
+          <Stack spacing={1}>
+            <Typography color="text.secondary">
               Erosional Constant
-            </Text>
-            <Input
+            </Typography>
+            <TextField
+              size="small"
               type="number"
-              step="any"
+              inputProps={{ step: "any" }}
               value={pipe.erosionalConstant ?? 100}
               onChange={(event) => {
                 const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -746,31 +784,33 @@ export function PropertiesPanel({
                 />
               )}
 
-              <Stack gap={3}>
-                <Stack gap={1}>
-                  <Text fontSize="sm" color="gray.500">
+              <Stack spacing={3}>
+                <Stack spacing={1}>
+                  <Typography color="text.secondary">
                     Fitting Type
-                  </Text>
+                  </Typography>
                   <Select
+                    size="small"
                     value={pipe.fittingType ?? "LR"}
                     onChange={(event) => onUpdatePipe(pipe.id, { fittingType: event.target.value })}
-                    w="full"
+                    fullWidth
                   >
                     {FITTING_TYPE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
+                      <MenuItem key={option} value={option}>
                         {option}
-                      </option>
+                      </MenuItem>
                     ))}
                   </Select>
                 </Stack>
 
-                <Stack gap={1}>
-                  <Text fontSize="sm" color="gray.500">
+                <Stack spacing={1}>
+                  <Typography color="text.secondary">
                     Safety Factor
-                  </Text>
-                  <Input
+                  </Typography>
+                  <TextField
+                    size="small"
                     type="number"
-                    step="any"
+                    inputProps={{ step: "any" }}
                     value={pipe.pipingFittingSafetyFactor ?? 1}
                     onChange={(event) => {
                       const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -779,32 +819,31 @@ export function PropertiesPanel({
                   />
                 </Stack>
 
-                <Stack gap={2}>
-                  <Stack direction="row" justify="space-between" align="center">
-                    <Text fontSize="sm" color="gray.500">
+                <Stack spacing={2}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography color="text.secondary">
                       Fittings
-                    </Text>
-                    <Stack direction="row" gap={2}>
+                    </Typography>
+                    <Stack direction="row" spacing={2}>
                       <Button
-                        size="xs"
-                        variant="ghost"
+                        size="small"
                         onClick={handleResetFittings}
-                        isDisabled={pipeFittings.length === 0}
+                        disabled={pipeFittings.length === 0}
                       >
                         Reset
                       </Button>
-                      <Button size="xs" onClick={handleAddFitting}>
+                      <Button size="small" onClick={handleAddFitting}>
                         Add
                       </Button>
                     </Stack>
                   </Stack>
 
                   {pipeFittings.length === 0 ? (
-                    <Text fontSize="sm" color="gray.400">
+                    <Typography color="text.secondary">
                       No fittings added.
-                    </Text>
+                    </Typography>
                   ) : (
-                    <Stack gap={2}>
+                    <Stack spacing={2}>
                       {pipeFittings.map((fitting, index) => {
                         const isSwage =
                           fitting.type === "inlet_swage" || fitting.type === "outlet_swage";
@@ -812,16 +851,17 @@ export function PropertiesPanel({
                           <Stack
                             key={`${fitting.type}-${index}`}
                             direction="row"
-                            gap={2}
-                            align="flex-end"
+                            spacing={2}
+                            alignItems="flex-end"
                           >
-                            <Stack flex="1" gap={1}>
-                              <Text fontSize="sm" color="gray.500">
+                            <Stack flex="1" spacing={1}>
+                              <Typography color="text.secondary">
                                 Type
-                              </Text>
+                              </Typography>
                               <Select
+                                size="small"
                                 value={fitting.type}
-                                isDisabled={isSwage}
+                                disabled={isSwage}
                                 onChange={(event) =>
                                   handleFittingFieldChange(index, {
                                     type: event.target.value,
@@ -829,27 +869,29 @@ export function PropertiesPanel({
                                     k_total: 0,
                                   })
                                 }
-                                w="full"
+                                fullWidth
                               >
                                 {PIPE_FITTING_OPTIONS.filter(
                                   (option) => !option.autoOnly || option.value === fitting.type
                                 ).map((option) => (
-                                  <option key={option.value} value={option.value}>
+                                  <MenuItem key={option.value} value={option.value}>
                                     {option.label}
-                                  </option>
+                                  </MenuItem>
                                 ))}
                               </Select>
                             </Stack>
-                            <Stack w="80px" gap={1}>
-                              <Text fontSize="sm" color="gray.500">
+                            <Stack width="80px" spacing={1}>
+                              <Typography color="text.secondary">
                                 Count
-                              </Text>
-                              <NumberInput
-                                min={0}
-                                step={1}
-                                isDisabled={isSwage}
+                              </Typography>
+                              <TextField
+                                size="small"
+                                type="number"
+                                inputProps={{ min: 0, step: 1 }}
+                                disabled={isSwage}
                                 value={fitting.count ?? 0}
-                                onChange={(_, valueNumber) => {
+                                onChange={(event) => {
+                                  const valueNumber = Number(event.target.value);
                                   if (!Number.isFinite(valueNumber)) {
                                     return;
                                   }
@@ -859,35 +901,30 @@ export function PropertiesPanel({
                                     k_total: normalized * (fitting.k_each ?? 0),
                                   });
                                 }}
-                              >
-                                <NumberInputField />
-                                <NumberInputStepper>
-                                  <NumberIncrementStepper />
-                                  <NumberDecrementStepper />
-                                </NumberInputStepper>
-                              </NumberInput>
+                              />
                             </Stack>
                             <IconButton
                               aria-label="Remove fitting"
-                              icon={<CloseIcon />}
-                              size="sm"
-                              variant="ghost"
-                              isDisabled={isSwage}
+                              size="small"
+                              disabled={isSwage}
                               onClick={() => handleRemoveFitting(index)}
-                            />
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
                           </Stack>
                         );
                       })}
                     </Stack>
                   )}
                 </Stack>
-                <Stack gap={1}>
-                  <Text fontSize="sm" color="gray.500">
+                <Stack spacing={1}>
+                  <Typography color="text.secondary">
                     User K
-                  </Text>
-                  <Input
+                  </Typography>
+                  <TextField
+                    size="small"
                     type="number"
-                    step="any"
+                    inputProps={{ step: "any" }}
                     value={pipe.userK ?? ""}
                     onChange={(event) => {
                       const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -916,37 +953,38 @@ export function PropertiesPanel({
 
           {pipe?.pipeSectionType === "control valve" && (
             <>
-              <Text fontSize="sm" color="gray.500">
+              <Typography color="text.secondary">
                 Control Valve Calculation Mode
-              </Text>
+              </Typography>
               <RadioGroup
                 value={pipe.controlValve?.calculation_note || "cv_to_dp"}
-                onChange={(value) => {
+                onChange={(event) => {
                   onUpdatePipe(pipe.id, {
                     controlValve: {
                       id: pipe.controlValve?.id || pipe.id,
                       tag: pipe.controlValve?.tag || pipe.id,
                       ...pipe.controlValve,
-                      calculation_note: value,
+                      calculation_note: event.target.value,
                     },
                   });
                 }}
               >
                 <Stack direction="row">
-                  <Radio value="cv_to_dp">{controlValveInputRadioLabel}</Radio>
-                  <Radio value="dp_to_cv">{controlValveOutputRadioLabel}</Radio>
+                  <FormControlLabel value="cv_to_dp" control={<Radio size="small" />} label={controlValveInputRadioLabel} />
+                  <FormControlLabel value="dp_to_cv" control={<Radio size="small" />} label={controlValveOutputRadioLabel} />
                 </Stack>
               </RadioGroup>
 
               {isGasPipe && (
                 <>
-                  <Stack gap={1}>
-                    <Text fontSize="sm" color="gray.500">
+                  <Stack spacing={1}>
+                    <Typography color="text.secondary">
                       Gas Valve Constant (C1)
-                    </Text>
-                    <Input
+                    </Typography>
+                    <TextField
+                      size="small"
                       type="number"
-                      step="any"
+                      inputProps={{ step: "any" }}
                       value={pipe.controlValve?.C1 ?? ""}
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -968,13 +1006,14 @@ export function PropertiesPanel({
                       }}
                     />
                   </Stack>
-                  <Stack gap={1}>
-                    <Text fontSize="sm" color="gray.500">
+                  <Stack spacing={1}>
+                    <Typography color="text.secondary">
                       Pressure Drop Ratio (xT)
-                    </Text>
-                    <Input
+                    </Typography>
+                    <TextField
+                      size="small"
                       type="number"
-                      step="any"
+                      inputProps={{ step: "any" }}
                       value={pipe.controlValve?.xT ?? ""}
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -1001,13 +1040,14 @@ export function PropertiesPanel({
 
               {pipe.controlValve?.calculation_note === "cv_to_dp" && (
                 <>
-                  <Stack gap={1}>
-                    <Text fontSize="sm" color="gray.500">
+                  <Stack spacing={1}>
+                    <Typography color="text.secondary">
                       {controlValveCoefficientLabel}
-                    </Text>
-                    <Input
+                    </Typography>
+                    <TextField
+                      size="small"
                       type="number"
-                      step="any"
+                      inputProps={{ step: "any" }}
                       value={controlValveCoefficientValue}
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -1033,18 +1073,19 @@ export function PropertiesPanel({
                       }}
                     />
                   </Stack>
-                  <Stack gap={1}>
-                    <Text fontSize="sm" color="gray.500">
+                  <Stack spacing={1}>
+                    <Typography color="text.secondary">
                       Calculated Pressure Drop
-                    </Text>
-                    <Stack direction="row" gap={2}>
-                      <Input
+                    </Typography>
+                    <Stack direction="row" spacing={2}>
+                      <TextField
+                        size="small"
                         type="number"
-                        step="any"
+                        inputProps={{ step: "any", readOnly: true }}
                         value={controlValvePressureDropDisplayValue}
-                        readOnly
                       />
                       <Select
+                        size="small"
                         value={controlValvePressureDropUnit}
                         onChange={(event) => {
                           const nextUnit = event.target.value;
@@ -1075,9 +1116,9 @@ export function PropertiesPanel({
                         }}
                       >
                         {QUANTITY_UNIT_OPTIONS.pressureDrop.map((unitOption) => (
-                          <option key={unitOption} value={unitOption}>
+                          <MenuItem key={unitOption} value={unitOption}>
                             {unitOption}
-                          </option>
+                          </MenuItem>
                         ))}
                       </Select>
                     </Stack>
@@ -1130,15 +1171,15 @@ export function PropertiesPanel({
                       });
                     }}
                   />
-                  <Stack gap={1}>
-                    <Text fontSize="sm" color="gray.500">
+                  <Stack spacing={1}>
+                    <Typography color="text.secondary">
                       {controlValveCalculatedCoefficientLabel}
-                    </Text>
-                    <Input
+                    </Typography>
+                    <TextField
+                      size="small"
                       type="number"
-                      step="any"
+                      inputProps={{ step: "any", readOnly: true }}
                       value={controlValveCalculatedCoefficientValue}
-                      readOnly
                     />
                   </Stack>
                 </>
@@ -1148,15 +1189,14 @@ export function PropertiesPanel({
 
           {pipe?.pipeSectionType === "orifice" && (
             <>
-              <Stack gap={1}>
-                <Text fontSize="sm" color="gray.500">
+              <Stack spacing={1}>
+                <Typography color="text.secondary">
                   Beta Ratio (β = d / D)
-                </Text>
-                <Input
+                </Typography>
+                <TextField
+                  size="small"
                   type="number"
-                  step="any"
-                  min="0"
-                  max="1"
+                  inputProps={{ step: "any", min: 0, max: 1 }}
                   value={pipe.orifice?.betaRatio ?? ""}
                   onChange={(event) => {
                     const value =
@@ -1183,18 +1223,19 @@ export function PropertiesPanel({
                 />
               </Stack>
 
-              <Stack gap={1}>
-                <Text fontSize="sm" color="gray.500">
+              <Stack spacing={1}>
+                <Typography color="text.secondary">
                   Calculated Pressure Drop
-                </Text>
-                <Stack direction="row" gap={2}>
-                  <Input
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  <TextField
+                    size="small"
                     type="number"
-                    step="any"
+                    inputProps={{ step: "any", readOnly: true }}
                     value={orificePressureDropDisplayValue}
-                    readOnly
                   />
                   <Select
+                    size="small"
                     value={orificePressureDropUnit}
                     onChange={(event) => {
                       const nextUnit = event.target.value;
@@ -1225,9 +1266,9 @@ export function PropertiesPanel({
                     }}
                   >
                     {QUANTITY_UNIT_OPTIONS.pressureDrop.map((unitOption) => (
-                      <option key={unitOption} value={unitOption}>
+                      <MenuItem key={unitOption} value={unitOption}>
                         {unitOption}
-                      </option>
+                      </MenuItem>
                     ))}
                   </Select>
                 </Stack>
@@ -1238,10 +1279,10 @@ export function PropertiesPanel({
       )}
 
       {!node && !pipe && (
-        <Box color="gray.500" fontSize="sm">
+        <Typography color="text.secondary">
           Select a node or pipe to view or edit its values.
-        </Box>
+        </Typography>
       )}
-    </Stack>
+    </Paper>
   );
 }

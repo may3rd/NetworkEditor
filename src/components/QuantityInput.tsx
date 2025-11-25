@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Flex, Input, Select, FormControl, FormLabel } from "@chakra-ui/react";
+import { Box, OutlinedInput, Select, Typography, MenuItem, SelectChangeEvent } from "@mui/material";
 import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
 export const QUANTITY_UNIT_OPTIONS = {
@@ -84,19 +84,22 @@ export function QuantityInput({
   };
 
   return (
-    <FormControl>
-      <FormLabel fontSize="sm" color="gray.400" mb={1}>
+    <Box width="100%">
+      <Typography color="text.secondary" sx={{ mb: 0.5 }}>
         {displayLabel}
-      </FormLabel>
-      <Flex
-        border="1px solid"
-        borderColor="inherit" // Use parent's border color from chakra
-        borderRadius="md"
-        overflow="hidden"
-        _hover={{ borderColor: "gray.300" }}
-        _focusWithin={{ zIndex: 1, borderColor: "blue.500", boxShadow: "0 0 0 1px blue.500" }}
+      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          border: "1px solid",
+          borderColor: "divider",
+          borderRadius: 1,
+          overflow: "hidden",
+          '&:hover': { borderColor: "text.primary" },
+          '&:focus-within': { borderColor: "primary.main", boxShadow: "0 0 0 1px #1976d2" } // Using default MUI primary blue
+        }}
       >
-        <Input
+        <OutlinedInput
           type="text"
           inputMode="decimal"
           placeholder={placeholder}
@@ -132,28 +135,40 @@ export function QuantityInput({
               onValueChange(parsed);
             }
           }}
-          border="none"
-          borderRadius="0"
-          _focus={{ boxShadow: "none" }}
-          isDisabled={isDisabled}
+          sx={{
+            flex: 1,
+            '& fieldset': { border: 'none' },
+            '& input': { py: 1, px: 1.5 }
+          }}
+          disabled={isDisabled}
         />
         <Select
           value={unit}
-          onChange={(e) => handleUnitChange(e.target.value)}
-          border="none"
-          borderLeft="1px solid"
-          borderColor="inherit"
-          borderRadius="0"
-          w="120px"
-          _focus={{ boxShadow: "none" }}
+          onChange={(e: SelectChangeEvent) => handleUnitChange(e.target.value)}
+          disabled={isDisabled}
+          variant="standard"
+          disableUnderline
+          sx={{
+            // width: "120px",
+            borderLeft: "1px solid",
+            borderColor: "divider",
+            borderRadius: 0,
+            bgcolor: "action.hover",
+            '& .MuiSelect-select': {
+              py: 1,
+              px: 1.5,
+              display: 'flex',
+              alignItems: 'center'
+            }
+          }}
         >
           {units.map((u) => (
-            <option key={u} value={u}>
+            <MenuItem key={u} value={u}>
               {u}
-            </option>
+            </MenuItem>
           ))}
         </Select>
-      </Flex>
-    </FormControl>
+      </Box>
+    </Box>
   );
 }

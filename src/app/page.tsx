@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Flex, Heading, Stack } from "@chakra-ui/react";
+import { Button, Box, Typography, Stack } from "@mui/material";
 import { useCallback, useState, useEffect, useRef, ChangeEvent } from "react";
 import { toPng } from "html-to-image";
+import { SummaryTable } from "@/components/SummaryTable";
 import { NetworkEditor } from "@/components/NetworkEditor";
 import { PropertiesPanel } from "@/components/PropertiesPanel";
 import { Header } from "@/components/Header";
@@ -18,7 +19,7 @@ import {
 } from "@/lib/types";
 import { runHydraulicCalculation } from "@/lib/solverClient";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
-import { convertUnit } from "@/lib/unitConversion";
+// import { convertUnit } from "@/lib/unitConversion";
 
 const createNetworkWithDerivedValues = () =>
   applyFittingLosses(createInitialNetwork());
@@ -30,13 +31,13 @@ const applyFittingLosses = (network: NetworkState): NetworkState => ({
 
 export default function Home() {
   const [network, setNetwork] = useState<NetworkState>(() => createNetworkWithDerivedValues());
-  const [isSolving, setIsSolving] = useState(false);
+  // const [isSolving, setIsSolving] = useState(false);
 
   // Selection state
   const [selection, setSelection] = useState<SelectedElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
-  const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
+  // const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
   const [showSnapshot, setShowSnapshot] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -91,12 +92,12 @@ export default function Home() {
 
   const handleSolve = useCallback(async () => {
     try {
-      setIsSolving(true);
+      // setIsSolving(true);
       const response = await runHydraulicCalculation(network);
       setNetwork(applyFittingLosses(response.network));
-      setLastSolvedAt(new Date().toLocaleTimeString());
+      // setLastSolvedAt(new Date().toLocaleTimeString());
     } finally {
-      setIsSolving(false);
+      // setIsSolving(false);
     }
   }, [network]);
 
@@ -160,17 +161,17 @@ export default function Home() {
     const hasNodes = network.nodes.length > 0;
     const bounds = hasNodes
       ? network.nodes.reduce(
-          (acc, node) => {
-            const { x = 0, y = 0 } = node.position ?? {};
-            return {
-              minX: Math.min(acc.minX, x),
-              minY: Math.min(acc.minY, y),
-              maxX: Math.max(acc.maxX, x),
-              maxY: Math.max(acc.maxY, y),
-            };
-          },
-          { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
-        )
+        (acc, node) => {
+          const { x = 0, y = 0 } = node.position ?? {};
+          return {
+            minX: Math.min(acc.minX, x),
+            minY: Math.min(acc.minY, y),
+            maxX: Math.max(acc.maxX, x),
+            maxY: Math.max(acc.maxY, y),
+          };
+        },
+        { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+      )
       : { minX: 0, minY: 0, maxX: flowElement.clientWidth, maxY: flowElement.clientHeight };
 
     const exportWidth = hasNodes ? Math.max(1, bounds.maxX - bounds.minX + NODE_SIZE + PADDING * 2) : flowElement.clientWidth;
@@ -310,7 +311,7 @@ export default function Home() {
   );
 
   return (
-    <Stack bg="#f8fafc" minH="100vh" gap={6} p={8}>
+    <Stack sx={{ bgcolor: "#f8fafc", minHeight: "100vh", gap: 3, p: 4 }}>
       <input
         ref={fileInputRef}
         type="file"
@@ -325,27 +326,28 @@ export default function Home() {
         onExportPng={handleExportPng}
         onLoadNetwork={handleLoadNetworkClick}
         onSaveNetwork={handleSaveNetwork}
-        // isSolving={isSolving}
-        // lastSolvedAt={lastSolvedAt}
+      // isSolving={isSolving}
+      // lastSolvedAt={lastSolvedAt}
       />
-      {/* <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} /> */}
 
-      <Flex gap={4} align="flex-start" flexDirection={{ base: "column", xl: "row" }}>
-        <NetworkEditor
-          network={network}
-          onSelect={handleSelect}
-          selectedId={selectedId}
-          selectedType={selectedType}
-          onDelete={handleDelete}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onNetworkChange={handleNetworkChange}
-          historyIndex={historyIndex}
-          historyLength={history.length}
-          height="640px"
-        />
+      <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexDirection: { xs: "column", lg: "row" } }}>
+        <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>
+          <NetworkEditor
+            network={network}
+            onSelect={handleSelect}
+            selectedId={selectedId}
+            selectedType={selectedType}
+            onDelete={handleDelete}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onNetworkChange={handleNetworkChange}
+            historyIndex={historyIndex}
+            historyLength={history.length}
+            height="640px"
+          />
+        </Box>
 
         <PropertiesPanel
           network={network}
@@ -426,19 +428,18 @@ export default function Home() {
           }
           onReset={handleReset}
         />
-      </Flex>
+      </Box>
 
-      <Stack gap={3}>
-        <Flex align="center" gap={2} wrap="wrap">
-          <Heading size="md" m={0}>
-            Network snapshot
-          </Heading>
+      <Stack spacing={2}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="subtitle2" color="text.secondary">
+            Network Snapshot
+          </Typography>
           <Button
-            size="xs"
-            variant="ghost"
+            size="small"
             onClick={() => setShowSnapshot(prev => !prev)}
             aria-label="Toggle network snapshot visibility"
-            color="currentColor"
+            sx={{ color: "text.primary", minWidth: 0, p: 0.5 }}
           >
             {showSnapshot ? (
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
@@ -450,7 +451,7 @@ export default function Home() {
               </svg>
             )}
           </Button>
-        </Flex>
+        </Box>
         {showSnapshot && (
           <pre
             style={{
@@ -467,6 +468,8 @@ export default function Home() {
           </pre>
         )}
       </Stack>
+
+      <SummaryTable network={network} />
     </Stack>
   );
 }
