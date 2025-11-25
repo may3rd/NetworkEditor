@@ -12,7 +12,11 @@ import {
     TablePagination,
     Typography,
     Box,
+    Button,
+    Switch,
+    FormControlLabel,
 } from "@mui/material";
+import PrintIcon from '@mui/icons-material/Print';
 import { NetworkState, PipeProps } from "@/lib/types";
 import { PIPE_FITTING_OPTIONS } from "./PipeDimension";
 
@@ -37,7 +41,7 @@ export function SummaryTable({ network }: Props) {
         setPage(0);
     };
 
-    const formatNumber = (val: string | number | undefined | null, decimals = 2) => {
+    const formatNumber = (val: string | number | undefined | null, decimals = 3) => {
         if (val === undefined || val === null) return "";
         if (typeof val === "string") return val;
         if (!Number.isFinite(val)) return "";
@@ -119,24 +123,24 @@ export function SummaryTable({ network }: Props) {
 
         // Fittings
         { type: "section", label: "Fitting Count" },
-        { type: "data", label: "Elbow 45 °C", getValue: (pipe) => getFittingCount(pipe, "elbow_45") },
-        { type: "data", label: "Elbow 90 °C", getValue: (pipe) => getFittingCount(pipe, "elbow_90") },
-        { type: "data", label: "U-Bend", getValue: (pipe) => getFittingCount(pipe, "u_bend") },
-        { type: "data", label: "Stub-In Elbow", getValue: (pipe) => getFittingCount(pipe, "stub_in_elbow") },
-        { type: "data", label: "Tee Elbow", getValue: (pipe) => getFittingCount(pipe, "tee_elbow") },
-        { type: "data", label: "Tee Through", getValue: (pipe) => getFittingCount(pipe, "tee_through") },
-        { type: "data", label: "Block Valve Full Line Size", getValue: (pipe) => getFittingCount(pipe, "block_valve_full_line_size") },
-        { type: "data", label: "Block Valve Reduced Trim 0.9D", getValue: (pipe) => getFittingCount(pipe, "block_valve_reduced_trim_0.9d") },
-        { type: "data", label: "Block Valve Reduced Trim 0.8D", getValue: (pipe) => getFittingCount(pipe, "block_valve_reduced_trim_0.8d") },
-        { type: "data", label: "Globe Valve", getValue: (pipe) => getFittingCount(pipe, "globe_valve") },
-        { type: "data", label: "Diaphragm Valve", getValue: (pipe) => getFittingCount(pipe, "diaphragm_valve") },
-        { type: "data", label: "Butterfly Valve", getValue: (pipe) => getFittingCount(pipe, "butterfly_valve") },
-        { type: "data", label: "Check Valve Swing", getValue: (pipe) => getFittingCount(pipe, "check_valve_swing") },
-        { type: "data", label: "Check Valve Lift", getValue: (pipe) => getFittingCount(pipe, "lift_check_valve") },
-        { type: "data", label: "Check Valve Tilting", getValue: (pipe) => getFittingCount(pipe, "tilting_check_valve") },
-        { type: "data", label: "Pipe Entrance Normal", getValue: (pipe) => getFittingCount(pipe, "pipe_entrance_normal") },
-        { type: "data", label: "Pipe Entrance Raise", getValue: (pipe) => getFittingCount(pipe, "pipe_entrance_raise") },
-        { type: "data", label: "Pipe Exit", getValue: (pipe) => getFittingCount(pipe, "pipe_exit") },
+        { type: "data", label: "Elbow 45 °C", getValue: (pipe) => getFittingCount(pipe, "elbow_45"), decimals: 0 },
+        { type: "data", label: "Elbow 90 °C", getValue: (pipe) => getFittingCount(pipe, "elbow_90"), decimals: 0 },
+        { type: "data", label: "U-Bend", getValue: (pipe) => getFittingCount(pipe, "u_bend"), decimals: 0 },
+        { type: "data", label: "Stub-In Elbow", getValue: (pipe) => getFittingCount(pipe, "stub_in_elbow"), decimals: 0 },
+        { type: "data", label: "Tee Elbow", getValue: (pipe) => getFittingCount(pipe, "tee_elbow"), decimals: 0 },
+        { type: "data", label: "Tee Through", getValue: (pipe) => getFittingCount(pipe, "tee_through"), decimals: 0 },
+        { type: "data", label: "Block Valve Full Line Size", getValue: (pipe) => getFittingCount(pipe, "block_valve_full_line_size"), decimals: 0 },
+        { type: "data", label: "Block Valve Reduced Trim 0.9D", getValue: (pipe) => getFittingCount(pipe, "block_valve_reduced_trim_0.9d"), decimals: 0 },
+        { type: "data", label: "Block Valve Reduced Trim 0.8D", getValue: (pipe) => getFittingCount(pipe, "block_valve_reduced_trim_0.8d"), decimals: 0 },
+        { type: "data", label: "Globe Valve", getValue: (pipe) => getFittingCount(pipe, "globe_valve"), decimals: 0 },
+        { type: "data", label: "Diaphragm Valve", getValue: (pipe) => getFittingCount(pipe, "diaphragm_valve"), decimals: 0 },
+        { type: "data", label: "Butterfly Valve", getValue: (pipe) => getFittingCount(pipe, "butterfly_valve"), decimals: 0 },
+        { type: "data", label: "Check Valve Swing", getValue: (pipe) => getFittingCount(pipe, "check_valve_swing"), decimals: 0 },
+        { type: "data", label: "Check Valve Lift", getValue: (pipe) => getFittingCount(pipe, "lift_check_valve"), decimals: 0 },
+        { type: "data", label: "Check Valve Tilting", getValue: (pipe) => getFittingCount(pipe, "tilting_check_valve"), decimals: 0 },
+        { type: "data", label: "Pipe Entrance Normal", getValue: (pipe) => getFittingCount(pipe, "pipe_entrance_normal"), decimals: 0 },
+        { type: "data", label: "Pipe Entrance Raise", getValue: (pipe) => getFittingCount(pipe, "pipe_entrance_raise"), decimals: 0 },
+        { type: "data", label: "Pipe Exit", getValue: (pipe) => getFittingCount(pipe, "pipe_exit"), decimals: 0 },
 
         { type: "data", label: "Fitting K", getValue: (pipe) => pipe.pressureDropCalculationResults?.fittingK },
         { type: "data", label: "Pipe Length K", getValue: (pipe) => pipe.pressureDropCalculationResults?.pipeLengthK },
@@ -248,11 +252,135 @@ export function SummaryTable({ network }: Props) {
         { type: "data", label: "OUTLET Flow Momentum", unit: "Pa", getValue: (pipe) => pipe.resultSummary?.outletState?.flowMomentum },
     ];
 
+    const [fitToPage, setFitToPage] = useState(false);
+
+    const handlePrint = () => {
+        window.print();
+    };
+
     return (
-        <Paper sx={{ width: "100%", overflow: "hidden", p: 2 }}>
-            <Typography variant="h6" gutterBottom component="div" align="center" sx={{ fontWeight: 'bold' }}>
-                SINGLE PHASE FLOW PRESSURE DROP
-            </Typography>
+        <Paper id="summary-table-print-area" className={fitToPage ? "fit-to-page" : ""} sx={{ width: "100%", overflow: "hidden", p: 2 }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', flex: 1, textAlign: "center" }}>
+                    SINGLE PHASE FLOW PRESSURE DROP
+                </Typography>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }} className="no-print">
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={fitToPage}
+                                onChange={(e) => setFitToPage(e.target.checked)}
+                                size="small"
+                            />
+                        }
+                        label="Fit Height to Page"
+                    />
+                    <Button variant="outlined" onClick={handlePrint} startIcon={<PrintIcon />}>
+                        Print
+                    </Button>
+                </Box>
+            </Box>
+            <style type="text/css" media="print">
+                {`
+                @page { size: portrait; }
+                @media print {
+                    body * {
+                        visibility: hidden;
+                    }
+                    #summary-table-print-area, #summary-table-print-area * {
+                        visibility: visible;
+                    }
+                    #summary-table-print-area {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        width: 100%;
+                        margin: 0;
+                        padding: 0;
+                        box-shadow: none;
+                    }
+                    .no-print {
+                        display: none !important;
+                    }
+                    /* Reset table container scroll/height for print */
+                    .MuiTableContainer-root {
+                        max-height: none !important;
+                        overflow: visible !important;
+                    }
+                    /* Remove sticky positioning for print */
+                    .MuiTableCell-stickyHeader, .MuiTableCell-root {
+                        position: static !important;
+                        border-right: 1px solid #000 !important;
+                        border-bottom: 1px solid #000 !important;
+                    }
+                    /* Add top and left borders to the table to complete the outer border */
+                    .MuiTable-root {
+                        border-top: 1px solid #000 !important;
+                        border-left: 1px solid #000 !important;
+                        table-layout: fixed !important; /* Force column widths */
+                        width: 100% !important;
+                    }
+                    .MuiTableHead-root {
+                        display: table-header-group;
+                    }
+                    .MuiTableRow-root {
+                        page-break-inside: avoid;
+                    }
+
+                    /* Fit to Page Styles */
+                    .fit-to-page .MuiTableCell-root {
+                        padding: 0px 2px !important;
+                        font-size: 6pt !important;
+                        line-height: 1.1 !important;
+                        height: auto !important;
+                    }
+                    .fit-to-page .MuiTypography-root {
+                        font-size: 6pt !important;
+                    }
+                    .fit-to-page .MuiTypography-caption {
+                        font-size: 5pt !important;
+                    }
+
+                    /* Column Width Adjustments for Print */
+                    /* Property Column */
+                    .MuiTableHead-root .MuiTableCell-root:nth-of-type(1),
+                    .MuiTableBody-root .MuiTableRow-root .MuiTableCell-root:nth-of-type(1) {
+                        width: 150px !important; /* Reduced from default minWidth 250 */
+                        min-width: 150px !important;
+                        max-width: 150px !important;
+                        white-space: normal !important; /* Allow wrapping */
+                        overflow: hidden !important;
+                        text-overflow: ellipsis !important;
+                    }
+                    /* Unit Column */
+                    .MuiTableHead-root .MuiTableCell-root:nth-of-type(2),
+                    .MuiTableBody-root .MuiTableRow-root .MuiTableCell-root:nth-of-type(2) {
+                        width: 25px !important;
+                        min-width: 25px !important;
+                        max-width: 25px !important;
+                        padding: 0px 1px !important;
+                        white-space: nowrap !important;
+                        overflow: hidden !important;
+                    }
+                    /* Data Columns */
+                    .MuiTableHead-root .MuiTableCell-root:nth-of-type(n+3),
+                    .MuiTableBody-root .MuiTableRow-root .MuiTableCell-root:nth-of-type(n+3) {
+                        width: auto !important;
+                        min-width: 30px !important;
+                    }
+
+                    /* Fix empty page at the end */
+                    html, body {
+                        height: auto !important;
+                        overflow: hidden !important;
+                    }
+                    #summary-table-print-area {
+                        height: auto !important;
+                        overflow: visible !important;
+                    }
+                }
+                `}
+            </style>
             <TableContainer sx={{ maxHeight: 800 }}>
                 <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'collapse' }}>
                     <TableHead>
@@ -307,6 +435,7 @@ export function SummaryTable({ network }: Props) {
                 </Table>
             </TableContainer>
             <TablePagination
+                className="no-print"
                 rowsPerPageOptions={[8, 16, 24, 100]}
                 component="div"
                 count={pipes.length}

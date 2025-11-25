@@ -30,7 +30,7 @@ export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, on
         <Stack gap={0.5} flex="1 1 auto">
           <Typography variant="h5" component="h1" fontWeight="bold">Pipeline Network Builder</Typography>
           <Typography color="text.secondary">
-            Sketch networks, edit properties, then run the mock hydraulic solver.
+            Sketch networks, edit properties, then print summary table and export network as PNG.
           </Typography>
         </Stack>
 
@@ -51,7 +51,6 @@ export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, on
           </ButtonGroup>
 
           <ButtonGroup variant="contained">
-            <Button onClick={() => window.print?.()} startIcon={<Print />}>Print</Button>
             <Button onClick={onExportPng} startIcon={<Image />}>Export PNG</Button>
             <Button onClick={onLoadNetwork} startIcon={<FileOpen />}>Load</Button>
             <Button onClick={onSaveNetwork} startIcon={<Save />}>Save</Button>
