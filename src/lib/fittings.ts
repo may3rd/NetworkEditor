@@ -967,10 +967,9 @@ function calculateResultSummary(
     // machNumber undefined for liquid
   };
 
-  return {
-    inletState,
-    outletState,
-  };
+  return direction === "backward"
+    ? { inletState: outletState, outletState: inletState }
+    : { inletState, outletState };
 }
 
 function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null {

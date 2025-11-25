@@ -206,12 +206,12 @@ export function PropertiesPanel({
             <QuantityInput
               label="Temperature"
               value={node.temperature ?? ""}
-              unit={node.temperatureUnit ?? "°C"}
+              unit={node.temperatureUnit ?? "C"}
               units={QUANTITY_UNIT_OPTIONS.temperature}
               unitFamily="temperature"
               onValueChange={(newValue) => onUpdateNode(node.id, {
                 temperature: newValue,
-                ...(node.temperatureUnit === undefined && { temperatureUnit: "°C" })
+                ...(node.temperatureUnit === undefined && { temperatureUnit: "C" })
               })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { temperatureUnit: newUnit })}
             />
@@ -243,27 +243,33 @@ export function PropertiesPanel({
                 const prioritizedPipes = [...targetPipes, ...sourcePipes];
 
                 for (const pipe of prioritizedPipes) {
-                  if (pipe.resultSummary?.outletState) {
-                    const outletState = pipe.resultSummary.outletState;
-                    const isOutletNode =
-                      (pipe.direction === 'forward' && pipe.endNodeId === node.id) ||
-                      (pipe.direction === 'backward' && pipe.startNodeId === node.id);
+                  const pipeState =
+                    pipe.startNodeId === node.id
+                      ? pipe.resultSummary?.inletState
+                      : pipe.endNodeId === node.id
+                        ? pipe.resultSummary?.outletState
+                        : undefined;
 
-                    if (isOutletNode && outletState.pressure !== undefined) {
-                      const pressureInNodeUnit = convertUnit(outletState.pressure, 'Pa', node.pressureUnit ?? 'kPag');
-                      const updates: Partial<NodeProps> = {
-                        pressure: pressureInNodeUnit,
-                        pressureUnit: node.pressureUnit ?? 'kPag'
-                      };
-                      if (outletState.temprature !== undefined) {
-                        const temperatureInNodeUnit = convertUnit(outletState.temprature, 'K', node.temperatureUnit ?? 'C');
-                        updates.temperature = temperatureInNodeUnit;
-                        updates.temperatureUnit = node.temperatureUnit ?? 'C';
-                      }
-                      onUpdateNode(node.id, updates);
-                      break; // Update from first matching pipe
-                    }
+                  if (!pipeState || pipeState.pressure === undefined) {
+                    continue;
                   }
+
+                  const updates: Partial<NodeProps> = {
+                    pressure: convertUnit(pipeState.pressure, 'Pa', node.pressureUnit ?? 'kPag'),
+                    pressureUnit: node.pressureUnit ?? 'kPag',
+                  };
+
+                  if (pipeState.temprature !== undefined) {
+                    updates.temperature = convertUnit(
+                      pipeState.temprature,
+                      'K',
+                      node.temperatureUnit ?? 'C'
+                    );
+                    updates.temperatureUnit = node.temperatureUnit ?? 'C';
+                  }
+
+                  onUpdateNode(node.id, updates);
+                  break;
                 }
               }}
             >

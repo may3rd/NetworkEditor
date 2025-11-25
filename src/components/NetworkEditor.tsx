@@ -221,10 +221,11 @@ export function NetworkEditor({
       }
 
       // Check if a connection already exists between these two nodes (in either direction)
-      const existingConnection = network.pipes.find(
-        (pipe) =>
-          (pipe.startNodeId === connection.source && pipe.endNodeId === connection.target)
-      );
+      const existingConnection = network.pipes.find(pipe => {
+        const connectsForward = pipe.startNodeId === connection.source && pipe.endNodeId === connection.target;
+        const connectsBackward = pipe.startNodeId === connection.target && pipe.endNodeId === connection.source;
+        return connectsForward || connectsBackward;
+      });
 
       if (existingConnection) {
         return; // Silently prevent duplicate connection
@@ -258,9 +259,11 @@ export function NetworkEditor({
         fittingType: "LR",
       };
 
+      const calculatedPipe = recalculatePipeFittingLosses(newPipe);
+
       onNetworkChange({
         ...network,
-        pipes: [...network.pipes, newPipe],
+        pipes: [...network.pipes, calculatedPipe],
       });
     },
     [network, onNetworkChange]
@@ -381,7 +384,7 @@ function EditorCanvas({
       const existingNodeAtPointer = getNodes().find((node) => {
         const width = node.width ?? 20;
         const height = node.height ?? 20;
-        const nodePosition = node.positionAbsolute ?? node.position;
+        const nodePosition = (node as { positionAbsolute?: { x: number; y: number } }).positionAbsolute ?? node.position;
         return (
           flowPosition.x >= nodePosition.x &&
           flowPosition.x <= nodePosition.x + width &&
