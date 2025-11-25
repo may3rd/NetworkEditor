@@ -1,6 +1,6 @@
 // components/PressureNode.tsx
 
-import { memo } from "react";
+import { memo, type CSSProperties } from "react";
 import { Handle, Position } from "@xyflow/react";
 
 type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
@@ -45,11 +45,16 @@ function PressureNode({ data }: { data: NodeData }) {
   const scaleAmount = isSelected ? 1.2 : 1;
   const circleSize = 20;
   const dashThickness = needsAttention ? 3 : 0;
+  const handleStyle: CSSProperties = {
+    opacity: 1,
+    border: "none",
+    background: needsAttention ? "#dc2626" : borderColor,
+  };
 
   return (
     <>
-      <Handle type="target" position={Position.Left} style={{ opacity: 1 }} />
-      <Handle type="source" position={Position.Right} style={{ opacity: 1 }} />
+      <Handle type="target" position={Position.Left} style={handleStyle} />
+      <Handle type="source" position={Position.Right} style={handleStyle} />
       {needsAttention && (
         <style>
           {`@keyframes dash-rotate {
