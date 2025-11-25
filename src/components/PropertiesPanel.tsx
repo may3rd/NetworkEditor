@@ -232,45 +232,75 @@ export function PropertiesPanel({
             <Button
               size="sm"
               onClick={() => {
-                // Find connected pipes and update node with outlet state
-                // Prioritize pipes where node is the target (endNode) first, then source (startNode)
-                const connectedPipes = network.pipes.filter(pipe =>
-                  pipe.startNodeId === node.id || pipe.endNodeId === node.id
+                // Find connected pipes and update node with the lowest pressure from matching port
+                const connectedPipes = network.pipes.filter(
+                  (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id,
                 );
 
-                const targetPipes = connectedPipes.filter(pipe => pipe.endNodeId === node.id);
-                const sourcePipes = connectedPipes.filter(pipe => pipe.startNodeId === node.id);
-                const prioritizedPipes = [...targetPipes, ...sourcePipes];
+                const targetPipes = connectedPipes.filter((pipe) => pipe.endNodeId === node.id);
+                const sourcePipes = connectedPipes.filter((pipe) => pipe.startNodeId === node.id);
+                const normalizeDirection = (pipe: PipeProps) =>
+                  pipe.direction === "backward" ? "backward" : "forward";
+                const inboundTargetPipes = targetPipes.filter(
+                  (pipe) => normalizeDirection(pipe) === "forward",
+                );
+                const inboundSourcePipes = sourcePipes.filter(
+                  (pipe) => normalizeDirection(pipe) === "backward",
+                );
 
-                for (const pipe of prioritizedPipes) {
-                  const pipeState =
-                    pipe.startNodeId === node.id
-                      ? pipe.resultSummary?.inletState
-                      : pipe.endNodeId === node.id
-                        ? pipe.resultSummary?.outletState
-                        : undefined;
+                type PipeState = NonNullable<NonNullable<PipeProps["resultSummary"]>["inletState"]>;
 
-                  if (!pipeState || pipeState.pressure === undefined) {
-                    continue;
+                const findLowestState = (
+                  pipes: PipeProps[],
+                  selector: (pipe: PipeProps) => PipeState | undefined,
+                ): PipeState | undefined => {
+                  let lowest: { pressure: number; state: PipeState } | null = null;
+                  for (const pipe of pipes) {
+                    const state = selector(pipe);
+                    if (!state || typeof state.pressure !== "number") {
+                      continue;
+                    }
+                    if (!lowest || state.pressure < lowest.pressure) {
+                      lowest = { pressure: state.pressure, state };
+                    }
                   }
+                  return lowest?.state;
+                };
 
-                  const updates: Partial<NodeProps> = {
-                    pressure: convertUnit(pipeState.pressure, 'Pa', node.pressureUnit ?? 'kPag'),
-                    pressureUnit: node.pressureUnit ?? 'kPag',
-                  };
-
-                  if (pipeState.temprature !== undefined) {
+                const updateFromState = (pipeState?: PipeState) => {
+                  if (!pipeState) {
+                    return false;
+                  }
+                  const updates: Partial<NodeProps> = {};
+                  if (typeof pipeState.pressure === "number") {
+                    updates.pressure = convertUnit(
+                      pipeState.pressure,
+                      "Pa",
+                      node.pressureUnit ?? "kPag",
+                    );
+                    updates.pressureUnit = node.pressureUnit ?? "kPag";
+                  }
+                  if (typeof pipeState.temprature === "number") {
                     updates.temperature = convertUnit(
                       pipeState.temprature,
-                      'K',
-                      node.temperatureUnit ?? 'C'
+                      "K",
+                      node.temperatureUnit ?? "C",
                     );
-                    updates.temperatureUnit = node.temperatureUnit ?? 'C';
+                    updates.temperatureUnit = node.temperatureUnit ?? "C";
                   }
-
+                  if (Object.keys(updates).length === 0) {
+                    return false;
+                  }
                   onUpdateNode(node.id, updates);
-                  break;
+                  return true;
+                };
+
+                const targetState = findLowestState(inboundTargetPipes, (pipe) => pipe.resultSummary?.outletState);
+                if (updateFromState(targetState)) {
+                  return;
                 }
+                const sourceState = findLowestState(inboundSourcePipes, (pipe) => pipe.resultSummary?.inletState);
+                updateFromState(sourceState);
               }}
             >
               Update from Connected Pipe

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { Flex, Input, Select, FormControl, FormLabel } from "@chakra-ui/react";
 import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
@@ -22,7 +23,7 @@ type QuantityInputProps = {
   value: number | string;
   unit: string;
   units: readonly string[];
-  onValueChange: (value: number) => void;
+  onValueChange: (value: number | undefined) => void;
   onUnitChange?: (unit: string) => void;
   unitFamily?: UnitFamily;
   placeholder?: string;
@@ -41,10 +42,38 @@ export function QuantityInput({
   isDisabled = false,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
+  const formatValue = useMemo(
+    () => (val: number | string) => {
+      if (val === "" || val === null || val === undefined) {
+        return "";
+      }
+      if (typeof val === "number") {
+        return Number.isFinite(val) ? `${val}` : "";
+      }
+      return val;
+    },
+    [],
+  );
+
+  const [inputValue, setInputValue] = useState<string>(formatValue(value));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    const formatted = formatValue(value);
+    if (!isFocused && formatted !== inputValue) {
+      setInputValue(formatted);
+    }
+  }, [value, formatValue, isFocused, inputValue]);
 
   const handleUnitChange = (nextUnit: string) => {
-    const numericValue = typeof value === "number" ? value : Number(value);
-    const canConvert = unitFamily && !Number.isNaN(numericValue);
+    const numericValue =
+      typeof value === "number"
+        ? value
+        : value === "" || value === null || value === undefined
+          ? undefined
+          : Number(value);
+    const canConvert =
+      unitFamily && typeof numericValue === "number" && !Number.isNaN(numericValue);
 
     if (canConvert) {
       const converted = convertUnit(numericValue, unit, nextUnit, unitFamily);
@@ -68,10 +97,41 @@ export function QuantityInput({
         _focusWithin={{ zIndex: 1, borderColor: "blue.500", boxShadow: "0 0 0 1px blue.500" }}
       >
         <Input
-          type="number"
+          type="text"
+          inputMode="decimal"
           placeholder={placeholder}
-          value={value}
-          onChange={(e) => onValueChange(Number(e.target.value))}
+          value={inputValue}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => {
+            setIsFocused(false);
+            if (inputValue === "-" || inputValue === "." || inputValue === "-.") {
+              setInputValue(formatValue(value));
+            }
+          }}
+          onChange={(e) => {
+            const next = e.target.value;
+            if (
+              next !== "" &&
+              next !== "-" &&
+              next !== "." &&
+              next !== "-." &&
+              !/^[-+]?\d*(?:\.\d*)?$/.test(next)
+            ) {
+              return;
+            }
+            setInputValue(next);
+            if (next === "") {
+              onValueChange(undefined);
+              return;
+            }
+            if (next === "-" || next === "." || next === "-.") {
+              return;
+            }
+            const parsed = Number(next);
+            if (!Number.isNaN(parsed)) {
+              onValueChange(parsed);
+            }
+          }}
           border="none"
           borderRadius="0"
           _focus={{ boxShadow: "none" }}

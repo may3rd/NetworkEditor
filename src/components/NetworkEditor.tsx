@@ -24,6 +24,7 @@ import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
 import { NetworkState, type NodeProps, type PipeProps } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
+import { convertUnit } from "@/lib/unitConversion";
 
 const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
@@ -47,6 +48,13 @@ type Props = {
   setShowPressures?: (show: boolean) => void;
 };
 
+type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
+
+type NodeFlowState = {
+  role: NodeFlowRole;
+  needsAttention: boolean;
+};
+
 export function NetworkEditor({
   network,
   onSelect,
@@ -68,48 +76,134 @@ export function NetworkEditor({
   const showPressures = externalShowPressures ?? internalShowPressures;
   const setShowPressures = externalSetShowPressures ?? setInternalShowPressures;
 
+  const nodeFlowStates = useMemo<Record<string, NodeFlowState>>(() => {
+    const PRESSURE_TOLERANCE = 0.001;
+    const connectionMap = new Map<
+      string,
+      { asSource: PipeProps[]; asTarget: PipeProps[] }
+    >();
+
+    network.nodes.forEach(node => {
+      connectionMap.set(node.id, { asSource: [], asTarget: [] });
+    });
+
+    network.pipes.forEach(pipe => {
+      connectionMap.get(pipe.startNodeId)?.asSource.push(pipe);
+      connectionMap.get(pipe.endNodeId)?.asTarget.push(pipe);
+    });
+
+    const normalizeDirection = (pipe: PipeProps) =>
+      pipe.direction === "backward" ? "backward" : "forward";
+
+    const states: Record<string, NodeFlowState> = {};
+
+    network.nodes.forEach(node => {
+      const connectionEntry = connectionMap.get(node.id);
+      const asSource = connectionEntry?.asSource ?? [];
+      const asTarget = connectionEntry?.asTarget ?? [];
+      const totalConnections = asSource.length + asTarget.length;
+      const isIsolated = totalConnections === 0;
+
+      const sourceDirections = asSource.map(normalizeDirection);
+      const targetDirections = asTarget.map(normalizeDirection);
+
+      const allSourceForward =
+        asSource.length === 0 || sourceDirections.every(direction => direction === "forward");
+      const allSourceBackward =
+        asSource.length === 0 || sourceDirections.every(direction => direction === "backward");
+      const anySourceBackward = sourceDirections.some(direction => direction === "backward");
+
+      const allTargetForward =
+        asTarget.length === 0 || targetDirections.every(direction => direction === "forward");
+      const allTargetBackward =
+        asTarget.length === 0 || targetDirections.every(direction => direction === "backward");
+      const anyTargetForward = targetDirections.some(direction => direction === "forward");
+
+      let role: NodeFlowRole = "neutral";
+      if (isIsolated) {
+        role = "isolated";
+      } else if (allSourceForward && allTargetBackward) {
+        role = "source";
+      } else if (allSourceBackward && allTargetForward) {
+        role = "sink";
+      } else if (anySourceBackward || anyTargetForward) {
+        role = "middle";
+      }
+
+      const missingPressure = typeof node.pressure !== "number";
+      const missingTemperature = typeof node.temperature !== "number";
+
+      const incomingSourcePipes = asSource.filter(pipe => normalizeDirection(pipe) === "backward");
+      const incomingTargetPipes = asTarget.filter(pipe => normalizeDirection(pipe) === "forward");
+
+      const incomingPressures: number[] = [];
+      incomingSourcePipes.forEach(pipe => {
+        const pressure = pipe.resultSummary?.inletState?.pressure;
+        if (typeof pressure === "number") {
+          incomingPressures.push(pressure);
+        }
+      });
+      incomingTargetPipes.forEach(pipe => {
+        const pressure = pipe.resultSummary?.outletState?.pressure;
+        if (typeof pressure === "number") {
+          incomingPressures.push(pressure);
+        }
+      });
+
+      let flowMismatch = false;
+      if ((role === "sink" || role === "middle") && !missingPressure && incomingPressures.length > 0) {
+        const nodePressurePa = convertUnit(
+          node.pressure as number,
+          node.pressureUnit ?? "kPag",
+          "Pa",
+        );
+        if (typeof nodePressurePa === "number" && Number.isFinite(nodePressurePa)) {
+          const hasMatch = incomingPressures.some(
+            stagePressure => Math.abs(stagePressure - nodePressurePa) <= PRESSURE_TOLERANCE,
+          );
+          flowMismatch = !hasMatch;
+        }
+      }
+
+      const needsAttention = missingPressure || missingTemperature || flowMismatch;
+      states[node.id] = { role, needsAttention };
+    });
+
+    return states;
+  }, [network.nodes, network.pipes]);
+
   const mapNodeToReactFlow = useCallback(
-    (node: NodeProps, isSelected: boolean): Node => ({
-      id: node.id,
-      type: "pressure",
-      position: { ...node.position },
-      data: {
-        label: node.label,
-        isSelected,
-        showPressures,
-        pressure: node.pressure,
-        pressureUnit: node.pressureUnit,
-      },
-      width: 20,
-      height: 20,
-      draggable: true,
-      connectable: true,
-    }),
-    []
+    (node: NodeProps, isSelected: boolean): Node => {
+      const flowState = nodeFlowStates[node.id] ?? { role: "isolated", needsAttention: false };
+      return {
+        id: node.id,
+        type: "pressure",
+        position: { ...node.position },
+        data: {
+          label: node.label,
+          isSelected,
+          showPressures,
+          pressure: node.pressure,
+          pressureUnit: node.pressureUnit,
+          flowRole: flowState.role,
+          needsAttention: flowState.needsAttention,
+        },
+        width: 20,
+        height: 20,
+        draggable: true,
+        connectable: true,
+      };
+    },
+    [nodeFlowStates, showPressures]
   );
 
   const rfNodes = useMemo<Node[]>(
     () =>
       network.nodes.map(node => {
         const isSelected = selectedType === "node" && selectedId === node.id;
-        return {
-          id: node.id,
-          type: "pressure",
-          position: { ...node.position },
-          data: {
-            label: node.label,
-            isSelected,
-            showPressures,
-            pressure: node.pressure,
-            pressureUnit: node.pressureUnit,
-          },
-          width: 20,
-          height: 20,
-          draggable: true,
-          connectable: true,
-        };
+        return mapNodeToReactFlow(node, isSelected);
       }),
-    [network.nodes, selectedId, selectedType, showPressures]
+    [network.nodes, selectedId, selectedType, mapNodeToReactFlow]
   );
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
