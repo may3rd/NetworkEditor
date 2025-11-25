@@ -3,17 +3,14 @@
 import { Button, Flex, Heading, Stack, Text, Box, ButtonGroup } from "@chakra-ui/react";
 
 type Props = {
-  onSolve: () => void;
   onReset: () => void;
   onClearNetwork: () => void;
   onExportPng: () => void;
   onLoadNetwork: () => void;
   onSaveNetwork: () => void;
-  isSolving: boolean;
-  lastSolvedAt: string | null;
 };
 
-export function Header({ onSolve, onReset, onClearNetwork, onExportPng, onLoadNetwork, onSaveNetwork, isSolving, lastSolvedAt }: Props) {
+export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, onSaveNetwork }: Props) {
   return (
     <Flex
       direction="column"
@@ -44,27 +41,6 @@ export function Header({ onSolve, onReset, onClearNetwork, onExportPng, onLoadNe
             <Button onClick={onLoadNetwork}>Load .nhf</Button>
             <Button onClick={onSaveNetwork}>Save .nhf</Button>
           </ButtonGroup>
-
-          <Stack align={{ base: "stretch", md: "flex-end" }}>
-            <Button
-              size="sm"
-              background={"#239BA7"}
-              color="white"
-              _hover={{ background: "#1d7b85" }}
-              onClick={onSolve}
-              isLoading={isSolving}
-              loadingText="Solving..."
-            >
-              Run hydraulic calculation
-            </Button>
-            <Box textAlign="center" minH="1.2em">
-              {lastSolvedAt && (
-                <Text fontSize="xs" color="gray.500">
-                  Last solved: {lastSolvedAt}
-                </Text>
-              )}
-            </Box>
-          </Stack>
         </Flex>
       </Flex>
     </Flex>

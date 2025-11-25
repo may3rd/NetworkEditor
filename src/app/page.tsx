@@ -319,16 +319,16 @@ export default function Home() {
         onChange={handleFileChange}
       />
       <Header
-        onSolve={handleSolve}
+        // onSolve={handleSolve}
         onReset={handleReset}
         onClearNetwork={handleClearNetwork}
         onExportPng={handleExportPng}
         onLoadNetwork={handleLoadNetworkClick}
         onSaveNetwork={handleSaveNetwork}
-        isSolving={isSolving}
-        lastSolvedAt={lastSolvedAt}
+        // isSolving={isSolving}
+        // lastSolvedAt={lastSolvedAt}
       />
-      <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} />
+      {/* <SummaryPanel network={network} lastSolvedAt={lastSolvedAt} /> */}
 
       <Flex gap={4} align="flex-start" flexDirection={{ base: "column", xl: "row" }}>
         <NetworkEditor
@@ -344,7 +344,7 @@ export default function Home() {
           onNetworkChange={handleNetworkChange}
           historyIndex={historyIndex}
           historyLength={history.length}
-          height="600px"
+          height="640px"
         />
 
         <PropertiesPanel

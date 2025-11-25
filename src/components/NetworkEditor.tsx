@@ -440,7 +440,7 @@ function EditorCanvas({
   selectedType: "node" | "pipe" | null;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
-  const [showGrid, setShowGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const [isAddingNode, setIsAddingNode] = useState(false);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
   const [isSpacePanning, setIsSpacePanning] = useState(false);
