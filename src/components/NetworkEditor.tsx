@@ -21,7 +21,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
-import { NetworkState, type NodeProps } from "@/lib/types";
+import { NetworkState, type NodeProps, type PipeProps } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 
 const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
@@ -231,6 +231,8 @@ export function NetworkEditor({
       }
 
       const startNode = network.nodes.find(node => node.id === connection.source);
+      const gasFlowModel: PipeProps["gasFlowModel"] =
+        startNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined;
       const newPipe = {
         id: `pipe-${connection.source}-${connection.target}-${Date.now()}`,
         startNodeId: connection.source,
@@ -245,8 +247,7 @@ export function NetworkEditor({
         roughness: 0.0457, // Default roughness
         roughnessUnit: "mm",
         fluid: startNode?.fluid ? { ...startNode.fluid } : undefined,
-        gasFlowModel:
-          startNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined,
+        gasFlowModel,
         direction: "forward",
         boundaryPressure: startNode?.pressure,
         boundaryPressureUnit: startNode?.pressureUnit,
@@ -433,6 +434,8 @@ function EditorCanvas({
         pipeStartNodeId === newNodeId
           ? newNode
           : network.nodes.find(node => node.id === pipeStartNodeId);
+      const gasFlowModel: PipeProps["gasFlowModel"] =
+        pipeStartNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined;
       const newPipe = {
         id: `pipe-${startsFromSourceHandle ? fromId : newNodeId}-${startsFromSourceHandle ? newNodeId : fromId}-${Date.now()}`,
         startNodeId: pipeStartNodeId,
@@ -447,8 +450,7 @@ function EditorCanvas({
         roughness: 0.0457, // Default roughness
         roughnessUnit: "mm",
         fluid: pipeStartNode?.fluid ? { ...pipeStartNode.fluid } : undefined,
-        gasFlowModel:
-          pipeStartNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined,
+        gasFlowModel,
         direction: "forward",
         boundaryPressure: sourceNode?.pressure, // Use source node pressure
         boundaryPressureUnit: sourceNode?.pressureUnit,
