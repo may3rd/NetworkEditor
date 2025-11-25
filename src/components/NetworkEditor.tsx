@@ -124,6 +124,7 @@ export function NetworkEditor({
   const rfEdges = useMemo<Edge[]>(
     () =>
       network.pipes.map((pipe) => {
+        const isSelectedPipe = selectedType === "pipe" && selectedId === pipe.id;
         let label: string;
         if (pipe.pipeSectionType === "control valve") {
           label = "CV";
@@ -141,7 +142,7 @@ export function NetworkEditor({
           pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined
         ) {
           const deltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000; // Pa to kPa
-          label += `\nΔP: ${deltaP.toFixed(1)} kPa`;
+          label += `, ΔP: ${deltaP.toFixed(1)} kPa`;
         }
         return {
           id: pipe.id,
@@ -149,17 +150,26 @@ export function NetworkEditor({
           target: pipe.endNodeId,
           label,
           labelStyle: {
-            fontSize: "8px",
-            fill: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
+            fontSize: "9px",
+            fontWeight: 500,
+            fill: isSelectedPipe ? "#92400e" : "#0f172a",
+          },
+          labelBgPadding: [8, 4] as [number, number],
+          labelBgBorderRadius: 4,
+          labelBgStyle: {
+            fill: isSelectedPipe ? "#fffbeb" : "#ffffff",
+            fillOpacity: 0.92,
+            stroke: isSelectedPipe ? "#f59e0b" : "#cbd5f5",
+            strokeWidth: 0.5,
           },
           type: "smoothstep",
           style: {
-            strokeWidth: selectedType === "pipe" && selectedId === pipe.id ? 2 : 1,
-            stroke: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
+            strokeWidth: isSelectedPipe ? 2 : 1,
+            stroke: isSelectedPipe ? "#f59e0b" : "#94a3b8",
           },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: selectedType === "pipe" && selectedId === pipe.id ? "#f59e0b" : "#94a3b8",
+            color: isSelectedPipe ? "#f59e0b" : "#94a3b8",
           },
         };
       }),
@@ -331,6 +341,7 @@ function EditorCanvas({
   selectedType: "node" | "pipe" | null;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(true);
   const [isAddingNode, setIsAddingNode] = useState(false);
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
@@ -682,6 +693,27 @@ function EditorCanvas({
 
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <input
+            id="show-grid"
+            type="checkbox"
+            checked={showGrid}
+            onChange={(e) => setShowGrid(e.target.checked)}
+            style={{ cursor: "pointer" }}
+          />
+          <label
+            htmlFor="show-grid"
+            style={{
+              fontSize: "13px",
+              color: "#64748b",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            Show Grid
+          </label>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
             id="show-pressures"
             type="checkbox"
             checked={showPressures}
@@ -738,7 +770,7 @@ function EditorCanvas({
           minZoom={0.1}
           style={{ cursor: editorCursor }}
         >
-          <Background />
+          {showGrid && <Background />}
           <MiniMap
             pannable
             zoomable

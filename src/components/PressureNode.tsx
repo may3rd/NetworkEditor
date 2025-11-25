@@ -45,7 +45,7 @@ function PressureNode({ data }: { data: NodeData }) {
                     whiteSpace: 'nowrap',
                 }}
             >
-                {showPressures && pressure !== undefined ? `${data.label}\n${pressure.toFixed(1)} ${pressureUnit}` : data.label}
+                {showPressures && pressure !== undefined ? `${data.label} (${pressure.toFixed(1)} ${pressureUnit})` : data.label}
             </div>
         </>
     );

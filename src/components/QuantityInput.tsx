@@ -9,7 +9,7 @@ export const QUANTITY_UNIT_OPTIONS = {
   length: ["m", "km", "ft", "in", "mil"] as const,
   lengthSmall: ["mm", "cm", "in"] as const,
   massFlowRate: ["kg/h", "kg/s", "lb/h", "lb/s", "tonn/day"] as const,
-  pressure: ["kPag", "barg", "kg/cm2g", "kPa", "bar", "kg/cm2", "Pa", "psi", "mmH2O", "torr", "inHg"] as const,
+  pressure: ["kPag", "barg", "kg/cm2g", "psig", "kPa", "bar", "kg/cm2", "Pa", "psi", "mmH2O", "torr", "inHg"] as const,
   pressureDrop: ["kPa", "bar", "kg_cm2", "Pa", "psi"] as const,
   temperature: ["C", "F", "K", "R"] as const,
   volume: ["mm3", "cm3", "m3", "in3", "ft3"] as const,

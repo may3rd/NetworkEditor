@@ -62,6 +62,9 @@ export function PropertiesPanel({
   const endNode = pipe ? network.nodes.find((n) => n.id === pipe.endNodeId) : undefined;
   const nodeFluidPhase = node?.fluid?.phase ?? "liquid";
   const pipeFluidPhase = pipe?.fluid?.phase ?? startNode?.fluid?.phase ?? "liquid";
+  const normalizedPipeFluidPhase =
+    typeof pipeFluidPhase === "string" ? pipeFluidPhase.toLowerCase() : undefined;
+  const isGasPipe = normalizedPipeFluidPhase === "gas";
   const pipeDiameterInputMode: "nps" | "diameter" = pipe
     ? pipe.diameterInputMode ??
       (pipe.pipeNPD !== undefined || pipe.pipeSchedule ? "nps" : "diameter")
@@ -92,6 +95,20 @@ export function PropertiesPanel({
     controlValveCalculatedPressureDropPa === undefined
       ? ""
       : convertUnit(controlValveCalculatedPressureDropPa, "Pa", controlValvePressureDropUnit);
+  const controlValveCoefficientLabel = isGasPipe ? "Cg (Gas Flow Coefficient)" : "Cv (Flow Coefficient)";
+  const controlValveCoefficientValue = isGasPipe
+    ? pipe?.controlValve?.cg ?? ""
+    : pipe?.controlValve?.cv ?? "";
+  const controlValveCalculatedCoefficientLabel = isGasPipe ? "Calculated Cg" : "Calculated Cv";
+  const controlValveCalculatedCoefficientValue = isGasPipe
+    ? pipe?.controlValve?.cg ?? ""
+    : pipe?.controlValve?.cv ?? "";
+  const controlValveInputRadioLabel = isGasPipe
+    ? "Input Cg, Calculate Pressure Drop"
+    : "Input Cv, Calculate Pressure Drop";
+  const controlValveOutputRadioLabel = isGasPipe
+    ? "Input Pressure Drop, Calculate Cg"
+    : "Input Pressure Drop, Calculate Cv";
   const orificePressureDropUnit = pipe?.orifice?.pressureDropUnit ?? "kPa";
   const orificeCalculatedPressureDropPa =
     pipe?.pressureDropCalculationResults?.orificePressureDrop ??
@@ -880,21 +897,21 @@ export function PropertiesPanel({
                 }}
               >
                 <Stack direction="row">
-                  <Radio value="cv_to_dp">Input Cv, Calculate Pressure Drop</Radio>
-                  <Radio value="dp_to_cv">Input Pressure Drop, Calculate Cv</Radio>
+                  <Radio value="cv_to_dp">{controlValveInputRadioLabel}</Radio>
+                  <Radio value="dp_to_cv">{controlValveOutputRadioLabel}</Radio>
                 </Stack>
               </RadioGroup>
 
-              {pipe.controlValve?.calculation_note === "cv_to_dp" && (
+              {isGasPipe && (
                 <>
                   <Stack gap={1}>
                     <Text fontSize="sm" color="gray.500">
-                      Cv (Flow Coefficient)
+                      Gas Valve Constant (C1)
                     </Text>
                     <Input
                       type="number"
                       step="any"
-                      value={pipe.controlValve?.cv ?? ""}
+                      value={pipe.controlValve?.C1 ?? ""}
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
                         onUpdatePipe(pipe.id, (currentPipe) => {
@@ -906,7 +923,71 @@ export function PropertiesPanel({
                           return {
                             controlValve: {
                               ...currentValve,
-                              cv: value,
+                              C1: value,
+                            },
+                            pressureDropCalculationResults: undefined,
+                            resultSummary: undefined,
+                          };
+                        });
+                      }}
+                    />
+                  </Stack>
+                  <Stack gap={1}>
+                    <Text fontSize="sm" color="gray.500">
+                      Pressure Drop Ratio (xT)
+                    </Text>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={pipe.controlValve?.xT ?? ""}
+                      onChange={(event) => {
+                        const value = event.target.value === "" ? undefined : Number(event.target.value);
+                        onUpdatePipe(pipe.id, (currentPipe) => {
+                          const currentValve =
+                            currentPipe.controlValve ?? {
+                              id: currentPipe.id,
+                              tag: currentPipe.id,
+                            };
+                          return {
+                            controlValve: {
+                              ...currentValve,
+                              xT: value,
+                            },
+                            pressureDropCalculationResults: undefined,
+                            resultSummary: undefined,
+                          };
+                        });
+                      }}
+                    />
+                  </Stack>
+                </>
+              )}
+
+              {pipe.controlValve?.calculation_note === "cv_to_dp" && (
+                <>
+                  <Stack gap={1}>
+                    <Text fontSize="sm" color="gray.500">
+                      {controlValveCoefficientLabel}
+                    </Text>
+                    <Input
+                      type="number"
+                      step="any"
+                      value={controlValveCoefficientValue}
+                      onChange={(event) => {
+                        const value = event.target.value === "" ? undefined : Number(event.target.value);
+                        onUpdatePipe(pipe.id, (currentPipe) => {
+                          const currentValve =
+                            currentPipe.controlValve ?? {
+                              id: currentPipe.id,
+                              tag: currentPipe.id,
+                            };
+                          const coefficientPatch = isGasPipe
+                            ? { cg: value, cv: undefined }
+                            : { cv: value, cg: undefined };
+                          return {
+                            controlValve: {
+                              ...currentValve,
+                              ...coefficientPatch,
                               pressureDrop: undefined, // Clear the other input
                             },
                             pressureDropCalculationResults: undefined,
@@ -988,7 +1069,7 @@ export function PropertiesPanel({
                             ...currentValve,
                             pressureDrop: newValue,
                             pressureDropUnit: currentValve.pressureDropUnit ?? "kPa",
-                            cv: undefined,
+                            ...(isGasPipe ? { cg: undefined } : { cv: undefined }),
                           },
                           pressureDropCalculationResults: undefined,
                           resultSummary: undefined,
@@ -1015,12 +1096,12 @@ export function PropertiesPanel({
                   />
                   <Stack gap={1}>
                     <Text fontSize="sm" color="gray.500">
-                      Calculated Cv
+                      {controlValveCalculatedCoefficientLabel}
                     </Text>
                     <Input
                       type="number"
                       step="any"
-                      value={pipe.controlValve?.cv ?? ""}
+                      value={controlValveCalculatedCoefficientValue}
                       readOnly
                     />
                   </Stack>

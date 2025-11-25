@@ -5,11 +5,15 @@ import { Button, Flex, Heading, Stack, Text, Box, ButtonGroup } from "@chakra-ui
 type Props = {
   onSolve: () => void;
   onReset: () => void;
+  onClearNetwork: () => void;
+  onExportPng: () => void;
+  onLoadNetwork: () => void;
+  onSaveNetwork: () => void;
   isSolving: boolean;
   lastSolvedAt: string | null;
 };
 
-export function Header({ onSolve, onReset, isSolving, lastSolvedAt }: Props) {
+export function Header({ onSolve, onReset, onClearNetwork, onExportPng, onLoadNetwork, onSaveNetwork, isSolving, lastSolvedAt }: Props) {
   return (
     <Flex
       direction="column"
@@ -31,10 +35,14 @@ export function Header({ onSolve, onReset, isSolving, lastSolvedAt }: Props) {
 
         <Flex ml={{ base: 0, md: "auto" }} align="flex-start" gap={4} wrap={{ base: "wrap", md: "nowrap" }} justify="flex-end">
           <ButtonGroup variant="outline" size="sm" marginRight={"8"}>
-            <Button onClick={onReset} marginRight={"8"} background={"orange"}>Reset</Button>
-            <Button onClick={() => alert("Print action triggered!")}>Print</Button>
-            <Button onClick={() => alert("Load action triggered!")}>Load</Button>
-            <Button onClick={() => alert("Save action triggered!")}>Save</Button>
+            <Button onClick={onClearNetwork} background={"red.400"} color="white" _hover={{ background: "red.500" }}>
+              Clear network
+            </Button>
+            <Button onClick={onReset} marginRight={"4"} background={"orange"}>Load default</Button>
+            <Button onClick={() => window.print?.()}>Print</Button>
+            <Button onClick={onExportPng}>Export PNG</Button>
+            <Button onClick={onLoadNetwork}>Load .nhf</Button>
+            <Button onClick={onSaveNetwork}>Save .nhf</Button>
           </ButtonGroup>
 
           <Stack align={{ base: "stretch", md: "flex-end" }}>

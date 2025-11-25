@@ -67,8 +67,11 @@ const extendedPressure = {
       ...pressure.systems.imperial,
       psig: {
         name: { singular: 'PSI Gauge', plural: 'PSI Gauge' },
-        to_anchor: 6894.75729,
-        anchor_shift: - atmInkPa,
+        to_anchor: {
+          numerator: 1,
+          denominator: 1e3,
+        },
+        anchor_shift: - 0.0146959487755,
       },
     },
   },
