@@ -113,7 +113,7 @@ function PressureNode({ data }: { data: NodeData }) {
         }}
       >
         {showPressures && typeof pressure === "number"
-          ? `${label} (${pressure.toFixed(1)} ${pressureUnit ?? ""})`
+          ? `${label} (${pressure.toFixed(2)} ${pressureUnit ?? ""})`
           : label}
       </div>
     </>

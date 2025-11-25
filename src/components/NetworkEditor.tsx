@@ -228,8 +228,8 @@ export function NetworkEditor({
         } else {
           const roundedLength =
             typeof pipe.length === "number"
-              ? pipe.length.toFixed(3)
-              : Number(pipe.length ?? 0).toFixed(3);
+              ? pipe.length.toFixed(2)
+              : Number(pipe.length ?? 0).toFixed(2);
           label = `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim();
         }
         if (
@@ -237,7 +237,7 @@ export function NetworkEditor({
           pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined
         ) {
           const deltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000; // Pa to kPa
-          label += `, ΔP: ${deltaP.toFixed(1)} kPa`;
+          label += `, ΔP: ${deltaP.toFixed(2)} kPa`;
         }
         return {
           id: pipe.id,
