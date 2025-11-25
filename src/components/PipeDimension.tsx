@@ -21,7 +21,13 @@ export type PipeSchedule =
   | "40S"
   | "80S";
 
-export const PIPE_FITTING_OPTIONS = [
+type PipeFittingOption = {
+  value: string;
+  label: string;
+  autoOnly?: boolean;
+};
+
+export const PIPE_FITTING_OPTIONS: ReadonlyArray<PipeFittingOption> = [
   { value: "elbow_45", label: "Elbow 45" },
   { value: "elbow_90", label: "Elbow 90" },
   { value: "u_bend", label: "U Bend" },
@@ -42,7 +48,7 @@ export const PIPE_FITTING_OPTIONS = [
   { value: "pipe_exit", label: "Pipe Exit" },
   { value: "inlet_swage", label: "Inlet Swage", autoOnly: true },
   { value: "outlet_swage", label: "Outlet Swage", autoOnly: true },
-] as const;
+];
 
 type PipeScheduleEntry = {
   nps: number;

@@ -544,7 +544,7 @@ function calculateLiquidControlValveContribution(
   pipe: PipeProps,
   context: HydraulicContext
 ): { results: PressureDropCalculationResults | undefined; updatedControlValve: ControlValve | undefined } {
-  const controlValve = pipe.controlValve;
+  const controlValve = pipe.controlValve!;
   const density = context.density;
   const volumetricFlowM3h = context.volumetricFlowRate * 3600; // convert from m³/s to m³/h
   const specificGravity = density / 1000; // SG relative to water

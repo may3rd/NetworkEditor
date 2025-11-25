@@ -215,12 +215,12 @@ export function runBackendMock(network: NetworkState): MockHydraulicResponse {
     );
 
     const flow = section?.calculation.flow.volumetric_actual ?? pipe.flow ?? 0;
-    const headloss = section ? Math.abs(section.calculation.pressure_drop.total) : pipe.headloss ?? 0;
+    const headLoss = section ? Math.abs(section.calculation.pressure_drop.total) : pipe.headLoss ?? 0;
 
     return {
       ...pipe,
       flow,
-      headloss,
+      headLoss,
     };
   });
 

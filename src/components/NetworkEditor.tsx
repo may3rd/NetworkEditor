@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useCallback, useEffect, useState, useRef } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   ReactFlow,
   Background,
@@ -357,7 +358,7 @@ function EditorCanvas({
   const NODE_SIZE = 20;
 
   const onConnectStart = useCallback(
-    (_: MouseEvent, { nodeId, handleType }: OnConnectStartParams) => {
+    (_: MouseEvent | TouchEvent, { nodeId, handleType }: OnConnectStartParams) => {
       connectingNodeId.current = nodeId;
       connectingHandleType.current = handleType ?? null;
     },
@@ -396,10 +397,11 @@ function EditorCanvas({
       });
 
       if (existingNodeAtPointer && existingNodeAtPointer.id !== fromId) {
+        const nullHandles = { sourceHandle: null, targetHandle: null };
         const connection: Connection =
           handleType === "target"
-            ? { source: existingNodeAtPointer.id, target: fromId }
-            : { source: fromId, target: existingNodeAtPointer.id };
+            ? { ...nullHandles, source: existingNodeAtPointer.id, target: fromId }
+            : { ...nullHandles, source: fromId, target: existingNodeAtPointer.id };
         handleConnect(connection);
         connectingNodeId.current = null;
         connectingHandleType.current = null;
@@ -494,7 +496,7 @@ function EditorCanvas({
   );
 
   const handlePaneClick = useCallback(
-    (event: MouseEvent) => {
+    (event: ReactMouseEvent) => {
       if (isAddingNode && !onNetworkChange) {
         setIsAddingNode(false);
         return;

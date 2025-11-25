@@ -13,7 +13,6 @@ export function SummaryPanel({ network, lastSolvedAt }: Props) {
   const stats = useMemo(() => {
     const nodeCount = network.nodes.length;
     const pipeCount = network.pipes.length;
-    const totalDemand = network.nodes.reduce((sum, node) => sum + (node.demand ?? 0), 0);
     const avgPressure =
       nodeCount > 0
         ? network.nodes.reduce((sum, node) => sum + (node.pressure ?? 0), 0) / nodeCount
@@ -22,7 +21,6 @@ export function SummaryPanel({ network, lastSolvedAt }: Props) {
     return {
       nodes: nodeCount,
       pipes: pipeCount,
-      totalDemand: totalDemand.toFixed(1),
       avgPressure: avgPressure ? avgPressure.toFixed(2) : "0.00",
     };
   }, [network]);

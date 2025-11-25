@@ -87,6 +87,7 @@ export type PipeProps = {
   elevation?: number;
   elevationUnit?: string;
   flowAndFittingLoss?: number;
+  flow?: number;
   headLoss?: number;
   userSpecifiedPressureLoss?: number;
   userSpecifiedPressureLossUnit?: string;
