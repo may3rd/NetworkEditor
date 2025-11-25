@@ -154,7 +154,44 @@ export default function Home() {
       alert("Unable to locate the network canvas.");
       return;
     }
+    const viewport = flowElement.querySelector(".react-flow__viewport") as HTMLElement | null;
+    const NODE_SIZE = 20;
+    const PADDING = 80;
+    const hasNodes = network.nodes.length > 0;
+    const bounds = hasNodes
+      ? network.nodes.reduce(
+          (acc, node) => {
+            const { x = 0, y = 0 } = node.position ?? {};
+            return {
+              minX: Math.min(acc.minX, x),
+              minY: Math.min(acc.minY, y),
+              maxX: Math.max(acc.maxX, x),
+              maxY: Math.max(acc.maxY, y),
+            };
+          },
+          { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+        )
+      : { minX: 0, minY: 0, maxX: flowElement.clientWidth, maxY: flowElement.clientHeight };
+
+    const exportWidth = hasNodes ? Math.max(1, bounds.maxX - bounds.minX + NODE_SIZE + PADDING * 2) : flowElement.clientWidth;
+    const exportHeight = hasNodes ? Math.max(1, bounds.maxY - bounds.minY + NODE_SIZE + PADDING * 2) : flowElement.clientHeight;
+
+    const originalStyles = {
+      width: flowElement.style.width,
+      height: flowElement.style.height,
+      overflow: flowElement.style.overflow,
+      transform: viewport?.style.transform,
+      transformOrigin: viewport?.style.transformOrigin,
+    };
+
     try {
+      if (hasNodes && viewport) {
+        flowElement.style.width = `${exportWidth}px`;
+        flowElement.style.height = `${exportHeight}px`;
+        flowElement.style.overflow = "visible";
+        viewport.style.transform = `translate(${PADDING - bounds.minX}px, ${PADDING - bounds.minY}px) scale(1)`;
+        viewport.style.transformOrigin = "0 0";
+      }
       const dataUrl = await toPng(flowElement, {
         cacheBust: true,
         backgroundColor: "#ffffff",
@@ -184,8 +221,16 @@ export default function Home() {
     } catch (error) {
       console.error("Failed to export network PNG", error);
       alert("Unable to export the network diagram. Please try again.");
+    } finally {
+      flowElement.style.width = originalStyles.width;
+      flowElement.style.height = originalStyles.height;
+      flowElement.style.overflow = originalStyles.overflow;
+      if (viewport) {
+        viewport.style.transform = originalStyles.transform ?? "";
+        viewport.style.transformOrigin = originalStyles.transformOrigin ?? "";
+      }
     }
-  }, []);
+  }, [network.nodes]);
 
   const handleSaveNetwork = useCallback(() => {
     try {
