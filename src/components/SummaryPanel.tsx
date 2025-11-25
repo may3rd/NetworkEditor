@@ -31,10 +31,12 @@ export function SummaryPanel({ network, lastSolvedAt }: Props) {
     <Grid templateColumns={["repeat(1, 1fr)", "repeat(4, 1fr)"]} gap={4}>
       <SummaryCard label="Nodes" value={stats.nodes} />
       <SummaryCard label="Pipes" value={stats.pipes} />
-      <SummaryCard label="Total demand" value={`${stats.totalDemand} L/s`} />
+      <SummaryCard label="Total demand" value="-- kg/h" />
+      {/* <SummaryCard label="Total demand" value={`${stats.totalDemand} L/s`} /> */}
       <SummaryCard
         label="Avg pressure"
-        value={`${stats.avgPressure} kPa`}
+        //value={`${stats.avgPressure} kPa`}
+        value="-- kPa"
         helper={lastSolvedAt ? `Last solve: ${lastSolvedAt}` : undefined}
       />
     </Grid>

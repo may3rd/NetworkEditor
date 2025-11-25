@@ -183,6 +183,7 @@ export default function Home() {
       transform: viewport?.style.transform,
       transformOrigin: viewport?.style.transformOrigin,
     };
+    const hiddenGridLayers: Array<{ el: HTMLElement; display: string }> = [];
 
     try {
       if (hasNodes && viewport) {
@@ -192,6 +193,10 @@ export default function Home() {
         viewport.style.transform = `translate(${PADDING - bounds.minX}px, ${PADDING - bounds.minY}px) scale(1)`;
         viewport.style.transformOrigin = "0 0";
       }
+      flowElement.querySelectorAll<HTMLElement>(".react-flow__background").forEach(el => {
+        hiddenGridLayers.push({ el, display: el.style.display });
+        el.style.display = "none";
+      });
       const dataUrl = await toPng(flowElement, {
         cacheBust: true,
         backgroundColor: "#ffffff",
@@ -229,6 +234,9 @@ export default function Home() {
         viewport.style.transform = originalStyles.transform ?? "";
         viewport.style.transformOrigin = originalStyles.transformOrigin ?? "";
       }
+      hiddenGridLayers.forEach(({ el, display }) => {
+        el.style.display = display;
+      });
     }
   }, [network.nodes]);
 

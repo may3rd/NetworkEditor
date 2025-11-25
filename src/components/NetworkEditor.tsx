@@ -347,6 +347,8 @@ function EditorCanvas({
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(true);
   const [isAddingNode, setIsAddingNode] = useState(false);
+  const [panModeEnabled, setPanModeEnabled] = useState(false);
+  const [isSpacePanning, setIsSpacePanning] = useState(false);
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
   const connectingHandleType = useRef<HandleType | null>(null);
@@ -567,21 +569,72 @@ function EditorCanvas({
   }, [isAddingNode]);
 
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code !== "Space" || event.repeat) {
+        return;
+      }
+
+      const active = document.activeElement as HTMLElement | null;
+      if (
+        active &&
+        (active.tagName === "INPUT" ||
+          active.tagName === "TEXTAREA" ||
+          active.tagName === "SELECT" ||
+          active.tagName === "BUTTON" ||
+          active.isContentEditable)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      setIsSpacePanning(true);
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.code !== "Space") {
+        return;
+      }
+      setIsSpacePanning(false);
+    };
+
+    const handleWindowBlur = () => setIsSpacePanning(false);
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("blur", handleWindowBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener("blur", handleWindowBlur);
+    };
+  }, []);
+
+  const isPanMode = panModeEnabled || isSpacePanning;
+
+  useEffect(() => {
     const wrapper = reactFlowWrapperRef.current;
     if (!wrapper) return;
 
     const pane = wrapper.querySelector(".react-flow__pane") as HTMLDivElement | null;
     if (!pane) return;
 
-    pane.style.cursor = isAddingNode ? ADD_NODE_CURSOR : "";
+    let cursor = "";
+    if (isAddingNode) {
+      cursor = ADD_NODE_CURSOR;
+    } else if (isPanMode) {
+      cursor = "grab";
+    }
+
+    pane.style.cursor = cursor;
 
     return () => {
       pane.style.cursor = "";
     };
-  }, [isAddingNode]);
+  }, [isAddingNode, isPanMode]);
 
   const canEditNetwork = Boolean(onNetworkChange);
-  const editorCursor = isAddingNode ? ADD_NODE_CURSOR : "default";
+  const editorCursor = isAddingNode ? ADD_NODE_CURSOR : isPanMode ? "grab" : "default";
 
   return (
     <div
@@ -696,7 +749,7 @@ function EditorCanvas({
           <label
             htmlFor="snap-to-grid"
             style={{
-              fontSize: "13px",
+              fontSize: "11px",
               color: "#64748b",
               cursor: "pointer",
               userSelect: "none",
@@ -717,13 +770,34 @@ function EditorCanvas({
           <label
             htmlFor="show-grid"
             style={{
-              fontSize: "13px",
+              fontSize: "11px",
               color: "#64748b",
               cursor: "pointer",
               userSelect: "none",
             }}
           >
             Show Grid
+          </label>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <input
+            id="pan-mode-toggle"
+            type="checkbox"
+            checked={panModeEnabled}
+            onChange={(e) => setPanModeEnabled(e.target.checked)}
+            style={{ cursor: "pointer" }}
+          />
+          <label
+            htmlFor="pan-mode-toggle"
+            style={{
+              fontSize: "11px",
+              color: "#64748b",
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            Pan mode
           </label>
         </div>
 
@@ -738,7 +812,7 @@ function EditorCanvas({
           <label
             htmlFor="show-pressures"
             style={{
-              fontSize: "13px",
+              fontSize: "11px",
               color: "#64748b",
               cursor: "pointer",
               userSelect: "none",
@@ -764,6 +838,7 @@ function EditorCanvas({
         cursor: editorCursor,
       }}>
         <ReactFlow
+          className={isPanMode ? "pan-mode" : "design-mode"}
           nodes={localNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
@@ -783,17 +858,35 @@ function EditorCanvas({
           connectionMode={ConnectionMode.Strict}
           maxZoom={16}
           minZoom={0.1}
+          nodesDraggable={!isPanMode}
+          selectionOnDrag={!isPanMode}
+          panOnDrag={isPanMode}
           style={{ cursor: editorCursor }}
         >
-          {showGrid && <Background />}
+          {showGrid && <Background className="network-grid" />}
           <MiniMap
+            className="network-minimap"
             pannable
             zoomable
             nodeColor={(n) => (n.data?.isSelected ? "#f59e0b" : "#5a5a5cff")}
-            style={{ background: "#f8f5f9" }}
+            style={{ background: "#f8f5f9", opacity: 0.7, width: 140, height: 90 }}
           />
           <Controls />
         </ReactFlow>
+        <style jsx global>{`
+          .react-flow.design-mode .react-flow__node {
+            cursor: default !important;
+          }
+          .react-flow.pan-mode .react-flow__node {
+            cursor: grab !important;
+          }
+          .network-minimap {
+            transition: opacity 0.2s ease;
+          }
+          .network-minimap:hover {
+            opacity: 1 !important;
+          }
+        `}</style>
       </div>
     </div>
   );
