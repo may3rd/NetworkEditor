@@ -510,12 +510,22 @@ function EditorCanvas({
           network.nodes[0]?.fluid !== undefined
             ? { ...network.nodes[0].fluid }
             : { id: "fluid", phase: "liquid" };
+        const liquidDefaults = {
+          density: 1000,
+          densityUnit: "kg/m3",
+          viscosity: 1,
+          viscosityUnit: "cP",
+        } as const;
+        const newNodeFluid =
+          templateFluid?.phase?.toLowerCase() === "liquid" || !templateFluid?.phase
+            ? { ...templateFluid, ...liquidDefaults }
+            : templateFluid;
 
         const newNode = {
           id: newNodeId,
           label: `Node ${network.nodes.length + 1}`,
           position,
-          fluid: templateFluid,
+          fluid: newNodeFluid,
           temperature: network.nodes[0]?.temperature,
           temperatureUnit: network.nodes[0]?.temperatureUnit ?? "°C",
           pressure: network.nodes[0]?.pressure,
