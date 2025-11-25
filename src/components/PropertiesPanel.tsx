@@ -174,7 +174,9 @@ export function PropertiesPanel({
     <Paper
       elevation={0}
       sx={{
-        width: "320px",
+        width: "100%",
+        height: "100%",
+        overflowY: "auto",
         borderRadius: 2,
         border: "1px solid",
         borderColor: "divider",

@@ -349,85 +349,87 @@ export default function Home() {
           />
         </Box>
 
-        <PropertiesPanel
-          network={network}
-          selected={selection}
-          onUpdateNode={(id, patch: NodePatch) =>
-            setNetwork(current => {
-              let updatedNode: NodeProps | undefined;
+        <Box sx={{ width: "320px", height: "640px" }}>
+          <PropertiesPanel
+            network={network}
+            selected={selection}
+            onUpdateNode={(id, patch: NodePatch) =>
+              setNetwork(current => {
+                let updatedNode: NodeProps | undefined;
 
-              const nextNodes = current.nodes.map(node => {
-                if (node.id !== id) return node;
+                const nextNodes = current.nodes.map(node => {
+                  if (node.id !== id) return node;
 
-                const nodePatch = typeof patch === "function" ? patch(node) : patch;
-                const mergedNode = {
-                  ...node,
-                  ...nodePatch,
+                  const nodePatch = typeof patch === "function" ? patch(node) : patch;
+                  const mergedNode = {
+                    ...node,
+                    ...nodePatch,
+                  };
+
+                  updatedNode = mergedNode;
+                  return mergedNode;
+                });
+
+                if (!updatedNode) {
+                  return current;
+                }
+
+                const nextPipes = current.pipes.map(pipe => {
+                  const isStartNode = pipe.startNodeId === id;
+                  const isEndNode = pipe.endNodeId === id;
+
+                  if (!isStartNode && !isEndNode) {
+                    return pipe;
+                  }
+
+                  const pipePatch: Partial<PipeProps> = {};
+
+                  if (isStartNode) {
+                    pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
+                  }
+
+                  const direction = pipe.direction ?? "forward";
+                  const shouldUpdateBoundary =
+                    (direction === "forward" && isStartNode) ||
+                    (direction === "backward" && isEndNode);
+
+                  if (shouldUpdateBoundary) {
+                    pipePatch.boundaryPressure = updatedNode?.pressure;
+                    pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
+                    pipePatch.boundaryTemperature = updatedNode?.temperature;
+                    pipePatch.boundaryTemperatureUnit = updatedNode?.temperatureUnit;
+                  }
+
+                  if (Object.keys(pipePatch).length === 0) {
+                    return pipe;
+                  }
+                  return recalculatePipeFittingLosses({ ...pipe, ...pipePatch });
+                });
+
+                return {
+                  ...current,
+                  nodes: nextNodes,
+                  pipes: nextPipes,
                 };
-
-                updatedNode = mergedNode;
-                return mergedNode;
-              });
-
-              if (!updatedNode) {
-                return current;
-              }
-
-              const nextPipes = current.pipes.map(pipe => {
-                const isStartNode = pipe.startNodeId === id;
-                const isEndNode = pipe.endNodeId === id;
-
-                if (!isStartNode && !isEndNode) {
-                  return pipe;
-                }
-
-                const pipePatch: Partial<PipeProps> = {};
-
-                if (isStartNode) {
-                  pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
-                }
-
-                const direction = pipe.direction ?? "forward";
-                const shouldUpdateBoundary =
-                  (direction === "forward" && isStartNode) ||
-                  (direction === "backward" && isEndNode);
-
-                if (shouldUpdateBoundary) {
-                  pipePatch.boundaryPressure = updatedNode?.pressure;
-                  pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
-                  pipePatch.boundaryTemperature = updatedNode?.temperature;
-                  pipePatch.boundaryTemperatureUnit = updatedNode?.temperatureUnit;
-                }
-
-                if (Object.keys(pipePatch).length === 0) {
-                  return pipe;
-                }
-                return recalculatePipeFittingLosses({ ...pipe, ...pipePatch });
-              });
-
-              return {
+              })
+            }
+            onUpdatePipe={(id, patch: PipePatch) =>
+              setNetwork(current => ({
                 ...current,
-                nodes: nextNodes,
-                pipes: nextPipes,
-              };
-            })
-          }
-          onUpdatePipe={(id, patch: PipePatch) =>
-            setNetwork(current => ({
-              ...current,
-              pipes: current.pipes.map(pipe => {
-                if (pipe.id !== id) return pipe;
-                const pipePatch = typeof patch === "function" ? patch(pipe) : patch;
-                const updatedPipe = { ...pipe, ...pipePatch };
-                if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
-                  return updatedPipe;
-                }
-                return recalculatePipeFittingLosses(updatedPipe);
-              }),
-            }))
-          }
-          onReset={handleReset}
-        />
+                pipes: current.pipes.map(pipe => {
+                  if (pipe.id !== id) return pipe;
+                  const pipePatch = typeof patch === "function" ? patch(pipe) : patch;
+                  const updatedPipe = { ...pipe, ...pipePatch };
+                  if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
+                    return updatedPipe;
+                  }
+                  return recalculatePipeFittingLosses(updatedPipe);
+                }),
+              }))
+            }
+            onReset={handleReset}
+          />
+        </Box>
       </Box>
 
       <Stack spacing={2}>
