@@ -27,7 +27,14 @@ type Props = {
 
 type RowConfig =
     | { type: "section"; label: string }
-    | { type: "data"; label: string; unit?: string; getValue: (pipe: PipeProps) => string | number | undefined | null; subLabel?: string; decimals?: number };
+    | {
+        type: "data";
+        label: string;
+        unit?: string;
+        getValue: (pipe: PipeProps) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string };
+        subLabel?: string;
+        decimals?: number
+    };
 
 export function SummaryTable({ network }: Props) {
     const [page, setPage] = useState(0);
@@ -81,10 +88,19 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "Pressure",
             unit: "kPag",
-            subLabel: "at INLET",
             getValue: (pipe) => {
-                const val = pipe.resultSummary?.inletState?.pressure;
-                return val ? convertUnit(val, "Pa", "kPag") : undefined;
+                const direction = pipe.direction ?? "forward";
+                const isForward = direction === "forward";
+                const val = isForward
+                    ? pipe.resultSummary?.inletState?.pressure
+                    : pipe.resultSummary?.outletState?.pressure;
+
+                const convertedVal = val ? convertUnit(val, "Pa", "kPag") : undefined;
+
+                return {
+                    value: convertedVal,
+                    subLabel: isForward ? "at INLET" : "at OUTLET"
+                };
             },
         },
 
@@ -253,7 +269,7 @@ export function SummaryTable({ network }: Props) {
         { type: "data", label: "OUTLET Flow Momentum", unit: "Pa", getValue: (pipe) => pipe.resultSummary?.outletState?.flowMomentum },
     ];
 
-    const [fitToPage, setFitToPage] = useState(false);
+    const [fitToPage, setFitToPage] = useState(true);
 
     const handlePrint = () => {
         window.print();
@@ -428,11 +444,22 @@ export function SummaryTable({ network }: Props) {
                                     <TableCell align="center" sx={{ position: 'sticky', left: 250, background: 'white', borderRight: '1px solid #e0e0e0', color: 'text.secondary', fontSize: '0.75rem' }}>
                                         {row.unit || "-"}
                                     </TableCell>
-                                    {visiblePipes.map((pipe) => (
-                                        <TableCell key={pipe.id} align="center" sx={{ borderRight: '1px solid #e0e0e0' }}>
-                                            {formatNumber(row.getValue(pipe), row.decimals)}
-                                        </TableCell>
-                                    ))}
+                                    {visiblePipes.map((pipe) => {
+                                        const result = row.getValue(pipe);
+                                        const value = typeof result === 'object' && result !== null ? result.value : result;
+                                        const cellSubLabel = typeof result === 'object' && result !== null ? result.subLabel : undefined;
+
+                                        return (
+                                            <TableCell key={pipe.id} align="center" sx={{ borderRight: '1px solid #e0e0e0' }}>
+                                                {formatNumber(value, row.decimals)}
+                                                {cellSubLabel && (
+                                                    <Typography variant="caption" display="block" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                                                        {cellSubLabel}
+                                                    </Typography>
+                                                )}
+                                            </TableCell>
+                                        );
+                                    })}
                                 </TableRow>
                             );
                         })}

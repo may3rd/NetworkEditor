@@ -14,7 +14,7 @@ export const QUANTITY_UNIT_OPTIONS = {
   pressureDrop: ["kPa", "bar", "kg_cm2", "Pa", "psi"] as const,
   temperature: ["C", "F", "K", "R"] as const,
   volume: ["mm3", "cm3", "m3", "in3", "ft3"] as const,
-  volumeFlowRate: ["m3/s"] as const,
+  volumeFlowRate: ["m3/s", "m3/h", "Nm3/h", "Nm3/d", "MSCFD"] as const,
   viscosity: ["cP", "Poise", "Pa.s"] as const,
 } as const;
 
@@ -28,6 +28,7 @@ type QuantityInputProps = {
   unitFamily?: UnitFamily;
   placeholder?: string;
   isDisabled?: boolean;
+  decimalPlaces?: number;
 };
 
 export function QuantityInput({
@@ -40,6 +41,7 @@ export function QuantityInput({
   unitFamily,
   placeholder,
   isDisabled = false,
+  decimalPlaces,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
   const formatValue = useMemo(
@@ -48,11 +50,12 @@ export function QuantityInput({
         return "";
       }
       if (typeof val === "number") {
-        return Number.isFinite(val) ? `${val}` : "";
+        if (!Number.isFinite(val)) return "";
+        return decimalPlaces !== undefined ? val.toFixed(decimalPlaces) : `${val}`;
       }
       return val;
     },
-    [],
+    [decimalPlaces],
   );
 
   const [inputValue, setInputValue] = useState<string>(formatValue(value));

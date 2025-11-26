@@ -104,11 +104,11 @@ export function PropertiesPanel({
     ? pipe?.controlValve?.cg ?? ""
     : pipe?.controlValve?.cv ?? "";
   const controlValveInputRadioLabel = isGasPipe
-    ? "Input Cg, Calculate Pressure Drop"
-    : "Input Cv, Calculate Pressure Drop";
+    ? "Input Cg"
+    : "Input Cv";
   const controlValveOutputRadioLabel = isGasPipe
-    ? "Input Pressure Drop, Calculate Cg"
-    : "Input Pressure Drop, Calculate Cv";
+    ? "Input Pressure Drop"
+    : "Input Pressure Drop";
   const orificePressureDropUnit = pipe?.orifice?.pressureDropUnit ?? "kPa";
   const orificeCalculatedPressureDropPa =
     pipe?.pressureDropCalculationResults?.orificePressureDrop ??
@@ -191,11 +191,12 @@ export function PropertiesPanel({
       }}
     >
       {node || pipe ? (
-        <Typography variant="h6">{node ? "Node" : "Pipe"} Properties</Typography>
+        <Typography variant="h6" fontWeight="bold">{node ? "Node" : "Pipe"} Properties</Typography>
       ) : (
-        <Typography>
-          Select a node or pipe to view or edit its values.
-        </Typography>
+        <Box>
+          <Typography variant="h6" fontWeight="bold">No Node or Pipe Selected</Typography>
+          <Typography>Select a node or pipe to view or edit its values.</Typography>
+        </Box>
       )}
 
       {node && (
@@ -483,11 +484,7 @@ export function PropertiesPanel({
       )}
 
       {pipe && (
-        <Stack spacing={3}>
-          <Typography color="text.secondary">
-            {startNode?.label ?? "Unknown"} → {endNode?.label ?? "Unknown"}
-          </Typography>
-
+        <Stack spacing={2}>
           <Stack spacing={2}>
             <TextField
               label="Label"
@@ -497,20 +494,42 @@ export function PropertiesPanel({
               placeholder="Enter label"
               fullWidth
             />
-          </Stack>
-
-          <Stack spacing={2}>
             <TextField
               label="Description"
               size="small"
               value={pipe.description ?? ""}
               onChange={(e) => onUpdatePipe(pipe.id, { description: e.target.value })}
               placeholder="Enter description"
+              helperText={`${startNode?.label ?? "Unknown"} → ${endNode?.label ?? "Unknown"}`}
               fullWidth
             />
           </Stack>
 
-          <Stack spacing={2}>
+          <FormControl size="small" fullWidth>
+            <InputLabel>Calculation Type</InputLabel>
+            <Select
+              label="Calculation Type"
+              value={pipe.pipeSectionType ?? "pipeline"}
+              onChange={(event) => onUpdatePipe(pipe.id, { pipeSectionType: event.target.value as "pipeline" | "control valve" | "orifice" })}
+            >
+              <MenuItem value="pipeline">Pipeline</MenuItem>
+              <MenuItem value="control valve">Control Valve</MenuItem>
+              <MenuItem value="orifice">Orifice</MenuItem>
+            </Select>
+          </FormControl>
+
+          <FormControl component="fieldset" fullWidth sx={{
+            border: "1px solid",
+            borderColor: "rgba(0, 0, 0, 0.23)",
+            borderRadius: 1,
+            px: 2,
+            pb: 1,
+            pt: 0.5,
+            "&:hover": {
+              borderColor: "text.primary",
+            },
+          }}>
+            <FormLabel component="legend" sx={{ px: 0.5, fontSize: "0.75rem" }}>Pressure Drop Direction</FormLabel>
             <RadioGroup
               value={pipe.direction ?? "forward"}
               onChange={(event) => {
@@ -531,7 +550,25 @@ export function PropertiesPanel({
                 <FormControlLabel value="backward" control={<Radio size="small" />} label="Backward" />
               </Stack>
             </RadioGroup>
-          </Stack>
+          </FormControl>
+
+          {pipeFluidPhase === "gas" && (
+            <FormControl size="small" fullWidth>
+              <InputLabel>Gas Flow Type</InputLabel>
+              <Select
+                label="Gas Flow Type"
+                value={pipe.gasFlowModel ?? "adiabatic"}
+                onChange={(event) =>
+                  onUpdatePipe(pipe.id, {
+                    gasFlowModel: event.target.value as "adiabatic" | "isothermal",
+                  })
+                }
+              >
+                <MenuItem value="adiabatic">Adiabatic</MenuItem>
+                <MenuItem value="isothermal">Isothermal</MenuItem>
+              </Select>
+            </FormControl>
+          )}
 
           <QuantityInput
             label="Mass Flow Rate"
@@ -588,42 +625,69 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <FormControl size="small" fullWidth>
-            <InputLabel>Pipe Section Type</InputLabel>
-            <Select
-              label="Pipe Section Type"
-              value={pipe.pipeSectionType ?? "pipeline"}
-              onChange={(event) => onUpdatePipe(pipe.id, { pipeSectionType: event.target.value as "pipeline" | "control valve" | "orifice" })}
-            >
-              <MenuItem value="pipeline">Pipeline</MenuItem>
-              <MenuItem value="control valve">Control Valve</MenuItem>
-              <MenuItem value="orifice">Orifice</MenuItem>
-            </Select>
-          </FormControl>
-
-
-          {pipeFluidPhase === "gas" && (
-            <FormControl size="small" fullWidth>
-              <InputLabel>Gas Flow Model</InputLabel>
-              <Select
-                label="Gas Flow Model"
-                value={pipe.gasFlowModel ?? "adiabatic"}
-                onChange={(event) =>
-                  onUpdatePipe(pipe.id, {
-                    gasFlowModel: event.target.value as "adiabatic" | "isothermal",
-                  })
-                }
-              >
-                <MenuItem value="adiabatic">Adiabatic</MenuItem>
-                <MenuItem value="isothermal">Isothermal</MenuItem>
-              </Select>
-            </FormControl>
-          )}
-
           <Stack spacing={2}>
-            <Typography color="text.secondary">
-              Diameter Input
-            </Typography>
+            <QuantityInput
+              label={isGasPipe ? "Design Normal Flow Rate" : "Design Volume Flow Rate"}
+              value={(() => {
+                const dMassFlow = pipe.designMassFlowRate ?? computeDesignMassFlowRate(pipe.massFlowRate, pipe.designMargin);
+                if (dMassFlow === undefined) return "";
+
+                const massFlowUnit = pipe.designMassFlowRateUnit ?? pipe.massFlowRateUnit ?? "kg/h";
+
+                const massFlowKgH = convertUnit(
+                  dMassFlow,
+                  massFlowUnit,
+                  "kg/h"
+                );
+
+                if (isGasPipe) {
+                  const mw = startNode?.fluid?.molecularWeight;
+                  if (!mw) return "";
+                  // Normal flow in Nm3/h
+                  const normalFlowNm3H = (massFlowKgH / mw) * 24.465;
+
+                  const displayUnit = pipe.designFlowRateDisplayUnit ?? "Nm3/h";
+                  if (displayUnit === "Nm3/h") return normalFlowNm3H;
+                  if (displayUnit === "Nm3/d") return normalFlowNm3H * 24;
+                  if (displayUnit === "MSCFD") return normalFlowNm3H * 0.000847552; // 1 Nm3/h = 35.3147 SCFH * 24 / 1e6 = 0.000847552 MSCFD
+                  return normalFlowNm3H;
+                } else {
+                  const density = startNode?.fluid?.density;
+                  if (!density) return "";
+
+                  let densityKgM3 = density;
+                  if (startNode?.fluid?.densityUnit && startNode.fluid.densityUnit !== "kg/m3") {
+                    densityKgM3 = convertUnit(density, startNode.fluid.densityUnit, "kg/m3");
+                  }
+
+                  const volFlowM3H = massFlowKgH / densityKgM3;
+                  const displayUnit = pipe.designFlowRateDisplayUnit ?? "m3/h";
+
+                  return convertUnit(volFlowM3H, "m3/h", displayUnit, "volumeFlowRate");
+                }
+              })()}
+              unit={pipe.designFlowRateDisplayUnit ?? (isGasPipe ? "Nm3/h" : "m3/h")}
+              units={isGasPipe ? ["Nm3/h", "Nm3/d", "MSCFD"] : QUANTITY_UNIT_OPTIONS.volumeFlowRate}
+              unitFamily={isGasPipe ? undefined : "volumeFlowRate"}
+              onValueChange={() => { }} // Read-only derived value
+              onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { designFlowRateDisplayUnit: newUnit })}
+              isDisabled={false} // Allow unit selection
+              decimalPlaces={3}
+            />
+          </Stack>
+
+          <FormControl component="fieldset" fullWidth sx={{
+            border: "1px solid",
+            borderColor: "rgba(0, 0, 0, 0.23)",
+            borderRadius: 1,
+            px: 2,
+            pb: 1,
+            pt: 0.5,
+            "&:hover": {
+              borderColor: "text.primary",
+            },
+          }}>
+            <FormLabel component="legend" sx={{ px: 0.5, fontSize: "0.75rem" }}>Diameter Input</FormLabel>
             <RadioGroup
               value={pipeDiameterInputMode}
               onChange={(event) =>
@@ -635,7 +699,7 @@ export function PropertiesPanel({
                 <FormControlLabel value="diameter" control={<Radio size="small" />} label="Diameter" />
               </Stack>
             </RadioGroup>
-          </Stack>
+          </FormControl>
 
           {pipeDiameterInputMode === "diameter" ? (
             <QuantityInput
@@ -653,7 +717,7 @@ export function PropertiesPanel({
                 <InputLabel>Nominal Pipe Size (NPS)</InputLabel>
                 <Select
                   label="Nominal Pipe Size (NPS)"
-                  displayEmpty
+
                   value={npsSelectValue}
                   onChange={(event) => {
                     const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -666,7 +730,7 @@ export function PropertiesPanel({
                     });
                   }}
                 >
-                  <MenuItem value="" disabled>Select NPS</MenuItem>
+
                   {scheduleEntries.map((entry) => (
                     <MenuItem key={`${pipeScheduleValue}-${entry.nps}`} value={entry.nps}>
                       {entry.nps}
@@ -932,39 +996,50 @@ export function PropertiesPanel({
 
           {pipe?.pipeSectionType === "control valve" && (
             <>
-              <Typography color="text.secondary">
-                Control Valve Calculation Mode
-              </Typography>
-              <RadioGroup
-                value={pipe.controlValve?.calculation_note || "cv_to_dp"}
-                onChange={(event) => {
-                  onUpdatePipe(pipe.id, {
-                    controlValve: {
-                      id: pipe.controlValve?.id || pipe.id,
-                      tag: pipe.controlValve?.tag || pipe.id,
-                      ...pipe.controlValve,
-                      calculation_note: event.target.value,
-                    },
-                  });
-                }}
-              >
-                <Stack direction="row">
-                  <FormControlLabel value="cv_to_dp" control={<Radio size="small" />} label={controlValveInputRadioLabel} />
-                  <FormControlLabel value="dp_to_cv" control={<Radio size="small" />} label={controlValveOutputRadioLabel} />
-                </Stack>
-              </RadioGroup>
+              <FormControl component="fieldset" fullWidth sx={{
+                border: "1px solid",
+                borderColor: "rgba(0, 0, 0, 0.23)",
+                borderRadius: 1,
+                px: 2,
+                pb: 1,
+                pt: 0.5,
+                "&:hover": {
+                  borderColor: "text.primary",
+                },
+              }}>
+                <FormLabel component="legend" sx={{ px: 0.5, fontSize: "0.75rem" }}>Control Valve Calculation Mode</FormLabel>
+                <RadioGroup
+                  value={pipe.controlValve?.calculation_note || "dp_to_cv"}
+                  onChange={(event) => {
+                    onUpdatePipe(pipe.id, {
+                      controlValve: {
+                        id: pipe.controlValve?.id || pipe.id,
+                        tag: pipe.controlValve?.tag || pipe.id,
+                        ...pipe.controlValve,
+                        calculation_note: event.target.value,
+                      },
+                    });
+                  }}
+                >
+                  <Stack direction="row">
+                    <FormControlLabel value="cv_to_dp" control={<Radio size="small" />} label={controlValveInputRadioLabel} />
+                    <FormControlLabel value="dp_to_cv" control={<Radio size="small" />} label={controlValveOutputRadioLabel} />
+                  </Stack>
+                </RadioGroup>
+              </FormControl>
 
               {isGasPipe && (
                 <>
                   <Stack spacing={2}>
-                    <Typography color="text.secondary">
-                      Gas Valve Constant (C1)
-                    </Typography>
                     <TextField
+                      label="Gas Valve Constant (C1)"
                       size="small"
                       type="number"
-                      inputProps={{ step: "any" }}
-                      value={pipe.controlValve?.C1 ?? ""}
+                      value={
+                        typeof pipe.controlValve?.C1 === "number"
+                          ? pipe.controlValve.C1.toFixed(4)
+                          : ""
+                      }
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
                         onUpdatePipe(pipe.id, (currentPipe) => {
@@ -986,14 +1061,15 @@ export function PropertiesPanel({
                     />
                   </Stack>
                   <Stack spacing={2}>
-                    <Typography color="text.secondary">
-                      Pressure Drop Ratio (xT)
-                    </Typography>
                     <TextField
+                      label="Pressure Drop Ratio (xT)"
                       size="small"
                       type="number"
-                      inputProps={{ step: "any" }}
-                      value={pipe.controlValve?.xT ?? ""}
+                      value={
+                        typeof pipe.controlValve?.xT === "number"
+                          ? pipe.controlValve.xT.toFixed(4)
+                          : ""
+                      }
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
                         onUpdatePipe(pipe.id, (currentPipe) => {
@@ -1020,10 +1096,8 @@ export function PropertiesPanel({
               {pipe.controlValve?.calculation_note === "cv_to_dp" && (
                 <>
                   <Stack spacing={2}>
-                    <Typography color="text.secondary">
-                      {controlValveCoefficientLabel}
-                    </Typography>
                     <TextField
+                      label={controlValveCoefficientLabel}
                       size="small"
                       type="number"
                       inputProps={{ step: "any" }}
@@ -1053,59 +1127,50 @@ export function PropertiesPanel({
                     />
                   </Stack>
                   <Stack spacing={2}>
-                    <Typography color="text.secondary">
-                      Calculated Pressure Drop
-                    </Typography>
-                    <Stack direction="row" spacing={2}>
-                      <TextField
-                        size="small"
-                        type="number"
-                        inputProps={{ step: "any", readOnly: true }}
-                        value={controlValvePressureDropDisplayValue}
-                      />
-                      <Select
-                        size="small"
-                        value={controlValvePressureDropUnit}
-                        onChange={(event) => {
-                          const nextUnit = event.target.value;
-                          onUpdatePipe(pipe.id, (currentPipe) => {
-                            const currentValve =
-                              currentPipe.controlValve ?? {
-                                id: currentPipe.id,
-                                tag: currentPipe.id,
-                              };
-                            const valveUnit = currentValve.pressureDropUnit ?? "kPa";
-                            const pressureDropPa =
-                              currentPipe.pressureDropCalculationResults?.controlValvePressureDrop ??
-                              (currentValve.pressureDrop !== undefined
-                                ? convertUnit(currentValve.pressureDrop, valveUnit, "Pa")
-                                : undefined);
-                            const converted =
-                              pressureDropPa === undefined
-                                ? undefined
-                                : convertUnit(pressureDropPa, "Pa", nextUnit);
-                            return {
-                              controlValve: {
-                                ...currentValve,
-                                pressureDrop: converted,
-                                pressureDropUnit: nextUnit,
-                              },
+                    <QuantityInput
+                      label="Calculated Pressure Drop"
+                      value={
+                        typeof controlValvePressureDropDisplayValue === "number"
+                          ? controlValvePressureDropDisplayValue
+                          : ""
+                      }
+                      unit={controlValvePressureDropUnit}
+                      units={QUANTITY_UNIT_OPTIONS.pressureDrop}
+                      unitFamily="pressureDrop"
+                      onValueChange={() => { }} // Read-only
+                      onUnitChange={(newUnit) => {
+                        onUpdatePipe(pipe.id, (currentPipe) => {
+                          const currentValve =
+                            currentPipe.controlValve ?? {
+                              id: currentPipe.id,
+                              tag: currentPipe.id,
                             };
-                          });
-                        }}
-                      >
-                        {QUANTITY_UNIT_OPTIONS.pressureDrop.map((unitOption) => (
-                          <MenuItem key={unitOption} value={unitOption}>
-                            {unitOption}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </Stack>
+                          const valveUnit = currentValve.pressureDropUnit ?? "kPa";
+                          const pressureDropPa =
+                            currentPipe.pressureDropCalculationResults?.controlValvePressureDrop ??
+                            (currentValve.pressureDrop !== undefined
+                              ? convertUnit(currentValve.pressureDrop, valveUnit, "Pa")
+                              : undefined);
+                          const converted =
+                            pressureDropPa === undefined
+                              ? undefined
+                              : convertUnit(pressureDropPa, "Pa", newUnit);
+                          return {
+                            controlValve: {
+                              ...currentValve,
+                              pressureDrop: converted,
+                              pressureDropUnit: newUnit,
+                            },
+                          };
+                        });
+                      }}
+                      decimalPlaces={3}
+                    />
                   </Stack>
                 </>
               )}
 
-              {pipe.controlValve?.calculation_note === "dp_to_cv" && (
+              {(pipe.controlValve?.calculation_note === "dp_to_cv" || !pipe.controlValve?.calculation_note) && (
                 <>
                   <QuantityInput
                     label="Pressure Drop"
@@ -1151,14 +1216,15 @@ export function PropertiesPanel({
                     }}
                   />
                   <Stack spacing={2}>
-                    <Typography color="text.secondary">
-                      {controlValveCalculatedCoefficientLabel}
-                    </Typography>
                     <TextField
+                      label={controlValveCalculatedCoefficientLabel}
                       size="small"
                       type="number"
-                      inputProps={{ step: "any", readOnly: true }}
-                      value={controlValveCalculatedCoefficientValue}
+                      value={
+                        typeof controlValveCalculatedCoefficientValue === "number"
+                          ? controlValveCalculatedCoefficientValue.toFixed(4)
+                          : ""
+                      }
                     />
                   </Stack>
                 </>
@@ -1169,13 +1235,11 @@ export function PropertiesPanel({
           {pipe?.pipeSectionType === "orifice" && (
             <>
               <Stack spacing={2}>
-                <Typography color="text.secondary">
-                  Beta Ratio (β = d / D)
-                </Typography>
                 <TextField
+                  label="Beta Ratio (β = d / D)"
                   size="small"
                   type="number"
-                  inputProps={{ step: "any", min: 0, max: 1 }}
+                  inputProps={{ step: 0.01, min: 0, max: 1 }}
                   value={pipe.orifice?.betaRatio ?? ""}
                   onChange={(event) => {
                     const value =
@@ -1200,62 +1264,51 @@ export function PropertiesPanel({
                     });
                   }}
                 />
-              </Stack>
-
-              <Stack spacing={2}>
-                <Typography color="text.secondary">
-                  Calculated Pressure Drop
-                </Typography>
-                <Stack direction="row" spacing={2}>
-                  <TextField
-                    size="small"
-                    type="number"
-                    inputProps={{ step: "any", readOnly: true }}
-                    value={orificePressureDropDisplayValue}
-                  />
-                  <Select
-                    size="small"
-                    value={orificePressureDropUnit}
-                    onChange={(event) => {
-                      const nextUnit = event.target.value;
-                      onUpdatePipe(pipe.id, (currentPipe) => {
-                        const currentOrifice =
-                          currentPipe.orifice ?? {
-                            id: currentPipe.id,
-                            tag: currentPipe.id,
-                          };
-                        const orificeUnit = currentOrifice.pressureDropUnit ?? "kPa";
-                        const pressureDropPa =
-                          currentPipe.pressureDropCalculationResults?.orificePressureDrop ??
-                          (currentOrifice.pressureDrop !== undefined
-                            ? convertUnit(currentOrifice.pressureDrop, orificeUnit, "Pa")
-                            : undefined);
-                        const converted =
-                          pressureDropPa === undefined
-                            ? undefined
-                            : convertUnit(pressureDropPa, "Pa", nextUnit);
-                        return {
-                          orifice: {
-                            ...currentOrifice,
-                            pressureDrop: converted,
-                            pressureDropUnit: nextUnit,
-                          },
+                <QuantityInput
+                  label="Calculated Pressure Drop"
+                  value={
+                    typeof orificePressureDropDisplayValue === "number"
+                      ? orificePressureDropDisplayValue
+                      : ""
+                  }
+                  unit={orificePressureDropUnit}
+                  units={QUANTITY_UNIT_OPTIONS.pressureDrop}
+                  unitFamily="pressureDrop"
+                  onValueChange={() => { }} // Read-only
+                  onUnitChange={(newUnit) => {
+                    onUpdatePipe(pipe.id, (currentPipe) => {
+                      const currentOrifice =
+                        currentPipe.orifice ?? {
+                          id: currentPipe.id,
+                          tag: currentPipe.id,
                         };
-                      });
-                    }}
-                  >
-                    {QUANTITY_UNIT_OPTIONS.pressureDrop.map((unitOption) => (
-                      <MenuItem key={unitOption} value={unitOption}>
-                        {unitOption}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </Stack>
+                      const orificeUnit = currentOrifice.pressureDropUnit ?? "kPa";
+                      const pressureDropPa =
+                        currentPipe.pressureDropCalculationResults?.orificePressureDrop ??
+                        (currentOrifice.pressureDrop !== undefined
+                          ? convertUnit(currentOrifice.pressureDrop, orificeUnit, "Pa")
+                          : undefined);
+                      const converted =
+                        pressureDropPa === undefined
+                          ? undefined
+                          : convertUnit(pressureDropPa, "Pa", newUnit);
+                      return {
+                        orifice: {
+                          ...currentOrifice,
+                          pressureDrop: converted,
+                          pressureDropUnit: newUnit,
+                        },
+                      };
+                    });
+                  }}
+                  decimalPlaces={3}
+                />
               </Stack>
             </>
           )}
         </Stack>
-      )}
-    </Paper>
+      )
+      }
+    </Paper >
   );
 }

@@ -110,6 +110,7 @@ export type PipeProps = {
   boundaryTemperatureUnit?: string,
   designMassFlowRate?: number,
   designMassFlowRateUnit?: string,
+  designFlowRateDisplayUnit?: string,
   equivalentLength?: number,
   fluid?: Fluid;
   massFlowRate?: number;

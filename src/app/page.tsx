@@ -44,7 +44,7 @@ export default function Home() {
   // ──────────────────────────────────────────────────────────────
   // Multi-step Undo/Redo – fixed logic
   // ──────────────────────────────────────────────────────────────
-  const HISTORY_LIMIT = 20;
+  const HISTORY_LIMIT = 50;
   const [history, setHistory] = useState<NetworkState[]>([createNetworkWithDerivedValues()]);
   const [historyIndex, setHistoryIndex] = useState<number>(0); // start at 0
 
@@ -432,6 +432,10 @@ export default function Home() {
         </Box>
       </Box>
 
+
+
+      <SummaryTable network={network} />
+
       <Stack spacing={2}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography variant="subtitle2" color="text.secondary">
@@ -470,8 +474,6 @@ export default function Home() {
           </pre>
         )}
       </Stack>
-
-      <SummaryTable network={network} />
     </Stack>
   );
 }
