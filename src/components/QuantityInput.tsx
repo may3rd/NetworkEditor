@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Select, MenuItem, SelectChangeEvent, TextField, InputAdornment, SxProps, Theme } from "@mui/material";
+import { Box, Select, MenuItem, SelectChangeEvent, TextField, InputAdornment, SxProps, Theme, TextFieldProps } from "@mui/material";
 import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
 export const QUANTITY_UNIT_OPTIONS = {
@@ -33,6 +33,10 @@ type QuantityInputProps = {
   min?: number;
   minUnit?: string;
   sx?: SxProps<Theme>;
+  color?: TextFieldProps['color'];
+  focused?: boolean;
+  readOnly?: boolean;
+  alwaysShowColor?: boolean;
 };
 
 export function QuantityInput({
@@ -50,6 +54,10 @@ export function QuantityInput({
   min,
   minUnit,
   sx,
+  color,
+  focused,
+  readOnly,
+  alwaysShowColor,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
   const formatValue = useMemo(
@@ -123,7 +131,16 @@ export function QuantityInput({
       label={label}
       value={inputValue}
       error={error}
-      sx={sx}
+      sx={{
+        ...sx,
+        ...(alwaysShowColor && color ? {
+          "& .MuiOutlinedInput-notchedOutline": { borderColor: `${color}.main` },
+          "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: `${color}.main` },
+          "& .MuiInputLabel-root": { color: `${color}.main` },
+        } : {})
+      }}
+      color={color}
+      focused={focused}
       onChange={(e) => {
         const next = e.target.value;
         if (
@@ -194,6 +211,7 @@ export function QuantityInput({
             </Select>
           </InputAdornment>
         ),
+        readOnly: readOnly,
       }}
       helperText={displayedHelperText}
     />
