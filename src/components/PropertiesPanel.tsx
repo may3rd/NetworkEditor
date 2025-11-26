@@ -22,6 +22,9 @@ import {
   MenuItem,
   FormControlLabel,
   Paper,
+  InputLabel,
+  FormHelperText,
+  FormControl,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, PipePatch, SelectedElement } from "@/lib/types";
@@ -191,10 +194,8 @@ export function PropertiesPanel({
       {node && (
         <Stack spacing={3}>
           <Stack spacing={1}>
-            <Typography color="text.secondary">
-              Label
-            </Typography>
             <TextField
+              label="Label"
               size="small"
               value={node.label}
               onChange={(event) => onUpdateNode(node.id, { label: event.target.value })}
@@ -481,10 +482,8 @@ export function PropertiesPanel({
           </Typography>
 
           <Stack spacing={1}>
-            <Typography color="text.secondary">
-              Label
-            </Typography>
             <TextField
+              label="Label"
               size="small"
               value={pipe.label ?? ""}
               onChange={(e) => onUpdatePipe(pipe.id, { label: e.target.value })}
@@ -494,10 +493,8 @@ export function PropertiesPanel({
           </Stack>
 
           <Stack spacing={1}>
-            <Typography color="text.secondary">
-              Description
-            </Typography>
             <TextField
+              label="Description"
               size="small"
               value={pipe.description ?? ""}
               onChange={(e) => onUpdatePipe(pipe.id, { description: e.target.value })}
@@ -507,9 +504,6 @@ export function PropertiesPanel({
           </Stack>
 
           <Stack spacing={1}>
-            <Typography color="text.secondary">
-              Calculation Direction
-            </Typography>
             <RadioGroup
               value={pipe.direction ?? "forward"}
               onChange={(event) => {
@@ -559,13 +553,10 @@ export function PropertiesPanel({
           />
 
           <Stack spacing={1}>
-            <Typography color="text.secondary">
-              Design Margin (%)
-            </Typography>
             <TextField
+              label="Design Margin (%)"
               size="small"
               type="number"
-              inputProps={{ step: "any" }}
               value={pipe.designMargin ?? ""}
               onChange={(event) => {
                 const parsedValue =
@@ -591,10 +582,9 @@ export function PropertiesPanel({
           </Stack>
 
           <Stack spacing={1}>
-            <Typography color="text.secondary">
-              Pipe Section Type
-            </Typography>
+            <InputLabel>Pipe Section Type</InputLabel>
             <Select
+              label="Pipe Section Type"
               size="small"
               value={pipe.pipeSectionType ?? "pipeline"}
               onChange={(event) => onUpdatePipe(pipe.id, { pipeSectionType: event.target.value as "pipeline" | "control valve" | "orifice" })}
@@ -608,9 +598,7 @@ export function PropertiesPanel({
 
           {pipeFluidPhase === "gas" && (
             <Stack spacing={1}>
-              <Typography color="text.secondary">
-                Gas Flow Model
-              </Typography>
+              <InputLabel>Gas Flow Model</InputLabel>
               <Select
                 size="small"
                 value={pipe.gasFlowModel ?? "adiabatic"}
@@ -656,9 +644,7 @@ export function PropertiesPanel({
           ) : (
             <Stack spacing={2}>
               <Stack spacing={1}>
-                <Typography color="text.secondary">
-                  Nominal Pipe Size (NPS)
-                </Typography>
+                <InputLabel>Nominal Pipe Size (NPS)</InputLabel>
                 <Select
                   size="small"
                   displayEmpty
@@ -683,9 +669,7 @@ export function PropertiesPanel({
                 </Select>
               </Stack>
               <Stack spacing={1}>
-                <Typography color="text.secondary">
-                  Pipe Schedule
-                </Typography>
+                <InputLabel>Pipe Schedule</InputLabel>
                 <Select
                   size="small"
                   value={pipeScheduleValue ?? "STD"}
@@ -712,6 +696,11 @@ export function PropertiesPanel({
                     </MenuItem>
                   ))}
                 </Select>
+                {pipe.diameter !== undefined && (
+                  <FormHelperText>
+                    Calculated Diameter: {pipe.diameter} {pipe.diameterUnit ?? "mm"}
+                  </FormHelperText>
+                )}
               </Stack>
             </Stack>
           )}
@@ -806,10 +795,8 @@ export function PropertiesPanel({
                 </Stack>
 
                 <Stack spacing={1}>
-                  <Typography color="text.secondary">
-                    Safety Factor
-                  </Typography>
                   <TextField
+                    label="Safety Factor"
                     size="small"
                     type="number"
                     inputProps={{ step: "any" }}
@@ -823,9 +810,7 @@ export function PropertiesPanel({
 
                 <Stack spacing={2}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography color="text.secondary">
-                      Fittings
-                    </Typography>
+                    <InputLabel>Fittings</InputLabel>
                     <Stack direction="row" spacing={2}>
                       <Button
                         size="small"
@@ -841,9 +826,7 @@ export function PropertiesPanel({
                   </Stack>
 
                   {pipeFittings.length === 0 ? (
-                    <Typography color="text.secondary">
-                      No fittings added.
-                    </Typography>
+                    <InputLabel>No fittings added.</InputLabel>
                   ) : (
                     <Stack spacing={2}>
                       {pipeFittings.map((fitting, index) => {
@@ -856,11 +839,9 @@ export function PropertiesPanel({
                             spacing={2}
                             alignItems="flex-end"
                           >
-                            <Stack flex="1" spacing={1}>
-                              <Typography color="text.secondary">
-                                Type
-                              </Typography>
+                            <FormControl sx={{ width: "240px" }}>
                               <Select
+                                label="Type"
                                 size="small"
                                 value={fitting.type}
                                 disabled={isSwage}
@@ -881,30 +862,27 @@ export function PropertiesPanel({
                                   </MenuItem>
                                 ))}
                               </Select>
-                            </Stack>
-                            <Stack width="80px" spacing={1}>
-                              <Typography color="text.secondary">
-                                Count
-                              </Typography>
-                              <TextField
-                                size="small"
-                                type="number"
-                                inputProps={{ min: 0, step: 1 }}
-                                disabled={isSwage}
-                                value={fitting.count ?? 0}
-                                onChange={(event) => {
-                                  const valueNumber = Number(event.target.value);
-                                  if (!Number.isFinite(valueNumber)) {
-                                    return;
-                                  }
-                                  const normalized = Math.max(0, Math.floor(valueNumber));
-                                  handleFittingFieldChange(index, {
-                                    count: normalized,
-                                    k_total: normalized * (fitting.k_each ?? 0),
-                                  });
-                                }}
-                              />
-                            </Stack>
+                            </FormControl>
+                            <TextField
+                              label="Count"
+                              size="small"
+                              type="number"
+                              sx={{ width: "80px" }}
+                              inputProps={{ min: 0, step: 1 }}
+                              disabled={isSwage}
+                              value={fitting.count ?? 0}
+                              onChange={(event) => {
+                                const valueNumber = Number(event.target.value);
+                                if (!Number.isFinite(valueNumber)) {
+                                  return;
+                                }
+                                const normalized = Math.max(0, Math.floor(valueNumber));
+                                handleFittingFieldChange(index, {
+                                  count: normalized,
+                                  k_total: normalized * (fitting.k_each ?? 0),
+                                });
+                              }}
+                            />
                             <IconButton
                               aria-label="Remove fitting"
                               size="small"
@@ -920,10 +898,8 @@ export function PropertiesPanel({
                   )}
                 </Stack>
                 <Stack spacing={1}>
-                  <Typography color="text.secondary">
-                    User K
-                  </Typography>
                   <TextField
+                    label="User K"
                     size="small"
                     type="number"
                     inputProps={{ step: "any" }}

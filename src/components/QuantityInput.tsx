@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, OutlinedInput, Select, Typography, MenuItem, SelectChangeEvent } from "@mui/material";
+import { Box, OutlinedInput, Select, Typography, MenuItem, SelectChangeEvent, TextField } from "@mui/material";
 import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
 export const QUANTITY_UNIT_OPTIONS = {
@@ -100,6 +100,7 @@ export function QuantityInput({
         }}
       >
         <OutlinedInput
+          label={displayLabel}
           type="text"
           inputMode="decimal"
           placeholder={placeholder}

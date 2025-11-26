@@ -19,6 +19,7 @@ import {
 import PrintIcon from '@mui/icons-material/Print';
 import { NetworkState, PipeProps } from "@/lib/types";
 import { PIPE_FITTING_OPTIONS } from "./PipeDimension";
+import { convertUnit } from "@/lib/unitConversion";
 
 type Props = {
     network: NetworkState;
@@ -83,12 +84,12 @@ export function SummaryTable({ network }: Props) {
             subLabel: "at INLET",
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.pressure;
-                return val ? (val / 1000 - 101.325) : undefined; // Pa -> kPag approx
+                return val ? convertUnit(val, "Pa", "kPag") : undefined;
             },
         },
 
         { type: "section", label: "II. FLUID DATA" },
-        { type: "data", label: "Flow Rate", unit: "kg/h", getValue: (pipe) => pipe.massFlowRate },
+        { type: "data", label: "Flow Rate", unit: "kg/h", getValue: (pipe) => pipe.massFlowRate ? convertUnit(pipe.massFlowRate, pipe.massFlowRateUnit || "kg/h", "kg/h") : undefined },
         {
             type: "data", label: "Volumetric Flow Rate", unit: "m3/h", getValue: (pipe) => {
                 const massFlow = pipe.massFlowRate;
@@ -101,24 +102,24 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data", label: "Temperature", unit: "°C", getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.temprature; // Note typo in types.ts 'temprature'
-                return val ? val - 273.15 : undefined;
+                return val ? convertUnit(val, "K", "C") : undefined;
             }
         },
         { type: "data", label: "Density", unit: "kg/m3", getValue: (pipe) => pipe.resultSummary?.inletState?.density },
         { type: "data", label: "Molecular Weight", getValue: (pipe) => pipe.fluid?.molecularWeight },
         { type: "data", label: "Compressibility Factor Z", getValue: (pipe) => pipe.fluid?.zFactor },
         { type: "data", label: "Specific Heat Ratio k (Cp/Cv)", getValue: (pipe) => pipe.fluid?.specificHeatRatio },
-        { type: "data", label: "Viscosity", unit: "cP", getValue: (pipe) => pipe.fluid?.viscosity },
+        { type: "data", label: "Viscosity", unit: "cP", getValue: (pipe) => pipe.fluid?.viscosity ? convertUnit(pipe.fluid.viscosity, pipe.fluid.viscosityUnit || "cP", "cP") : undefined },
 
         { type: "section", label: "III. PIPE, FITTING & ELEVATION" },
         { type: "data", label: "Main Pipe DN", unit: "in", getValue: (pipe) => pipe.pipeNPD },
         { type: "data", label: "Pipe Schedule", getValue: (pipe) => pipe.pipeSchedule },
-        { type: "data", label: "Main Pipe ID", unit: "mm", getValue: (pipe) => pipe.diameter },
-        { type: "data", label: "Inlet Pipe DN", unit: "mm", getValue: (pipe) => pipe.inletDiameter },
-        { type: "data", label: "Outlet Pipe DN", unit: "mm", getValue: (pipe) => pipe.outletDiameter },
-        { type: "data", label: "Pipe Roughness", unit: "mm", getValue: (pipe) => pipe.roughness },
-        { type: "data", label: "Pipe Length", unit: "m", getValue: (pipe) => pipe.length },
-        { type: "data", label: "Elevation Change (- for DOWN)", unit: "m", getValue: (pipe) => pipe.elevation },
+        { type: "data", label: "Main Pipe ID", unit: "mm", getValue: (pipe) => pipe.diameter ? convertUnit(pipe.diameter, pipe.diameterUnit || "mm", "mm") : undefined },
+        { type: "data", label: "Inlet Pipe DN", unit: "mm", getValue: (pipe) => pipe.inletDiameter ? convertUnit(pipe.inletDiameter, pipe.inletDiameterUnit || pipe.diameterUnit || "mm", "mm") : undefined },
+        { type: "data", label: "Outlet Pipe DN", unit: "mm", getValue: (pipe) => pipe.outletDiameter ? convertUnit(pipe.outletDiameter, pipe.outletDiameterUnit || pipe.diameterUnit || "mm", "mm") : undefined },
+        { type: "data", label: "Pipe Roughness", unit: "mm", getValue: (pipe) => pipe.roughness ? convertUnit(pipe.roughness, pipe.roughnessUnit || "mm", "mm") : undefined },
+        { type: "data", label: "Pipe Length", unit: "m", getValue: (pipe) => pipe.length ? convertUnit(pipe.length, pipe.lengthUnit || "m", "m") : undefined },
+        { type: "data", label: "Elevation Change (- for DOWN)", unit: "m", getValue: (pipe) => pipe.elevation ? convertUnit(pipe.elevation, pipe.elevationUnit || "m", "m") : undefined },
         { type: "data", label: "Erosional Constant C (API 14E)", getValue: (pipe) => pipe.erosionalConstant },
 
         // Fittings
@@ -164,7 +165,7 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data", label: "Critical Pressure", unit: "kPa(a)", getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.gasFlowCriticalPressure;
-                return val ? val / 1000 : undefined;
+                return val ? convertUnit(val, "Pa", "kPa") : undefined;
             }
         },
 
@@ -172,25 +173,25 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data", label: "Pipe & Fitting", unit: "kPa", getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.pipeAndFittingPressureDrop;
-                return val ? val / 1000 : undefined;
+                return val ? convertUnit(val, "Pa", "kPa") : undefined;
             }
         },
         {
             type: "data", label: "Elevation Change", unit: "kPa", getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.elevationPressureDrop;
-                return val ? val / 1000 : undefined;
+                return val ? convertUnit(val, "Pa", "kPa") : undefined;
             }
         },
         {
             type: "data", label: "Control Valve Pressure Drop", unit: "kPa", getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.controlValvePressureDrop;
-                return val ? val / 1000 : undefined;
+                return val ? convertUnit(val, "Pa", "kPa") : undefined;
             }
         },
         {
             type: "data", label: "Orifice Pressure Drop", unit: "kPa", getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.orificePressureDrop;
-                return val ? val / 1000 : undefined;
+                return val ? convertUnit(val, "Pa", "kPa") : undefined;
             }
         },
         {
@@ -202,7 +203,7 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data", label: "Segment Total Loss", unit: "kPa", getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
-                return val ? val / 1000 : undefined;
+                return val ? convertUnit(val, "Pa", "kPa") : undefined;
             }
         },
         {
@@ -217,13 +218,13 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data", label: "INLET Pressure", unit: "kPag", getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.pressure;
-                return val ? (val / 1000 - 101.325) : undefined;
+                return val ? convertUnit(val, "Pa", "kPag") : undefined;
             }
         },
         {
             type: "data", label: "INLET Temperature", unit: "°C", getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.temprature;
-                return val ? val - 273.15 : undefined;
+                return val ? convertUnit(val, "K", "C") : undefined;
             }
         },
         { type: "data", label: "INLET Density", unit: "kg/m3", getValue: (pipe) => pipe.resultSummary?.inletState?.density },
@@ -236,13 +237,13 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data", label: "OUTLET Pressure", unit: "kPag", getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.pressure;
-                return val ? (val / 1000 - 101.325) : undefined;
+                return val ? convertUnit(val, "Pa", "kPag") : undefined;
             }
         },
         {
             type: "data", label: "OUTLET Temperature", unit: "°C", getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.temprature;
-                return val ? val - 273.15 : undefined;
+                return val ? convertUnit(val, "K", "C") : undefined;
             }
         },
         { type: "data", label: "OUTLET Density", unit: "kg/m3", getValue: (pipe) => pipe.resultSummary?.outletState?.density },
@@ -282,7 +283,7 @@ export function SummaryTable({ network }: Props) {
             </Box>
             <style type="text/css" media="print">
                 {`
-                @page { size: portrait; }
+                @page { size: portrait; margin: 5mm; }
                 @media print {
                     body * {
                         visibility: hidden;
@@ -325,20 +326,24 @@ export function SummaryTable({ network }: Props) {
                     }
                     .MuiTableRow-root {
                         page-break-inside: avoid;
+                        height: auto !important; /* Allow rows to shrink */
+                        min-height: 0 !important;
                     }
 
                     /* Fit to Page Styles */
                     .fit-to-page .MuiTableCell-root {
-                        padding: 0px 2px !important;
-                        font-size: 6pt !important;
-                        line-height: 1.1 !important;
-                        height: auto !important;
+                        padding: 0px 1px !important;
+                        font-size: 5.5pt !important;
+                        line-height: 0.9 !important; /* Very tight line height */
+                        height: 10px !important; /* Force small height */
+                        min-height: 0 !important;
                     }
                     .fit-to-page .MuiTypography-root {
-                        font-size: 6pt !important;
+                        font-size: 5.5pt !important;
                     }
                     .fit-to-page .MuiTypography-caption {
-                        font-size: 5pt !important;
+                        font-size: 4.5pt !important;
+                        line-height: 0.9 !important;
                     }
 
                     /* Column Width Adjustments for Print */
