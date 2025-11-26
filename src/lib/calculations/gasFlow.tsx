@@ -286,7 +286,7 @@ const _gasFlowCriticalPressureFromConditions = ({
       (massFlow / area) *
       Math.sqrt(
         (temperature * UNIVERSAL_GAS_CONSTANT) /
-          (gamma * molarMass * (1 + (gamma - 1) / 2)),
+        (gamma * molarMass * (1 + (gamma - 1) / 2)),
       )
     );
   }
@@ -637,6 +637,75 @@ export const solveAdiabatic = (
       gamma,
     ),
     outletTemperature,
+  );
+
+  return [inletState, outletState];
+};
+
+export const solveAdiabaticExpansion = (
+  inlet_pressure: number,
+  outlet_pressure: number,
+  temperature: number,
+  mass_flow: number,
+  diameter: number,
+  molar_mass: number,
+  z_factor: number,
+  gamma: number,
+): [GasState, GasState] => {
+  _validateGasFlowInputs(
+    inlet_pressure,
+    temperature,
+    mass_flow,
+    diameter,
+    molar_mass,
+    z_factor,
+    gamma,
+  );
+
+  if (outlet_pressure <= 0) {
+    throw new Error(`Outlet pressure must be positive, got ${outlet_pressure} Pa`);
+  }
+
+  const inletState = gasStateFromConditions(
+    inlet_pressure,
+    temperature,
+    mass_flow,
+    diameter,
+    molar_mass,
+    z_factor,
+    gamma,
+  );
+
+  const mach1 = inletState.mach;
+  const y1 = 1 + ((gamma - 1) / 2) * square(mach1);
+
+  // Relation: M2^2 * (1 + (gamma-1)/2 * M2^2) = M1^2 * y1 * (P1/P2)^2
+  // Let X = M2^2. Equation: X * (1 + k*X) = C, where k = (gamma-1)/2
+  // k*X^2 + X - C = 0
+
+  const pRatio = inlet_pressure / outlet_pressure;
+  const C = square(mach1) * y1 * square(pRatio);
+  const k = (gamma - 1) / 2;
+
+  // Quadratic formula for X: ax^2 + bx + c = 0
+  // a = k, b = 1, c = -C
+  // X = (-1 + sqrt(1 - 4*k*(-C))) / (2*k) = (-1 + sqrt(1 + 4*k*C)) / (2*k)
+
+  const discriminant = 1 + 4 * k * C;
+  const mach2Squared = (Math.sqrt(discriminant) - 1) / (2 * k);
+  const mach2 = Math.sqrt(mach2Squared);
+
+  const y2 = 1 + k * mach2Squared;
+  const outletTemperature = temperature * (y1 / y2);
+
+  const outletState = gasStateFromConditions(
+    outlet_pressure,
+    outletTemperature,
+    mass_flow,
+    diameter,
+    molar_mass,
+    z_factor,
+    gamma,
   );
 
   return [inletState, outletState];

@@ -13,6 +13,7 @@ import {
   solveIsothermal,
   solveAdiabatic,
   gasStateFromConditions,
+  solveAdiabaticExpansion,
   type GasState,
   UNIVERSAL_GAS_CONSTANT,
 } from "./calculations/gasFlow";
@@ -1005,6 +1006,26 @@ function calculateResultSummary(
     flowMomentum,
     // machNumber undefined for liquid
   };
+
+  if (context.phase === "gas" && pipe.pipeSectionType === "control valve" && outletPressurePa) {
+    try {
+      const [gasInlet, gasOutlet] = solveAdiabaticExpansion(
+        inletPressurePa,
+        outletPressurePa,
+        context.temperature,
+        context.massFlow,
+        context.pipeDiameter,
+        context.molarMass!,
+        context.zFactor!,
+        context.gamma!
+      );
+      return direction === "backward"
+        ? { inletState: gasStateToPipeState(gasOutlet, erosionalConstant), outletState: gasStateToPipeState(gasInlet, erosionalConstant) }
+        : { inletState: gasStateToPipeState(gasInlet, erosionalConstant), outletState: gasStateToPipeState(gasOutlet, erosionalConstant) };
+    } catch (e) {
+      console.warn("Failed to solve adiabatic expansion for control valve", e);
+    }
+  }
 
   return direction === "backward"
     ? { inletState: outletState, outletState: inletState }
