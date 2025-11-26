@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, OutlinedInput, Select, Typography, MenuItem, SelectChangeEvent, TextField } from "@mui/material";
+import { Box, Select, MenuItem, SelectChangeEvent, TextField, InputAdornment } from "@mui/material";
 import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
 export const QUANTITY_UNIT_OPTIONS = {
@@ -84,92 +84,80 @@ export function QuantityInput({
   };
 
   return (
-    <Box width="100%">
-      <Typography color="text.secondary" sx={{ mb: 0.5 }}>
-        {displayLabel}
-      </Typography>
-      <Box
-        sx={{
-          display: "flex",
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 1,
-          overflow: "hidden",
-          '&:hover': { borderColor: "text.primary" },
-          '&:focus-within': { borderColor: "primary.main", boxShadow: "0 0 0 1px #1976d2" } // Using default MUI primary blue
-        }}
-      >
-        <OutlinedInput
-          label={displayLabel}
-          type="text"
-          inputMode="decimal"
-          placeholder={placeholder}
-          value={inputValue}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => {
-            setIsFocused(false);
-            if (inputValue === "-" || inputValue === "." || inputValue === "-.") {
-              setInputValue(formatValue(value));
-            }
-          }}
-          onChange={(e) => {
-            const next = e.target.value;
-            if (
-              next !== "" &&
-              next !== "-" &&
-              next !== "." &&
-              next !== "-." &&
-              !/^[-+]?\d*(?:\.\d*)?$/.test(next)
-            ) {
-              return;
-            }
-            setInputValue(next);
-            if (next === "") {
-              onValueChange(undefined);
-              return;
-            }
-            if (next === "-" || next === "." || next === "-.") {
-              return;
-            }
-            const parsed = Number(next);
-            if (!Number.isNaN(parsed)) {
-              onValueChange(parsed);
-            }
-          }}
-          sx={{
-            flex: 1,
-            '& fieldset': { border: 'none' },
-            '& input': { py: 1, px: 1.5 }
-          }}
-          disabled={isDisabled}
-        />
-        <Select
-          value={unit}
-          onChange={(e: SelectChangeEvent) => handleUnitChange(e.target.value)}
-          disabled={isDisabled}
-          variant="standard"
-          disableUnderline
-          sx={{
-            // width: "120px",
-            borderLeft: "1px solid",
-            borderColor: "divider",
-            borderRadius: 0,
-            bgcolor: "action.hover",
-            '& .MuiSelect-select': {
-              py: 1,
-              px: 1.5,
-              display: 'flex',
-              alignItems: 'center'
-            }
-          }}
-        >
-          {units.map((u) => (
-            <MenuItem key={u} value={u}>
-              {u}
-            </MenuItem>
-          ))}
-        </Select>
-      </Box>
-    </Box>
+    <TextField
+      label={label}
+      value={inputValue}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (
+          next !== "" &&
+          next !== "-" &&
+          next !== "." &&
+          next !== "-." &&
+          !/^[-+]?\d*(?:\.\d*)?$/.test(next)
+        ) {
+          return;
+        }
+        setInputValue(next);
+        if (next === "") {
+          onValueChange(undefined);
+          return;
+        }
+        if (next === "-" || next === "." || next === "-.") {
+          return;
+        }
+        const parsed = Number(next);
+        if (!Number.isNaN(parsed)) {
+          onValueChange(parsed);
+        }
+      }}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => {
+        setIsFocused(false);
+        if (inputValue === "-" || inputValue === "." || inputValue === "-.") {
+          setInputValue(formatValue(value));
+        }
+      }}
+      placeholder={placeholder}
+      disabled={isDisabled}
+      fullWidth
+      size="small"
+      InputProps={{
+        endAdornment: (
+          <InputAdornment position="end" sx={{ mr: -1.5 }}>
+            <Select
+              value={unit}
+              onChange={(e: SelectChangeEvent) => handleUnitChange(e.target.value)}
+              disabled={isDisabled}
+              variant="standard"
+              disableUnderline
+              sx={{
+                borderLeft: "1px solid",
+                borderColor: "divider",
+                borderRadius: 0,
+                bgcolor: "action.hover",
+                height: "100%",
+                '& .MuiSelect-select': {
+                  py: 1,
+                  px: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%',
+                },
+                // Adjust border radius to match TextField if needed, but here we are inside
+                borderTopRightRadius: 1, // Match default MUI radius
+                borderBottomRightRadius: 1,
+              }}
+            >
+              {units.map((u) => (
+                <MenuItem key={u} value={u}>
+                  {u}
+                </MenuItem>
+              ))}
+            </Select>
+          </InputAdornment>
+        ),
+      }}
+    />
   );
 }

@@ -25,6 +25,7 @@ import {
   InputLabel,
   FormHelperText,
   FormControl,
+  FormLabel,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, PipePatch, SelectedElement } from "@/lib/types";
@@ -189,11 +190,17 @@ export function PropertiesPanel({
         gap: 2,
       }}
     >
-      <Typography variant="h6">Properties</Typography>
+      {node || pipe ? (
+        <Typography variant="h6">{node ? "Node" : "Pipe"} Properties</Typography>
+      ) : (
+        <Typography>
+          Select a node or pipe to view or edit its values.
+        </Typography>
+      )}
 
       {node && (
         <Stack spacing={3}>
-          <Stack spacing={1}>
+          <Stack spacing={2}>
             <TextField
               label="Label"
               size="small"
@@ -202,7 +209,7 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack spacing={2}>
             <Typography color="text.secondary">
               Conditions
             </Typography>
@@ -234,7 +241,6 @@ export function PropertiesPanel({
             />
 
             <Button
-              size="small"
               variant="contained"
               onClick={() => {
                 const connectedPipes = network.pipes.filter(
@@ -311,12 +317,10 @@ export function PropertiesPanel({
             </Button>
           </Stack>
 
-          <Stack spacing={1}>
-            <Stack spacing={1}>
-              <Typography color="text.secondary">
-                Fluid ID
-              </Typography>
+          <Stack spacing={2}>
+            <Stack spacing={2}>
               <TextField
+                label="Fluid ID"
                 size="small"
                 value={node.fluid?.id ?? ""}
                 onChange={(event) =>
@@ -330,25 +334,35 @@ export function PropertiesPanel({
               />
             </Stack>
 
-            <Typography color="text.secondary">
-              Fluid Phase
-            </Typography>
-            <RadioGroup
-              value={nodeFluidPhase}
-              onChange={(event) =>
-                onUpdateNode(node.id, current => ({
-                  fluid: {
-                    ...(current.fluid ?? {}),
-                    phase: event.target.value as "liquid" | "gas",
-                  },
-                }))
-              }
-            >
-              <Stack direction="row">
-                <FormControlLabel value="liquid" control={<Radio size="small" />} label="Liquid" />
-                <FormControlLabel value="gas" control={<Radio size="small" />} label="Gas" />
-              </Stack>
-            </RadioGroup>
+            <FormControl component="fieldset" fullWidth sx={{
+              border: "1px solid",
+              borderColor: "rgba(0, 0, 0, 0.23)",
+              borderRadius: 1,
+              px: 2,
+              pb: 1,
+              pt: 0.5,
+              "&:hover": {
+                borderColor: "text.primary",
+              },
+            }}>
+              <FormLabel component="legend" sx={{ px: 0.5, fontSize: "0.75rem" }}>Fluid Phase</FormLabel>
+              <RadioGroup
+                value={nodeFluidPhase}
+                onChange={(event) =>
+                  onUpdateNode(node.id, current => ({
+                    fluid: {
+                      ...(current.fluid ?? {}),
+                      phase: event.target.value as "liquid" | "gas",
+                    },
+                  }))
+                }
+              >
+                <Stack direction="row">
+                  <FormControlLabel value="liquid" control={<Radio size="small" />} label="Liquid" />
+                  <FormControlLabel value="gas" control={<Radio size="small" />} label="Gas" />
+                </Stack>
+              </RadioGroup>
+            </FormControl>
 
             {nodeFluidPhase !== "gas" && (
               <QuantityInput
@@ -377,11 +391,9 @@ export function PropertiesPanel({
             )}
             {nodeFluidPhase === "gas" && (
               <Stack spacing={2}>
-                <Stack spacing={1}>
-                  <Typography color="text.secondary">
-                    Gas Molecular Weight
-                  </Typography>
+                <Stack spacing={2}>
                   <TextField
+                    label="Gas Molecular Weight"
                     size="small"
                     type="number"
                     inputProps={{ step: "any" }}
@@ -399,11 +411,9 @@ export function PropertiesPanel({
                   />
                 </Stack>
 
-                <Stack spacing={1}>
-                  <Typography color="text.secondary">
-                    Z Factor
-                  </Typography>
+                <Stack spacing={2}>
                   <TextField
+                    label="Z Factor"
                     size="small"
                     type="number"
                     inputProps={{ step: "any" }}
@@ -421,11 +431,9 @@ export function PropertiesPanel({
                   />
                 </Stack>
 
-                <Stack spacing={1}>
-                  <Typography color="text.secondary">
-                    Specific Heat Ratio
-                  </Typography>
+                <Stack spacing={2}>
                   <TextField
+                    label="Specific Heat Ratio"
                     size="small"
                     type="number"
                     inputProps={{ step: "any" }}
@@ -476,12 +484,11 @@ export function PropertiesPanel({
 
       {pipe && (
         <Stack spacing={3}>
-          <Typography fontWeight="bold">Pipe Section</Typography>
           <Typography color="text.secondary">
             {startNode?.label ?? "Unknown"} → {endNode?.label ?? "Unknown"}
           </Typography>
 
-          <Stack spacing={1}>
+          <Stack spacing={2}>
             <TextField
               label="Label"
               size="small"
@@ -492,7 +499,7 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack spacing={2}>
             <TextField
               label="Description"
               size="small"
@@ -503,7 +510,7 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <Stack spacing={2}>
             <RadioGroup
               value={pipe.direction ?? "forward"}
               onChange={(event) => {
@@ -552,7 +559,7 @@ export function PropertiesPanel({
             }
           />
 
-          <Stack spacing={1}>
+          <Stack spacing={2}>
             <TextField
               label="Design Margin (%)"
               size="small"
@@ -581,11 +588,10 @@ export function PropertiesPanel({
             />
           </Stack>
 
-          <Stack spacing={1}>
+          <FormControl size="small" fullWidth>
             <InputLabel>Pipe Section Type</InputLabel>
             <Select
               label="Pipe Section Type"
-              size="small"
               value={pipe.pipeSectionType ?? "pipeline"}
               onChange={(event) => onUpdatePipe(pipe.id, { pipeSectionType: event.target.value as "pipeline" | "control valve" | "orifice" })}
             >
@@ -593,14 +599,14 @@ export function PropertiesPanel({
               <MenuItem value="control valve">Control Valve</MenuItem>
               <MenuItem value="orifice">Orifice</MenuItem>
             </Select>
-          </Stack>
+          </FormControl>
 
 
           {pipeFluidPhase === "gas" && (
-            <Stack spacing={1}>
+            <FormControl size="small" fullWidth>
               <InputLabel>Gas Flow Model</InputLabel>
               <Select
-                size="small"
+                label="Gas Flow Model"
                 value={pipe.gasFlowModel ?? "adiabatic"}
                 onChange={(event) =>
                   onUpdatePipe(pipe.id, {
@@ -611,10 +617,10 @@ export function PropertiesPanel({
                 <MenuItem value="adiabatic">Adiabatic</MenuItem>
                 <MenuItem value="isothermal">Isothermal</MenuItem>
               </Select>
-            </Stack>
+            </FormControl>
           )}
 
-          <Stack spacing={1}>
+          <Stack spacing={2}>
             <Typography color="text.secondary">
               Diameter Input
             </Typography>
@@ -643,10 +649,10 @@ export function PropertiesPanel({
             />
           ) : (
             <Stack spacing={2}>
-              <Stack spacing={1}>
+              <FormControl size="small" fullWidth>
                 <InputLabel>Nominal Pipe Size (NPS)</InputLabel>
                 <Select
-                  size="small"
+                  label="Nominal Pipe Size (NPS)"
                   displayEmpty
                   value={npsSelectValue}
                   onChange={(event) => {
@@ -667,11 +673,11 @@ export function PropertiesPanel({
                     </MenuItem>
                   ))}
                 </Select>
-              </Stack>
-              <Stack spacing={1}>
+              </FormControl>
+              <FormControl size="small" fullWidth>
                 <InputLabel>Pipe Schedule</InputLabel>
                 <Select
-                  size="small"
+                  label="Pipe Schedule"
                   value={pipeScheduleValue ?? "STD"}
                   onChange={(event) => {
                     const scheduleValue = event.target.value as PipeSchedule;
@@ -701,7 +707,7 @@ export function PropertiesPanel({
                     Calculated Diameter: {pipe.diameter} {pipe.diameterUnit ?? "mm"}
                   </FormHelperText>
                 )}
-              </Stack>
+              </FormControl>
             </Stack>
           )}
 
@@ -725,11 +731,9 @@ export function PropertiesPanel({
             onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { outletDiameterUnit: newUnit })}
           />
 
-          <Stack spacing={1}>
-            <Typography color="text.secondary">
-              Erosional Constant
-            </Typography>
+          <Stack spacing={2}>
             <TextField
+              label="Erosional Constant"
               size="small"
               type="number"
               inputProps={{ step: "any" }}
@@ -776,15 +780,12 @@ export function PropertiesPanel({
               )}
 
               <Stack spacing={3}>
-                <Stack spacing={1}>
-                  <Typography color="text.secondary">
-                    Fitting Type
-                  </Typography>
+                <FormControl size="small" fullWidth>
+                  <InputLabel>Fitting Type</InputLabel>
                   <Select
-                    size="small"
+                    label="Fitting Type"
                     value={pipe.fittingType ?? "LR"}
                     onChange={(event) => onUpdatePipe(pipe.id, { fittingType: event.target.value })}
-                    fullWidth
                   >
                     {FITTING_TYPE_OPTIONS.map((option) => (
                       <MenuItem key={option} value={option}>
@@ -792,9 +793,9 @@ export function PropertiesPanel({
                       </MenuItem>
                     ))}
                   </Select>
-                </Stack>
+                </FormControl>
 
-                <Stack spacing={1}>
+                <Stack spacing={2}>
                   <TextField
                     label="Safety Factor"
                     size="small"
@@ -839,10 +840,10 @@ export function PropertiesPanel({
                             spacing={2}
                             alignItems="flex-end"
                           >
-                            <FormControl sx={{ width: "240px" }}>
+                            <FormControl sx={{ width: "240px" }} size="small">
+                              <InputLabel>Type</InputLabel>
                               <Select
                                 label="Type"
-                                size="small"
                                 value={fitting.type}
                                 disabled={isSwage}
                                 onChange={(event) =>
@@ -897,7 +898,7 @@ export function PropertiesPanel({
                     </Stack>
                   )}
                 </Stack>
-                <Stack spacing={1}>
+                <Stack spacing={2}>
                   <TextField
                     label="User K"
                     size="small"
@@ -955,7 +956,7 @@ export function PropertiesPanel({
 
               {isGasPipe && (
                 <>
-                  <Stack spacing={1}>
+                  <Stack spacing={2}>
                     <Typography color="text.secondary">
                       Gas Valve Constant (C1)
                     </Typography>
@@ -984,7 +985,7 @@ export function PropertiesPanel({
                       }}
                     />
                   </Stack>
-                  <Stack spacing={1}>
+                  <Stack spacing={2}>
                     <Typography color="text.secondary">
                       Pressure Drop Ratio (xT)
                     </Typography>
@@ -1018,7 +1019,7 @@ export function PropertiesPanel({
 
               {pipe.controlValve?.calculation_note === "cv_to_dp" && (
                 <>
-                  <Stack spacing={1}>
+                  <Stack spacing={2}>
                     <Typography color="text.secondary">
                       {controlValveCoefficientLabel}
                     </Typography>
@@ -1051,7 +1052,7 @@ export function PropertiesPanel({
                       }}
                     />
                   </Stack>
-                  <Stack spacing={1}>
+                  <Stack spacing={2}>
                     <Typography color="text.secondary">
                       Calculated Pressure Drop
                     </Typography>
@@ -1149,7 +1150,7 @@ export function PropertiesPanel({
                       });
                     }}
                   />
-                  <Stack spacing={1}>
+                  <Stack spacing={2}>
                     <Typography color="text.secondary">
                       {controlValveCalculatedCoefficientLabel}
                     </Typography>
@@ -1167,7 +1168,7 @@ export function PropertiesPanel({
 
           {pipe?.pipeSectionType === "orifice" && (
             <>
-              <Stack spacing={1}>
+              <Stack spacing={2}>
                 <Typography color="text.secondary">
                   Beta Ratio (β = d / D)
                 </Typography>
@@ -1201,7 +1202,7 @@ export function PropertiesPanel({
                 />
               </Stack>
 
-              <Stack spacing={1}>
+              <Stack spacing={2}>
                 <Typography color="text.secondary">
                   Calculated Pressure Drop
                 </Typography>
@@ -1254,12 +1255,6 @@ export function PropertiesPanel({
             </>
           )}
         </Stack>
-      )}
-
-      {!node && !pipe && (
-        <Typography color="text.secondary">
-          Select a node or pipe to view or edit its values.
-        </Typography>
       )}
     </Paper>
   );
