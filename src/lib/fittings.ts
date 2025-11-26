@@ -1381,7 +1381,11 @@ export function calculateRequiredCg({
     return 0;
   }
 
-  const denominator = p1Psia * 520 * termTempDensity * Math.sin(angleRadians);
+  // Fisher Universal Gas Sizing Equation:
+  // Q = Cg * P1 * sin( (59.64/C1) * sqrt(dP/P1) )_rad * sqrt(520 / (G*T))
+  // The termTempDensity is sqrt(1 / (G*T)).
+  // So we need sqrt(520) * termTempDensity.
+  const denominator = p1Psia * Math.sqrt(520) * termTempDensity * Math.sin(angleRadians);
   if (!Number.isFinite(denominator) || denominator === 0) {
     return 0;
   }
