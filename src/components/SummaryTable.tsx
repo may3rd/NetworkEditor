@@ -665,7 +665,7 @@ export function SummaryTable({ network }: Props) {
 
     return (
         <Paper id="summary-table-print-area" className={fitToPage ? "fit-to-page" : ""} sx={{ width: "100%", overflow: "hidden", p: 2 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Box className="print-header-container" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', flex: 1, textAlign: "center" }}>
                     SINGLE PHASE FLOW PRESSURE DROP
                 </Typography>
@@ -711,9 +711,12 @@ export function SummaryTable({ network }: Props) {
                         left: 0;
                         top: 0;
                         width: 100%;
-                        margin: 0;
-                        padding: 0;
+                        margin: 0 !important;
+                        padding: 0 !important;
                         box-shadow: none;
+                    }
+                    .print-header-container {
+                        margin-bottom: 0 !important;
                     }
                     .no-print {
                         display: none !important;
@@ -793,10 +796,17 @@ export function SummaryTable({ network }: Props) {
                     html, body {
                         height: auto !important;
                         overflow: hidden !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
                     }
                     #summary-table-print-area {
                         height: auto !important;
                         overflow: visible !important;
+                        width: 99% !important; /* Prevent horizontal overflow */
+                    }
+                    #summary-table-print-area.fit-to-page {
+                        transform: scale(0.98);
+                        transform-origin: top left;
                     }
                 }
                 `}
@@ -805,10 +815,10 @@ export function SummaryTable({ network }: Props) {
                 <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'collapse', border: '1px solid #e0e0e0' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200, position: 'sticky', left: 0, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
+                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200, width: 200, position: 'sticky', left: 0, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
                                 Property
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 200, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 200, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
                                 Unit
                             </TableCell>
                             {visiblePipes.map((pipe, index) => (
