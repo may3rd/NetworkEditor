@@ -103,7 +103,7 @@ const massDensityMeasure = {
       "kg/m3": {
         name: { singular: "Kilogram per cubic meter", plural: "Kilogram per cubic meter" },
         to_anchor: 1,
-        },
+      },
       "kg/cm3": {
         name: { singular: "Kilogram per cubic centimeter", plural: "Kilogram per cubic centimeter" },
         to_anchor: 1000,
@@ -235,6 +235,82 @@ const convert = configureMeasurements({
   viscosity: viscosityMeasure,
   massDensity: massDensityMeasure,
   massFlowRate: massFlowRateMeasure,
+  volumeFlowRate: {
+    systems: {
+      metric: {
+        "m3/h": {
+          name: { singular: "Cubic meter per hour", plural: "Cubic meters per hour" },
+          to_anchor: 1,
+        },
+        "Nm3/h": {
+          name: { singular: "Normal cubic meter per hour", plural: "Normal cubic meters per hour" },
+          to_anchor: 1,
+        },
+        "Nm3/d": {
+          name: { singular: "Normal cubic meter per day", plural: "Normal cubic meters per day" },
+          to_anchor: 1 / 24,
+        },
+      },
+      imperial: {
+        "ft3/h": {
+          name: { singular: "Cubic foot per hour", plural: "Cubic feet per hour" },
+          to_anchor: 1 / 35.3146667,
+        },
+        SCFD: {
+          name: { singular: "Standard cubic foot per day", plural: "Standard cubic feet per day" },
+          to_anchor: 1 / 847.552,
+        },
+        MSCFD: {
+          name: { singular: "Thousand standard cubic feet per day", plural: "Thousand standard cubic feet per day" },
+          to_anchor: 1000 / 847.552,
+        },
+      },
+    },
+    anchors: {
+      metric: {
+        imperial: {
+          ratio: 1,
+        },
+      },
+      imperial: {
+        metric: {
+          ratio: 1,
+        },
+      },
+    },
+  },
+  pressureGradient: {
+    systems: {
+      metric: {
+        "Pa/m": {
+          name: { singular: "Pascal per meter", plural: "Pascals per meter" },
+          to_anchor: 0.1,
+        },
+        "kPa/100m": {
+          name: { singular: "Kilopascal per 100 meters", plural: "Kilopascals per 100 meters" },
+          to_anchor: 1,
+        },
+      },
+      imperial: {
+        "psi/100ft": {
+          name: { singular: "PSI per 100 feet", plural: "PSI per 100 feet" },
+          to_anchor: 22.62059,
+        },
+      },
+    },
+    anchors: {
+      metric: {
+        imperial: {
+          ratio: 1,
+        },
+      },
+      imperial: {
+        metric: {
+          ratio: 1,
+        },
+      },
+    },
+  },
 } as any);
 
 export function normalizeUnit(unit?: string | null): string | undefined {
