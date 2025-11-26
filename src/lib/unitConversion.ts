@@ -290,6 +290,14 @@ const convert = configureMeasurements({
           name: { singular: "Kilopascal per 100 meters", plural: "Kilopascals per 100 meters" },
           to_anchor: 1,
         },
+        "bar/100m": {
+          name: { singular: "Bar per 100 meters", plural: "Bars per 100 meters" },
+          to_anchor: 100,
+        },
+        "kg/cm2/100m": {
+          name: { singular: "Kilogram per square centimeter per 100 meters", plural: "Kilograms per square centimeter per 100 meters" },
+          to_anchor: 98.0665,
+        },
       },
       imperial: {
         "psi/100ft": {

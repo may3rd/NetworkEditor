@@ -2,7 +2,16 @@
 
 import { useMemo, useCallback, useEffect, useState, useRef } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { Button, ButtonGroup, Typography, Stack, Paper, Box, Checkbox, FormControlLabel, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
+import {
+  Button,
+  ButtonGroup,
+  Stack,
+  Box,
+  IconButton,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip
+} from "@mui/material";
 import { Add, Delete, Undo, Redo, Grid3x3, GridOn, PanTool, Speed } from "@mui/icons-material";
 import {
   ReactFlow,
@@ -395,6 +404,40 @@ export function NetworkEditor({
   }, [selectedId, selectedType, onDelete]);
   // ───────────────────────────────────────────────────────────────────────
 
+  // ── Keyboard Undo/Redo (Ctrl+Z / Ctrl+Y) ───────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "y" || e.key === "Z" || e.key === "Y")) {
+        // Do not trigger if focus is on an input
+        const active = document.activeElement;
+        if (
+          active &&
+          (active.tagName === "INPUT" ||
+            active.tagName === "TEXTAREA" ||
+            (active as HTMLElement).isContentEditable)
+        ) {
+          return;
+        }
+
+        e.preventDefault();
+
+        if (e.key === "z" || e.key === "Z") {
+          if (e.shiftKey) {
+            if (canRedo) onRedo?.();
+          } else {
+            if (canUndo) onUndo?.();
+          }
+        } else if (e.key === "y" || e.key === "Y") {
+          if (canRedo) onRedo?.();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onUndo, onRedo, canUndo, canRedo]);
+  // ───────────────────────────────────────────────────────────────────────
+
   return (
     <ReactFlowProvider>
       <EditorCanvas {...{ network, onSelect, selectedId, selectedType, onDelete, onUndo, onRedo, canUndo, canRedo, historyIndex, historyLength, onNetworkChange, height, localNodes, setLocalNodes, rfEdges, nodeTypes, defaultEdgeOptions, handleNodesChange, handleConnect, mapNodeToReactFlow, showPressures, setShowPressures }} />
@@ -446,11 +489,12 @@ function EditorCanvas({
   const [isAddingNode, setIsAddingNode] = useState(false);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
   const [isSpacePanning, setIsSpacePanning] = useState(false);
+  const lastMousePos = useRef<{ x: number; y: number } | null>(null);
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
   const connectingHandleType = useRef<HandleType | null>(null);
   const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null);
-  const { screenToFlowPosition, getNodes } = useReactFlow();
+  const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
   const NODE_SIZE = 20;
 
   const onConnectStart = useCallback(
@@ -611,26 +655,11 @@ function EditorCanvas({
         position.y -= NODE_SIZE / 2;
 
         const newNodeId = `node-${Date.now()}`;
-        const templateFluid =
-          network.nodes[0]?.fluid !== undefined
-            ? { ...network.nodes[0].fluid }
-            : { id: "fluid", phase: "liquid" };
-        const liquidDefaults = {
-          density: 1000,
-          densityUnit: "kg/m3",
-          viscosity: 1,
-          viscosityUnit: "cP",
-        } as const;
-        const newNodeFluid =
-          templateFluid?.phase?.toLowerCase() === "liquid" || !templateFluid?.phase
-            ? { ...templateFluid, ...liquidDefaults }
-            : templateFluid;
-
         const newNode = {
           id: newNodeId,
           label: `Node ${network.nodes.length + 1}`,
           position,
-          fluid: newNodeFluid,
+          // fluid is now optional and undefined for new nodes
           temperature: network.nodes[0]?.temperature,
           temperatureUnit: network.nodes[0]?.temperatureUnit ?? "°C",
           pressure: network.nodes[0]?.pressure,
@@ -693,9 +722,13 @@ function EditorCanvas({
         return;
       }
       setIsSpacePanning(false);
+      lastMousePos.current = null;
     };
 
-    const handleWindowBlur = () => setIsSpacePanning(false);
+    const handleWindowBlur = () => {
+      setIsSpacePanning(false);
+      lastMousePos.current = null;
+    };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -707,6 +740,32 @@ function EditorCanvas({
       window.removeEventListener("blur", handleWindowBlur);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isSpacePanning) return;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (lastMousePos.current) {
+        const dx = event.clientX - lastMousePos.current.x;
+        const dy = event.clientY - lastMousePos.current.y;
+        const { x, y, zoom } = getViewport();
+        setViewport({ x: x + dx, y: y + dy, zoom });
+      }
+      lastMousePos.current = { x: event.clientX, y: event.clientY };
+    };
+
+    const handleMouseUp = () => {
+      lastMousePos.current = null;
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isSpacePanning, getViewport, setViewport]);
 
   const isPanMode = panModeEnabled || isSpacePanning;
 
@@ -765,45 +824,45 @@ function EditorCanvas({
         }}
       >
         <ButtonGroup variant="contained" size="small">
-          <Button
-            onClick={() => setIsAddingNode((value) => !value)}
-            disabled={!canEditNetwork}
-            color={isAddingNode ? "primary" : "info"}
-            startIcon={<Add />}
-            title="Add node"
-          >
-            Add Node
-          </Button>
+          <Tooltip title="Add new node">
+            <IconButton
+              onClick={() => setIsAddingNode((value) => !value)}
+              disabled={!canEditNetwork}
+              color={isAddingNode ? "primary" : "info"}
+            >
+              <Add />
+            </IconButton>
+          </Tooltip>
 
-          <Button
-            onClick={onDelete}
-            disabled={!canEditNetwork || !selectedId}
-            color="error"
-            startIcon={<Delete />}
-            title="Delete selected item"
-          >
-            Delete
-          </Button>
+          <Tooltip title="Delete selected item">
+            <IconButton
+              onClick={onDelete}
+              disabled={!canEditNetwork || !selectedId}
+              color="error"
+            >
+              <Delete />
+            </IconButton>
+          </Tooltip>
 
-          <Button
-            onClick={onUndo}
-            disabled={!canUndo}
-            color="warning"
-            startIcon={<Undo />}
-            title="Undo (Ctrl+Z)"
-          >
-            Undo
-          </Button>
+          <Tooltip title="Undo (Ctrl+Z)">
+            <IconButton
+              onClick={onUndo}
+              disabled={!canUndo}
+              color="primary"
+            >
+              <Undo />
+            </IconButton>
+          </Tooltip>
 
-          <Button
-            onClick={onRedo}
-            disabled={!canRedo}
-            color="success"
-            startIcon={<Redo />}
-            title="Redo (Ctrl+Y)"
-          >
-            Redo
-          </Button>
+          <Tooltip title="Redo (Ctrl+Y)">
+            <IconButton
+              onClick={onRedo}
+              disabled={!canRedo}
+              color="success"
+            >
+              <Redo />
+            </IconButton>
+          </Tooltip>
         </ButtonGroup>
 
         <ToggleButtonGroup
@@ -882,9 +941,12 @@ function EditorCanvas({
           connectionMode={ConnectionMode.Strict}
           maxZoom={16}
           minZoom={0.1}
+          panActivationKeyCode={undefined} // We handle space panning manually
           nodesDraggable={!isPanMode}
           selectionOnDrag={!isPanMode}
-          panOnDrag={isPanMode}
+          panOnDrag={panModeEnabled || [1, 2]} // Pan on left click if in pan mode, or middle/right click always
+          selectionKeyCode={isPanMode ? null : "Shift"} // Use Shift for selection if not in pan mode
+          multiSelectionKeyCode={isPanMode ? null : "Meta"}
           style={{ cursor: editorCursor }}
         >
           {showGrid && <Background className="network-grid" />}

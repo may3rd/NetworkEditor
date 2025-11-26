@@ -15,12 +15,12 @@ import {
     Button,
     Switch,
     FormControlLabel,
+    Tooltip,
 } from "@mui/material";
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import PrintIcon from '@mui/icons-material/Print';
 import { NetworkState, PipeProps } from "@/lib/types";
-import { PIPE_FITTING_OPTIONS } from "./PipeDimension";
 import { convertUnit } from "@/lib/unitConversion";
 
 type Props = {
@@ -41,7 +41,7 @@ type RowConfig =
 export function SummaryTable({ network }: Props) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(8);
-    const [unitSystem, setUnitSystem] = useState<"metric" | "imperial">("metric");
+    const [unitSystem, setUnitSystem] = useState<"metric" | "imperial" | "fieldSI" | "metric_kgcm2">("metric");
     const [fitToPage, setFitToPage] = useState(true);
 
     const handleChangePage = (event: unknown, newPage: number) => {
@@ -77,30 +77,71 @@ export function SummaryTable({ network }: Props) {
     const pipes = network.pipes;
     const visiblePipes = pipes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-    const u = (metric: string, imperial: string) => unitSystem === "metric" ? metric : imperial;
+    const u = (metric: string, imperial: string, fieldSI?: string, metricKgCm2?: string) => {
+        if (unitSystem === "metric_kgcm2" && metricKgCm2) return metricKgCm2;
+        if (unitSystem === "fieldSI" && fieldSI) return fieldSI;
+        return unitSystem === "imperial" ? imperial : metric;
+    };
+
+    const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+    const formatNps = (val: number | undefined | null): string => {
+        if (val === undefined || val === null) return "";
+        const intPart = Math.floor(val);
+        const decimalPart = val - intPart;
+
+        if (decimalPart === 0) return `${intPart}"`;
+
+        const fractions: { [key: number]: string } = {
+            0.125: '1/8',
+            0.25: '1/4',
+            0.375: '3/8',
+            0.5: '1/2',
+            0.625: '5/8',
+            0.75: '3/4',
+            0.875: '7/8'
+        };
+
+        // Find closest match within small tolerance
+        let fractionStr = "";
+        for (const [dec, frac] of Object.entries(fractions)) {
+            if (Math.abs(decimalPart - parseFloat(dec)) < 0.001) {
+                fractionStr = frac;
+                break;
+            }
+        }
+
+        if (!fractionStr) {
+            // Fallback for non-standard fractions, maybe just show decimal or try to approximate?
+            // For now, if no match, just show decimal to avoid misleading info
+            return `${val}"`;
+        }
+
+        return intPart === 0 ? `${fractionStr}"` : `${intPart} ${fractionStr}"`;
+    };
 
     const rows: RowConfig[] = [
         { type: "data", label: "Segment ID", getValue: (pipe) => pipe.label || "" },
-        { type: "data", label: "Description", getValue: (pipe) => pipe.description },
-        { type: "data", label: "From", getValue: (pipe) => getNodeLabel(pipe.startNodeId) },
-        { type: "data", label: "To", getValue: (pipe) => getNodeLabel(pipe.endNodeId) },
+        { type: "data", label: "Description", getValue: (pipe) => pipe.description || "" },
+        { type: "data", label: "From", getValue: (pipe) => getNodeLabel(pipe.startNodeId) || "" },
+        { type: "data", label: "To", getValue: (pipe) => getNodeLabel(pipe.endNodeId) || "" },
 
         { type: "section", label: "I. GENERAL DATA" },
-        { type: "data", label: "Fluid Phase", getValue: (pipe) => pipe.fluid?.phase },
-        { type: "data", label: "Calculation Type", getValue: (pipe) => pipe.pipeSectionType },
-        { type: "data", label: "Flow Direction", getValue: (pipe) => pipe.direction },
+        { type: "data", label: "Fluid Phase", getValue: (pipe) => pipe.fluid?.phase ? capitalize(pipe.fluid.phase) : "" },
+        { type: "data", label: "Calculation Type", getValue: (pipe) => pipe.pipeSectionType ? capitalize(pipe.pipeSectionType) : "" },
+        { type: "data", label: "Flow Direction", getValue: (pipe) => pipe.direction ? capitalize(pipe.direction) : "" },
         {
             type: "data",
             label: "Flow Type (Adiabatic or Isothermal)",
             getValue: (pipe) => {
                 if (pipe.fluid?.phase !== "gas") return "N/A";
-                return pipe.gasFlowModel;
+                return pipe.gasFlowModel ? capitalize(pipe.gasFlowModel) : "";
             }
         },
         {
             type: "data",
             label: "Pressure",
-            unit: u("kPag", "psig"),
+            unit: u("kPag", "psig", "barg", "kg/cm2g"),
             getValue: (pipe) => {
                 const direction = pipe.direction ?? "forward";
                 const isForward = direction === "forward";
@@ -108,7 +149,7 @@ export function SummaryTable({ network }: Props) {
                     ? pipe.resultSummary?.inletState?.pressure
                     : pipe.resultSummary?.outletState?.pressure;
 
-                const convertedVal = val ? convertUnit(val, "Pa", u("kPag", "psig")) : undefined;
+                const convertedVal = val ? convertUnit(val, "Pa", u("kPag", "psig", "barg", "kg/cm2g")) : "";
 
                 return {
                     value: convertedVal,
@@ -122,7 +163,7 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "Design Flow Rate",
             unit: u("kg/h", "lb/h"),
-            getValue: (pipe) => pipe.designMassFlowRate ? convertUnit(pipe.designMassFlowRate, pipe.designMassFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : pipe.massFlowRate ? convertUnit(pipe.massFlowRate, pipe.massFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : undefined
+            getValue: (pipe) => pipe.designMassFlowRate ? convertUnit(pipe.designMassFlowRate, pipe.designMassFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : pipe.massFlowRate ? convertUnit(pipe.massFlowRate, pipe.massFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : ""
         },
         {
             type: "data",
@@ -139,9 +180,9 @@ export function SummaryTable({ network }: Props) {
 
                     let targetUnit = "m3/h";
                     if (phase === "gas") {
-                        targetUnit = unitSystem === "metric" ? "Nm3/h" : "SCFD";
+                        targetUnit = unitSystem === "imperial" ? "SCFD" : "Nm3/h";
                     } else {
-                        targetUnit = unitSystem === "metric" ? "m3/h" : "ft3/h";
+                        targetUnit = unitSystem === "imperial" ? "ft3/h" : "m3/h";
                     }
 
                     const val = convertUnit(volFlowM3H, "m3/h", targetUnit, "volumeFlowRate");
@@ -151,7 +192,7 @@ export function SummaryTable({ network }: Props) {
                         helperText: phase === "gas" ? "(at 1 atm, 25°C)" : undefined
                     };
                 }
-                return undefined;
+                return "";
             }
         },
         {
@@ -160,7 +201,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("°C", "°F"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.temprature; // Note typo in types.ts 'temprature'
-                return val ? convertUnit(val, "K", u("C", "F")) : undefined;
+                return val ? convertUnit(val, "K", u("C", "F")) : "";
             }
         },
         {
@@ -169,7 +210,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("kg/m3", "lb/ft3"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.density;
-                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : undefined;
+                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : "";
             }
         },
         { type: "data", label: "Molecular Weight", getValue: (pipe) => pipe.fluid?.molecularWeight },
@@ -179,35 +220,40 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "Viscosity",
             unit: "cP",
-            getValue: (pipe) => pipe.fluid?.viscosity ? convertUnit(pipe.fluid.viscosity, pipe.fluid.viscosityUnit || "cP", "cP") : undefined
+            getValue: (pipe) => pipe.fluid?.viscosity ? convertUnit(pipe.fluid.viscosity, pipe.fluid.viscosityUnit || "cP", "cP") : ""
         },
 
         { type: "section", label: "III. PIPE, FITTING & ELEVATION" },
-        { type: "data", label: "Main Pipe DN", unit: u("in", "in"), getValue: (pipe) => pipe.diameterInputMode == "nps" ? pipe.pipeNPD : "" },
+        {
+            type: "data", label: "Main Pipe DN", unit: u("in", "in"), getValue: (pipe) => {
+                if (pipe.diameterInputMode == "diameter") return "";
+                return pipe.diameterInputMode == "nps" ? formatNps(pipe.pipeNPD) : ""
+            }
+        },
         { type: "data", label: "Pipe Schedule", getValue: (pipe) => pipe.diameterInputMode == "nps" ? pipe.pipeSchedule : "" },
         {
             type: "data",
             label: "Main Pipe ID",
             unit: u("mm", "in"),
-            getValue: (pipe) => pipe.diameter ? convertUnit(pipe.diameter, pipe.diameterUnit || "mm", u("mm", "in")) : undefined
+            getValue: (pipe) => pipe.diameter ? convertUnit(pipe.diameter, pipe.diameterUnit || "mm", u("mm", "in")) : ""
         },
         {
             type: "data",
             label: "Inlet Pipe DN",
             unit: u("mm", "in"),
-            getValue: (pipe) => pipe.inletDiameter ? convertUnit(pipe.inletDiameter, pipe.inletDiameterUnit || pipe.diameterUnit || "mm", u("mm", "in")) : undefined
+            getValue: (pipe) => pipe.inletDiameter ? convertUnit(pipe.inletDiameter, pipe.inletDiameterUnit || pipe.diameterUnit || "mm", u("mm", "in")) : ""
         },
         {
             type: "data",
             label: "Outlet Pipe DN",
             unit: u("mm", "in"),
-            getValue: (pipe) => pipe.outletDiameter ? convertUnit(pipe.outletDiameter, pipe.outletDiameterUnit || pipe.diameterUnit || "mm", u("mm", "in")) : undefined
+            getValue: (pipe) => pipe.outletDiameter ? convertUnit(pipe.outletDiameter, pipe.outletDiameterUnit || pipe.diameterUnit || "mm", u("mm", "in")) : ""
         },
         {
             type: "data",
             label: "Pipe Roughness",
             unit: u("mm", "in"),
-            getValue: (pipe) => pipe.roughness ? convertUnit(pipe.roughness, pipe.roughnessUnit || "mm", u("mm", "in")) : undefined
+            getValue: (pipe) => pipe.roughness ? convertUnit(pipe.roughness, pipe.roughnessUnit || "mm", u("mm", "in")) : ""
         },
         {
             type: "data",
@@ -215,7 +261,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("m", "ft"),
             getValue: (pipe) => {
                 if (!pipe.pipeSectionType) return "";
-                const length = pipe.length ? convertUnit(pipe.length, pipe.lengthUnit || "m", u("m", "ft")) : undefined
+                const length = pipe.length ? convertUnit(pipe.length, pipe.lengthUnit || "m", u("m", "ft")) : ""
                 const sectionType = pipe.pipeSectionType || "pipeline";
                 if (sectionType == "pipeline") {
                     return length;
@@ -229,13 +275,14 @@ export function SummaryTable({ network }: Props) {
             label: "Elevation Change (- for DOWN)",
             unit: u("m", "ft"),
             getValue: (pipe) => {
+                if (pipe.fluid?.phase === "gas") return "N/A";
                 if (!pipe.pipeSectionType) return "";
-                const elevation = pipe.elevation ? convertUnit(pipe.elevation, pipe.elevationUnit || "m", u("m", "ft")) : undefined
+                const elevation = pipe.elevation ? convertUnit(pipe.elevation, pipe.elevationUnit || "m", u("m", "ft")) : 0;
                 const sectionType = pipe.pipeSectionType || "pipeline";
                 if (sectionType == "pipeline") {
                     return elevation;
                 } else {
-                    return "";
+                    return 0;
                 }
             }
         },
@@ -418,31 +465,31 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "Fitting K",
             getValue: (pipe) => {
-                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
-                return pipe.pressureDropCalculationResults?.fittingK;
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.pressureDropCalculationResults?.fittingK || 0;
             }
         },
         {
             type: "data",
             label: "Pipe Length K",
             getValue: (pipe) => {
-                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
-                return pipe.pressureDropCalculationResults?.pipeLengthK;
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.pressureDropCalculationResults?.pipeLengthK || 0;
             }
         },
         {
             type: "data",
             label: "User Supply K",
             getValue: (pipe) => {
-                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
-                return pipe.userK;
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.userK || 0;
             }
         },
         {
             type: "data",
             label: "Total K",
             getValue: (pipe) => {
-                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
                 const fittingK = pipe.pressureDropCalculationResults?.fittingK || 0;
                 const pipeLengthK = pipe.pressureDropCalculationResults?.pipeLengthK || 0;
                 const userK = pipe.userK || 0;
@@ -454,15 +501,15 @@ export function SummaryTable({ network }: Props) {
             label: "Pipe & Fitting Safety Factor",
             unit: "%",
             getValue: (pipe) => {
-                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
-                return pipe.pipingFittingSafetyFactor;
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.pipingFittingSafetyFactor || 0;
             }
         },
         {
             type: "data",
             label: "Total K (with safety factor)",
             getValue: (pipe) => {
-                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
                 return pipe.pressureDropCalculationResults?.totalK;
             }
         },
@@ -471,30 +518,30 @@ export function SummaryTable({ network }: Props) {
         { type: "data", label: "Control Valve Cv", getValue: (pipe) => pipe.controlValve?.cv },
         { type: "data", label: "Control Valve Cg", getValue: (pipe) => pipe.controlValve?.cg },
         { type: "data", label: "Recovery Factor C1", getValue: (pipe) => pipe.controlValve?.C1 },
-        { type: "data", label: "Terminal Pressure Drop Ratio xT", getValue: (pipe) => pipe.controlValve?.xT },
-        { type: "data", label: "Thin Sharp Edged Orifice d/D Ratio", getValue: (pipe) => pipe.orifice?.betaRatio },
+        { type: "data", label: "Terminal Pressure Drop Ratio (xT)", getValue: (pipe) => pipe.controlValve?.xT },
+        { type: "data", label: "Thin Sharp Edged Orifice d/D Ratio (β)", getValue: (pipe) => pipe.orifice?.betaRatio },
 
         { type: "section", label: "V. CHARACTERISTIC SUMMARY" },
         { type: "data", label: "Reynolds Number", getValue: (pipe) => pipe.pressureDropCalculationResults?.reynoldsNumber },
-        { type: "data", label: "Flow Regime", getValue: (pipe) => pipe.pressureDropCalculationResults?.flowScheme },
+        { type: "data", label: "Flow Regime", getValue: (pipe) => capitalize(pipe.pressureDropCalculationResults?.flowScheme || "undefined") },
         { type: "data", label: "Moody Friction Factor", getValue: (pipe) => pipe.pressureDropCalculationResults?.frictionalFactor, decimals: 5 },
         // Velocity Head at Inlet (K=1) - calculate? 0.5 * rho * v^2 / 1000 for kPa?
         {
             type: "data",
-            label: "Flow Momentum (Rho*v²)",
+            label: "Flow Momentum (ρv²)",
             unit: u("Pa", "psi"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.flowMomentum;
-                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : "";
             }
         },
         {
             type: "data",
             label: "Critical Pressure",
-            unit: u("kPa(a)", "psia"),
+            unit: u("kPa(a)", "psia", "bar(a)", "kg/cm2(a)"),
             getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.gasFlowCriticalPressure;
-                return val ? convertUnit(val, "Pa", u("kPa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : "N/A";
             }
         },
 
@@ -502,68 +549,74 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data",
             label: "Pipe & Fitting",
-            unit: u("kPa", "psi"),
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
             getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.pipeAndFittingPressureDrop;
-                return val ? convertUnit(val, "Pa", u("kPa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : "";
             }
         },
         {
             type: "data",
             label: "Elevation Change",
-            unit: u("kPa", "psi"),
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
             getValue: (pipe) => {
+                if (pipe.fluid?.phase === "gas") return "N/A";
                 const val = pipe.pressureDropCalculationResults?.elevationPressureDrop;
-                return val ? convertUnit(val, "Pa", u("kPa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : 0;
             }
         },
         {
             type: "data",
             label: "Control Valve Pressure Drop",
-            unit: u("kPa", "psi"),
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
             getValue: (pipe) => {
+                if (pipe.pipeSectionType !== "control valve") return "N/A";
                 const val = pipe.pressureDropCalculationResults?.controlValvePressureDrop;
-                return val ? convertUnit(val, "Pa", u("kPa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : 0;
             }
         },
         {
             type: "data",
             label: "Orifice Pressure Drop",
-            unit: u("kPa", "psi"),
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
             getValue: (pipe) => {
+                if (pipe.pipeSectionType !== "orifice") return "N/A";
                 const val = pipe.pressureDropCalculationResults?.orificePressureDrop;
-                return val ? convertUnit(val, "Pa", u("kPa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : 0;
             }
         },
         {
             type: "data",
             label: "User Supplied Fixed Loss",
-            unit: u("kPa", "psi"),
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
             getValue: (pipe) => {
                 const val = pipe.userSpecifiedPressureLoss;
-                if (!val) return undefined;
-                return unitSystem === "metric" ? val : convertUnit(val, "kPa", "psi");
+                if (!val) return 0;
+                if (unitSystem === "imperial") return convertUnit(val, "kPa", "psi");
+                if (unitSystem === "fieldSI") return convertUnit(val, "kPa", "bar");
+                if (unitSystem === "metric_kgcm2") return convertUnit(val, "kPa", "kg/cm2");
+                return val;
             }
         },
         {
             type: "data",
             label: "Segment Total Loss",
-            unit: u("kPa", "psi"),
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
             getValue: (pipe: PipeProps) => {
                 const val = pipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
-                if (typeof val !== 'number') return undefined;
+                if (typeof val !== 'number') return "";
                 const inputVal = pipe.resultSummary?.inletState?.pressure || 1e12;
-                if (val > inputVal) return { value: val, color: "error.main", fontWeight: "bold", helperText:"Total loss exceeds inlet pressure" };
-                return { value: convertUnit(val, "Pa", u("kPa", "psi")), color: "primary.main", fontWeight: "bold" };
+                if (val > inputVal) return { value: val, color: "error.main", fontWeight: "bold", helperText: "Total loss exceeds inlet pressure" };
+                return { value: convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")), color: "primary.main", fontWeight: "bold" };
             }
         },
         {
             type: "data",
             label: "Unit Friction Loss",
-            unit: u("kPa/100m", "psi/100ft"),
+            unit: u("kPa/100m", "psi/100ft", "bar/100m", "kg/cm2/100m"),
             getValue: (pipe) => {
                 const val = pipe.pressureDropCalculationResults?.normalizedPressureDrop; // Pa/m
-                return val ? convertUnit(val, "Pa/m", u("kPa/100m", "psi/100ft"), "pressureGradient") : undefined;
+                return val ? convertUnit(val, "Pa/m", u("kPa/100m", "psi/100ft", "bar/100m", "kg/cm2/100m"), "pressureGradient") : "";
             }
         },
 
@@ -572,12 +625,12 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data",
             label: "INLET Pressure",
-            unit: u("kPag", "psig"),
+            unit: u("kPag", "psig", "barg", "kg/cm2g"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.pressure;
-                if (typeof val !== 'number') return undefined;
+                if (typeof val !== 'number') return "";
                 if (val < 0.0) return { value: val, color: "error.main", fontWeight: "bold" };
-                return { value: convertUnit(val, "Pa", u("kPag", "psig")), color: "primary.main", fontWeight: "bold" };
+                return { value: convertUnit(val, "Pa", u("kPag", "psig", "barg", "kg/cm2g")), color: "primary.main", fontWeight: "bold" };
             }
         },
         {
@@ -586,7 +639,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("°C", "°F"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.temprature;
-                return val ? convertUnit(val, "K", u("C", "F")) : undefined;
+                return val ? convertUnit(val, "K", u("C", "F")) : "";
             }
         },
         {
@@ -595,7 +648,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("kg/m3", "lb/ft3"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.density;
-                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : undefined;
+                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : "";
             }
         },
         {
@@ -606,8 +659,9 @@ export function SummaryTable({ network }: Props) {
                 if (typeof val === 'number') {
                     if (val > 1.0) return { value: val, color: "error.main", helperText: "Mach > 1.0" };
                     if (val > 0.5) return { value: val, color: "warning.main", helperText: "Mach > 0.5" };
+                    return val;
                 }
-                return val;
+                return "N/A";
             }
         },
         {
@@ -617,7 +671,7 @@ export function SummaryTable({ network }: Props) {
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.velocity;
                 const erosional = pipe.resultSummary?.inletState?.erosionalVelocity;
-                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
 
                 if (val && erosional && val > erosional) {
                     return {
@@ -635,7 +689,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("m/s", "ft/s"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.erosionalVelocity;
-                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
             }
         },
         {
@@ -644,7 +698,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("Pa", "psi"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.flowMomentum;
-                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : "";
             }
         },
 
@@ -652,12 +706,12 @@ export function SummaryTable({ network }: Props) {
         {
             type: "data",
             label: "OUTLET Pressure",
-            unit: u("kPag", "psig"),
+            unit: u("kPag", "psig", "barg", "kg/cm2g"),
             getValue: (pipe: PipeProps) => {
                 const val = pipe.resultSummary?.outletState?.pressure;
-                if (typeof val !== 'number') return undefined;
-                if (val < 0.0) return { value: val, color: "error.main", fontWeight: "bold", helperText:"Pressure cannot be negative [Pa]" };
-                return { value: convertUnit(val, "Pa", u("kPag", "psig")), color: "primary.main", fontWeight: "bold" };
+                if (typeof val !== 'number') return "";
+                if (val < 0.0) return { value: val, color: "error.main", fontWeight: "bold", helperText: "Pressure cannot be negative [Pa]" };
+                return { value: convertUnit(val, "Pa", u("kPag", "psig", "barg", "kg/cm2g")), color: "primary.main", fontWeight: "bold" };
             }
         },
         {
@@ -666,7 +720,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("°C", "°F"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.temprature;
-                return val ? convertUnit(val, "K", u("C", "F")) : undefined;
+                return val ? convertUnit(val, "K", u("C", "F")) : "";
             }
         },
         {
@@ -675,7 +729,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("kg/m3", "lb/ft3"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.density;
-                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : undefined;
+                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : "";
             }
         },
         {
@@ -686,8 +740,9 @@ export function SummaryTable({ network }: Props) {
                 if (typeof val === 'number') {
                     if (val > 1.0) return { value: val, color: "error.main", helperText: "Mach > 1.0" };
                     if (val > 0.5) return { value: val, color: "warning.main", helperText: "Mach > 0.5" };
+                    return val;
                 }
-                return val;
+                return "N/A";
             }
         },
         {
@@ -697,7 +752,7 @@ export function SummaryTable({ network }: Props) {
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.velocity;
                 const erosional = pipe.resultSummary?.outletState?.erosionalVelocity;
-                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
 
                 if (val && erosional && val > erosional) {
                     return {
@@ -715,7 +770,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("m/s", "ft/s"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.erosionalVelocity;
-                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
             }
         },
         {
@@ -724,7 +779,7 @@ export function SummaryTable({ network }: Props) {
             unit: u("Pa", "psi"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.flowMomentum;
-                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : undefined;
+                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : "";
             }
         },
     ];
@@ -748,8 +803,18 @@ export function SummaryTable({ network }: Props) {
                         size="small"
                         aria-label="Unit System"
                     >
-                        <ToggleButton value="metric">Metric</ToggleButton>
-                        <ToggleButton value="imperial">Imperial</ToggleButton>
+                        <Tooltip title="Metric with kPa">
+                            <ToggleButton value="metric">kPa</ToggleButton>
+                        </Tooltip>
+                        <Tooltip title="Metric with bar">
+                            <ToggleButton value="fieldSI">bar</ToggleButton>
+                        </Tooltip>
+                        <Tooltip title="Metric with kg/cm²">
+                            <ToggleButton value="metric_kgcm2">kg/cm²</ToggleButton>
+                        </Tooltip>
+                        <Tooltip title="Imperial with psi">
+                            <ToggleButton value="imperial">psi</ToggleButton>
+                        </Tooltip>
                     </ToggleButtonGroup>
                     <FormControlLabel
                         control={
@@ -881,18 +946,18 @@ export function SummaryTable({ network }: Props) {
                 }
                 `}
             </style>
-            <TableContainer sx={{ maxHeight: 800 }}>
-                <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'collapse', border: '1px solid #e0e0e0' }}>
+            <TableContainer sx={{ maxHeight: 800, border: '1px solid #e0e0e0' }}>
+                <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'collapse' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200, width: 200, position: 'sticky', left: 0, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
+                            <TableCell sx={{ fontWeight: 'bold', minWidth: 240, width: 240, position: 'sticky', left: 0, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0' }}>
                                 Property
                             </TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 200, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 240, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0' }}>
                                 Unit
                             </TableCell>
                             {visiblePipes.map((pipe, index) => (
-                                <TableCell key={pipe.id} align="center" sx={{ minWidth: 120, borderRight: '1px solid #e0e0e0', bgcolor: '#e0f2f1' }}>
+                                <TableCell key={pipe.id} align="center" sx={{ minWidth: 110, borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0', bgcolor: '#e0f2f1' }}>
                                     {index + 1 + (page * rowsPerPage)}
                                 </TableCell>
                             ))}
@@ -920,8 +985,8 @@ export function SummaryTable({ network }: Props) {
                                             </Typography>
                                         )}
                                     </TableCell>
-                                    <TableCell align="center" sx={{ position: 'sticky', left: 200, background: 'white', borderRight: '1px solid #e0e0e0', color: 'text.secondary', fontSize: '0.75rem' }}>
-                                        {row.unit || "-"}
+                                    <TableCell align="center" sx={{ position: 'sticky', left: 200, background: 'white', borderRight: '1px solid #e0e0e0', color: 'text.secondary' }}>
+                                        {row.unit || ""}
                                     </TableCell>
                                     {visiblePipes.map((pipe) => {
                                         const result = row.getValue(pipe);

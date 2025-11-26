@@ -26,8 +26,9 @@ import {
   FormHelperText,
   FormControl,
   FormLabel,
+  Fab,
 } from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
+import { Close as CloseIcon, Add as AddIcon, Refresh as RefreshIcon } from "@mui/icons-material";
 import { FittingType, NetworkState, NodeProps, NodePatch, PipeProps, PipePatch, SelectedElement } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 
@@ -174,7 +175,126 @@ export function PropertiesPanel({
     return massFlowRateValue * (1 + normalizedMargin / 100);
   };
 
-  return (
+  const handleAutoFluid = () => {
+    if (!node) return;
+    const connectedPipes = network.pipes.filter(
+      (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id,
+    );
+
+    const targetPipes = connectedPipes.filter((pipe) => pipe.endNodeId === node.id);
+    const sourcePipes = connectedPipes.filter((pipe) => pipe.startNodeId === node.id);
+    const normalizeDirection = (pipe: PipeProps) =>
+      pipe.direction === "backward" ? "backward" : "forward";
+    const inboundTargetPipes = targetPipes.filter(
+      (pipe) => normalizeDirection(pipe) === "forward",
+    );
+    const inboundSourcePipes = sourcePipes.filter(
+      (pipe) => normalizeDirection(pipe) === "backward",
+    );
+
+    const inboundPipes = [...inboundTargetPipes, ...inboundSourcePipes];
+
+    // Prioritize inbound pipes, otherwise fallback to any connected pipe (e.g. for source nodes)
+    let pipeToCopyFrom = inboundPipes[0];
+    if (!pipeToCopyFrom && connectedPipes.length > 0) {
+      pipeToCopyFrom = connectedPipes[0];
+    }
+
+    if (pipeToCopyFrom && pipeToCopyFrom.fluid) {
+      onUpdateNode(node.id, { fluid: { ...pipeToCopyFrom.fluid } });
+    } else {
+      alert("No fluid properties found in connected pipes.");
+    }
+  };
+
+const handleUpdateFromPipe = (node: NodeProps) => {
+  const connectedPipes = network.pipes.filter(
+    (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id,
+  );
+
+  const targetPipes = connectedPipes.filter((pipe) => pipe.endNodeId === node.id);
+  const sourcePipes = connectedPipes.filter((pipe) => pipe.startNodeId === node.id);
+  const normalizeDirection = (pipe: PipeProps) =>
+    pipe.direction === "backward" ? "backward" : "forward";
+  const inboundTargetPipes = targetPipes.filter(
+    (pipe) => normalizeDirection(pipe) === "forward",
+  );
+  const inboundSourcePipes = sourcePipes.filter(
+    (pipe) => normalizeDirection(pipe) === "backward",
+  );
+
+  type PipeState = NonNullable<NonNullable<PipeProps["resultSummary"]>["inletState"]>;
+
+  const findLowestState = (
+    pipes: PipeProps[],
+    selector: (pipe: PipeProps) => PipeState | undefined,
+  ): PipeState | undefined => {
+    let lowest: { pressure: number; state: PipeState } | null = null;
+    for (const pipe of pipes) {
+      const state = selector(pipe);
+      if (!state || typeof state.pressure !== "number") {
+        continue;
+      }
+      if (!lowest || state.pressure < lowest.pressure) {
+        lowest = { pressure: state.pressure, state };
+      }
+    }
+    return lowest?.state;
+  };
+
+  const updateFromState = (pipeState?: PipeState) => {
+    if (!pipeState) {
+      return false;
+    }
+    const updates: Partial<NodeProps> = {};
+    if (typeof pipeState.pressure === "number") {
+      updates.pressure = convertUnit(
+        pipeState.pressure,
+        "Pa",
+        node.pressureUnit ?? "kPag",
+      );
+      updates.pressureUnit = node.pressureUnit ?? "kPag";
+    }
+    if (typeof pipeState.temprature === "number") {
+      updates.temperature = convertUnit(
+        pipeState.temprature,
+        "K",
+        node.temperatureUnit ?? "C",
+      );
+      updates.temperatureUnit = node.temperatureUnit ?? "C";
+    }
+    if (Object.keys(updates).length === 0) {
+      return false;
+    }
+    onUpdateNode(node.id, updates);
+    return true;
+  };
+
+  const targetState = findLowestState(inboundTargetPipes, (pipe) => pipe.resultSummary?.outletState);
+  if (updateFromState(targetState)) {
+    return;
+  }
+  const sourceState = findLowestState(inboundSourcePipes, (pipe) => pipe.resultSummary?.inletState);
+  updateFromState(sourceState);
+};
+
+const pipeHelperText = () => {
+  if (!pipe) {
+    return "Unknown";
+  }
+
+  if (pipe.pipeSectionType === "pipeline") {
+    const length = pipe.length || 0;
+    const lengthUnit = pipe.lengthUnit || "m";
+    return `${startNode?.label ?? "Unknown"} → ${endNode?.label ?? "Unknown"} (${length.toFixed(2)} ${lengthUnit})`;
+  } else if (pipe.pipeSectionType === "control valve") {
+    return `${startNode?.label ?? "Unknown"} → ${endNode?.label ?? "Unknown"} (control valve)`;
+  } else {
+    return `${startNode?.label ?? "Unknown"} → ${endNode?.label ?? "Unknown"} (orifice)`;
+  }
+};
+
+return (
     <Paper
       elevation={0}
       sx={{
@@ -187,7 +307,7 @@ export function PropertiesPanel({
         p: 2,
         display: "flex",
         flexDirection: "column",
-        gap: 2,
+        gap: 1,
       }}
     >
       {node || pipe ? (
@@ -200,7 +320,7 @@ export function PropertiesPanel({
       )}
 
       {node && (
-        <Stack spacing={3}>
+        <Stack spacing={2}>
           <Stack spacing={2}>
             <TextField
               label="Label"
@@ -209,12 +329,19 @@ export function PropertiesPanel({
               onChange={(event) => onUpdateNode(node.id, { label: event.target.value })}
             />
           </Stack>
-
           <Stack spacing={2}>
-            <Typography color="text.secondary">
-              Conditions
-            </Typography>
-
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography fontSize={12}>
+                Conditions
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => handleUpdateFromPipe(node)}
+              >
+                Update from Pipe
+              </Button>
+            </Stack>
             <QuantityInput
               label="Temperature"
               value={node.temperature ?? ""}
@@ -226,6 +353,7 @@ export function PropertiesPanel({
                 ...(node.temperatureUnit === undefined && { temperatureUnit: "C" })
               })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { temperatureUnit: newUnit })}
+              decimalPlaces={4}
               min={0}
               minUnit="K"
             />
@@ -241,97 +369,25 @@ export function PropertiesPanel({
                 ...(node.pressureUnit === undefined && { pressureUnit: "kPag" })
               })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { pressureUnit: newUnit })}
+              decimalPlaces={4}
               min={0}
               minUnit="Pa"
             />
-
-            <Button
-              variant="contained"
-              onClick={() => {
-                const connectedPipes = network.pipes.filter(
-                  (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id,
-                );
-
-                const targetPipes = connectedPipes.filter((pipe) => pipe.endNodeId === node.id);
-                const sourcePipes = connectedPipes.filter((pipe) => pipe.startNodeId === node.id);
-                const normalizeDirection = (pipe: PipeProps) =>
-                  pipe.direction === "backward" ? "backward" : "forward";
-                const inboundTargetPipes = targetPipes.filter(
-                  (pipe) => normalizeDirection(pipe) === "forward",
-                );
-                const inboundSourcePipes = sourcePipes.filter(
-                  (pipe) => normalizeDirection(pipe) === "backward",
-                );
-
-                type PipeState = NonNullable<NonNullable<PipeProps["resultSummary"]>["inletState"]>;
-
-                const findLowestState = (
-                  pipes: PipeProps[],
-                  selector: (pipe: PipeProps) => PipeState | undefined,
-                ): PipeState | undefined => {
-                  let lowest: { pressure: number; state: PipeState } | null = null;
-                  for (const pipe of pipes) {
-                    const state = selector(pipe);
-                    if (!state || typeof state.pressure !== "number") {
-                      continue;
-                    }
-                    if (!lowest || state.pressure < lowest.pressure) {
-                      lowest = { pressure: state.pressure, state };
-                    }
-                  }
-                  return lowest?.state;
-                };
-
-                const updateFromState = (pipeState?: PipeState) => {
-                  if (!pipeState) {
-                    return false;
-                  }
-                  const updates: Partial<NodeProps> = {};
-                  if (typeof pipeState.pressure === "number") {
-                    updates.pressure = convertUnit(
-                      pipeState.pressure,
-                      "Pa",
-                      node.pressureUnit ?? "kPag",
-                    );
-                    updates.pressureUnit = node.pressureUnit ?? "kPag";
-                  }
-                  if (typeof pipeState.temprature === "number") {
-                    updates.temperature = convertUnit(
-                      pipeState.temprature,
-                      "K",
-                      node.temperatureUnit ?? "C",
-                    );
-                    updates.temperatureUnit = node.temperatureUnit ?? "C";
-                  }
-                  if (Object.keys(updates).length === 0) {
-                    return false;
-                  }
-                  onUpdateNode(node.id, updates);
-                  return true;
-                };
-
-                const targetState = findLowestState(inboundTargetPipes, (pipe) => pipe.resultSummary?.outletState);
-                if (updateFromState(targetState)) {
-                  return;
-                }
-                const sourceState = findLowestState(inboundSourcePipes, (pipe) => pipe.resultSummary?.inletState);
-                updateFromState(sourceState);
-              }}
-            >
-              Update from Connected Pipe
-            </Button>
           </Stack>
 
           <Stack spacing={2}>
             <Stack spacing={2}>
+              <Typography fontSize={12}>
+                Fluid
+              </Typography>
               <TextField
-                label="Fluid ID"
+                label="Name"
                 size="small"
                 value={node.fluid?.id ?? ""}
                 onChange={(event) =>
                   onUpdateNode(node.id, (current) => ({
                     fluid: {
-                      ...(current.fluid ?? {}),
+                      ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                       id: event.target.value,
                     },
                   }))
@@ -351,22 +407,25 @@ export function PropertiesPanel({
               },
             }}>
               <FormLabel component="legend" sx={{ px: 0.5, fontSize: "0.75rem" }}>Fluid Phase</FormLabel>
-              <RadioGroup
-                value={nodeFluidPhase}
-                onChange={(event) =>
-                  onUpdateNode(node.id, current => ({
-                    fluid: {
-                      ...(current.fluid ?? {}),
-                      phase: event.target.value as "liquid" | "gas",
-                    },
-                  }))
-                }
-              >
-                <Stack direction="row">
-                  <FormControlLabel value="liquid" control={<Radio size="small" />} label="Liquid" />
-                  <FormControlLabel value="gas" control={<Radio size="small" />} label="Gas" />
-                </Stack>
-              </RadioGroup>
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <RadioGroup
+                  value={nodeFluidPhase}
+                  onChange={(event) =>
+                    onUpdateNode(node.id, current => ({
+                      fluid: {
+                        ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
+                        phase: event.target.value as "liquid" | "gas",
+                      },
+                    }))
+                  }
+                >
+                  <Stack direction="row">
+                    <FormControlLabel value="liquid" control={<Radio size="small" />} label="Liquid" />
+                    <FormControlLabel value="gas" control={<Radio size="small" />} label="Gas" />
+                  </Stack>
+                </RadioGroup>
+                <Button variant="contained" size="small" onClick={handleAutoFluid}>Auto</Button>
+              </Stack>
             </FormControl>
 
             {nodeFluidPhase !== "gas" && (
@@ -379,7 +438,7 @@ export function PropertiesPanel({
                 onValueChange={(newValue) =>
                   onUpdateNode(node.id, (current) => ({
                     fluid: {
-                      ...(current.fluid ?? {}),
+                      ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                       density: newValue,
                     },
                   }))
@@ -387,12 +446,13 @@ export function PropertiesPanel({
                 onUnitChange={(newUnit) =>
                   onUpdateNode(node.id, (current) => ({
                     fluid: {
-                      ...(current.fluid ?? {}),
+                      ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                       densityUnit: newUnit,
                     },
                   }))
                 }
                 min={0}
+                minUnit="kg/m3"
               />
             )}
             {nodeFluidPhase === "gas" && (
@@ -410,7 +470,7 @@ export function PropertiesPanel({
                         event.target.value === "" ? undefined : Number(event.target.value);
                       onUpdateNode(node.id, (current) => ({
                         fluid: {
-                          ...(current.fluid ?? {}),
+                          ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                           molecularWeight: value,
                         },
                       }));
@@ -431,7 +491,7 @@ export function PropertiesPanel({
                         event.target.value === "" ? undefined : Number(event.target.value);
                       onUpdateNode(node.id, (current) => ({
                         fluid: {
-                          ...(current.fluid ?? {}),
+                          ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                           zFactor: value,
                         },
                       }));
@@ -452,7 +512,7 @@ export function PropertiesPanel({
                         event.target.value === "" ? undefined : Number(event.target.value);
                       onUpdateNode(node.id, (current) => ({
                         fluid: {
-                          ...(current.fluid ?? {}),
+                          ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                           specificHeatRatio: value,
                         },
                       }));
@@ -471,7 +531,7 @@ export function PropertiesPanel({
               onValueChange={(newValue) =>
                 onUpdateNode(node.id, current => ({
                   fluid: {
-                    ...(current.fluid ?? {}),
+                    ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                     viscosity: newValue,
                   },
                 }))
@@ -479,7 +539,7 @@ export function PropertiesPanel({
               onUnitChange={(newUnit) =>
                 onUpdateNode(node.id, current => ({
                   fluid: {
-                    ...(current.fluid ?? {}),
+                    ...(current.fluid ?? { id: "fluid", phase: "liquid" }),
                     viscosityUnit: newUnit,
                   },
                 }))
@@ -502,13 +562,14 @@ export function PropertiesPanel({
               placeholder="Enter label"
               fullWidth
             />
+            
             <TextField
               label="Description"
               size="small"
               value={pipe.description ?? ""}
               onChange={(e) => onUpdatePipe(pipe.id, { description: e.target.value })}
               placeholder="Enter description"
-              helperText={`${startNode?.label ?? "Unknown"} → ${endNode?.label ?? "Unknown"}`}
+              helperText={pipeHelperText()}
               fullWidth
             />
           </Stack>
@@ -550,6 +611,9 @@ export function PropertiesPanel({
                   boundaryPressureUnit: boundaryNode?.pressureUnit,
                   boundaryTemperature: boundaryNode?.temperature,
                   boundaryTemperatureUnit: boundaryNode?.temperatureUnit,
+                  ...(nextDirection === "backward" && boundaryNode?.fluid
+                    ? { fluid: { ...boundaryNode.fluid } }
+                    : {}),
                 });
               }}
             >
@@ -896,16 +960,16 @@ export function PropertiesPanel({
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <InputLabel>Fittings</InputLabel>
                     <Stack direction="row" spacing={2}>
-                      <Button
+                      <IconButton
                         size="small"
                         onClick={handleResetFittings}
                         disabled={pipeFittings.length === 0}
                       >
-                        Reset
-                      </Button>
-                      <Button size="small" onClick={handleAddFitting}>
-                        Add
-                      </Button>
+                        <RefreshIcon />
+                      </IconButton>
+                      <IconButton size="small" onClick={handleAddFitting}>
+                        <AddIcon />
+                      </IconButton>
                     </Stack>
                   </Stack>
 

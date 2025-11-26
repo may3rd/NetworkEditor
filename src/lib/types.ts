@@ -21,7 +21,7 @@ export type NodeProps = {
   pressureUnit?: string;
   temperature?: number;
   temperatureUnit?: string;
-  fluid: Fluid,
+  fluid?: Fluid,
 };
 
 export type pipeState = {
@@ -330,11 +330,11 @@ const baseNetwork: NetworkState = {
       massFlowRateUnit: "kg/h",
       diameter: 202.74,
       diameterUnit: "mm",
-      diameterInputMode: "nps",
       length: 37.599,
       lengthUnit: "m",
       elevation: -23.59,
       elevationUnit: "m",
+      diameterInputMode: "nps",
       pipeNPD: 8,
       pipeSchedule: "40",
       roughness: 0.0457,
@@ -361,6 +361,7 @@ const baseNetwork: NetworkState = {
       lengthUnit: "m",
       elevation: -3.208,
       elevationUnit: "m",
+      diameterInputMode: "nps",
       pipeNPD: 8,
       pipeSchedule: "40",
       roughness: 0.0457,
@@ -387,6 +388,7 @@ const baseNetwork: NetworkState = {
       lengthUnit: "m",
       elevation: -0.712,
       elevationUnit: "m",
+      diameterInputMode: "nps",
       pipeNPD: 4,
       pipeSchedule: "40",
       roughness: 0.0457,
@@ -413,6 +415,7 @@ const baseNetwork: NetworkState = {
       length: 1000.0,
       lengthUnit: "m",
       elevationUnit: "m",
+      diameterInputMode: "nps",
       pipeNPD: 4,
       pipeSchedule: "40",
       roughness: 0.0457,
@@ -440,6 +443,7 @@ const baseNetwork: NetworkState = {
       length: 1000.0,
       lengthUnit: "m",
       elevationUnit: "m",
+      diameterInputMode: "nps",
       pipeNPD: 4,
       pipeSchedule: "40",
       roughness: 0.0457,
@@ -469,6 +473,7 @@ const baseNetwork: NetworkState = {
       length: 1000.0,
       lengthUnit: "m",
       elevationUnit: "m",
+      diameterInputMode: "nps",
       pipeNPD: 4,
       pipeSchedule: "40",
       roughness: 0.0457,
@@ -521,7 +526,7 @@ export const createInitialNetwork = (): NetworkState => {
 };
 
 export const copyFluidFromNodeToPipe = (node: NodeProps, pipe: PipeProps) => {
-  pipe.fluid = { ...node.fluid };
+  pipe.fluid = node.fluid ? { ...node.fluid } : undefined;
 };
 
 export const copyFluidFromPipeToNode = (pipe: PipeProps, node: NodeProps) => {

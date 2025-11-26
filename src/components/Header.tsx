@@ -1,7 +1,7 @@
 "use client";
 
-import { Print, Image, FileOpen, Save } from "@mui/icons-material";
-import { Button, Box, Typography, Stack, ButtonGroup, Paper } from "@mui/material";
+import { Image, FileOpen, Save } from "@mui/icons-material";
+import { Button, Box, Typography, Stack, ButtonGroup, Paper, Tooltip } from "@mui/material";
 
 type Props = {
   onReset: () => void;
@@ -35,25 +35,35 @@ export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, on
         </Stack>
 
         <Box sx={{ display: "flex", alignItems: "center" }}>
-          <ButtonGroup variant="contained" sx={{ mr: 2 }}>
-            <Button
-              onClick={onClearNetwork}
-              color="error"
-            >
-              Clear network
-            </Button>
-            <Button
-              onClick={onReset}
-              color="warning"
-            >
-              Load default
-            </Button>
+          <ButtonGroup variant="outlined" sx={{ mr: 2 }}>
+            <Tooltip title="Load example network">
+                <Button onClick={onReset} color="warning">
+                  Example
+                </Button>
+            </Tooltip>
+            <Tooltip title="Clear all nodes and pipes">
+                <Button onClick={onClearNetwork} color="error">
+                  Clear All
+                </Button>
+            </Tooltip>
           </ButtonGroup>
 
-          <ButtonGroup variant="contained">
-            <Button onClick={onExportPng} startIcon={<Image />}>Export PNG</Button>
-            <Button onClick={onLoadNetwork} startIcon={<FileOpen />}>Load</Button>
-            <Button onClick={onSaveNetwork} startIcon={<Save />}>Save</Button>
+          <ButtonGroup variant="outlined">
+            <Tooltip title="Export network as PNG">
+                <Button onClick={onExportPng} startIcon={<Image />}>
+                    Export
+                </Button>
+            </Tooltip>
+            <Tooltip title="Load network from file">
+                <Button onClick={onLoadNetwork} startIcon={<FileOpen />}>
+                    Load
+                </Button>
+            </Tooltip>
+            <Tooltip title="Save network to file">
+                <Button onClick={onSaveNetwork} startIcon={<Save />}>
+                    Save
+                </Button>
+            </Tooltip>
           </ButtonGroup>
         </Box>
       </Box>

@@ -42,13 +42,16 @@ function PressureNode({ data }: { data: NodeData }) {
   const selectionShadow = isSelected
     ? `${baseShadow}, 0 0 0 1px rgba(234, 179, 8, 0.5)`
     : baseShadow;
-  const scaleAmount = isSelected ? 1.2 : 1;
+  const scaleAmount = isSelected ? 1 : 1;
   const circleSize = 20;
   const dashThickness = needsAttention ? 3 : 0;
   const handleStyle: CSSProperties = {
     opacity: 1,
     border: "none",
     background: needsAttention ? "#dc2626" : borderColor,
+    width: 7,
+    height: 7,
+    zIndex: 1,
   };
 
   return (
