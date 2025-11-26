@@ -1,25 +1,7 @@
+import { PipeSchedule } from "@/lib/types";
+
 // Schedules and inner diameter data derived from
 // https://github.com/CalebBell/fluids/blob/master/fluids/piping.py
-
-export type PipeSchedule =
-  | "5"
-  | "10"
-  | "20"
-  | "30"
-  | "40"
-  | "60"
-  | "80"
-  | "100"
-  | "120"
-  | "140"
-  | "160"
-  | "STD"
-  | "XS"
-  | "XXS"
-  | "5S"
-  | "10S"
-  | "40S"
-  | "80S";
 
 type PipeFittingOption = {
   value: string;

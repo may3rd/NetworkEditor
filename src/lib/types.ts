@@ -64,6 +64,26 @@ export type NodePatch = Partial<NodeProps> | ((node: NodeProps) => Partial<NodeP
 
 export type PipePatch = Partial<PipeProps> | ((pipe: PipeProps) => Partial<PipeProps>);
 
+export type PipeSchedule =
+  | "5"
+  | "10"
+  | "20"
+  | "30"
+  | "40"
+  | "60"
+  | "80"
+  | "100"
+  | "120"
+  | "140"
+  | "160"
+  | "STD"
+  | "XS"
+  | "XXS"
+  | "5S"
+  | "10S"
+  | "40S"
+  | "80S";
+
 export type PipeProps = {
   id: string;
   label?: string;
@@ -72,7 +92,7 @@ export type PipeProps = {
   endNodeId: string;
   pipeSectionType?: "pipeline" | "control valve" | "orifice";
   pipeNPD?: number,
-  pipeSchedule?: string,
+  pipeSchedule?: PipeSchedule,
   diameter?: number;
   diameterUnit?: string;
   diameterInputMode?: "nps" | "diameter";
@@ -164,6 +184,7 @@ export type Orifice = {
   betaRatio?: number, // d over D ratio
   pressureDrop?: number,
   pressureDropUnit?: string,
+  dischargeCoefficient?: number,
 }
 
 export type FittingType = {

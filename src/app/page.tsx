@@ -7,7 +7,6 @@ import { SummaryTable } from "@/components/SummaryTable";
 import { NetworkEditor } from "@/components/NetworkEditor";
 import { PropertiesPanel } from "@/components/PropertiesPanel";
 import { Header } from "@/components/Header";
-import { SummaryPanel } from "@/components/SummaryPanel";
 import {
   createInitialNetwork,
   NetworkState,
@@ -17,7 +16,6 @@ import {
   NodeProps,
   PipeProps,
 } from "@/lib/types";
-import { runHydraulicCalculation } from "@/lib/solverClient";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 // import { convertUnit } from "@/lib/unitConversion";
 
@@ -31,13 +29,12 @@ const applyFittingLosses = (network: NetworkState): NetworkState => ({
 
 export default function Home() {
   const [network, setNetwork] = useState<NetworkState>(() => createNetworkWithDerivedValues());
-  // const [isSolving, setIsSolving] = useState(false);
+
 
   // Selection state
   const [selection, setSelection] = useState<SelectedElement>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
-  // const [lastSolvedAt, setLastSolvedAt] = useState<string | null>(null);
   const [showSnapshot, setShowSnapshot] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -90,16 +87,7 @@ export default function Home() {
   const canRedo = historyIndex < history.length - 1;
   // ──────────────────────────────────────────────────────────────
 
-  const handleSolve = useCallback(async () => {
-    try {
-      // setIsSolving(true);
-      const response = await runHydraulicCalculation(network);
-      setNetwork(applyFittingLosses(response.network));
-      // setLastSolvedAt(new Date().toLocaleTimeString());
-    } finally {
-      // setIsSolving(false);
-    }
-  }, [network]);
+
 
   const handleSelect = useCallback((id: string | null, type: "node" | "pipe" | null) => {
     setSelectedId(id);
@@ -320,14 +308,11 @@ export default function Home() {
         onChange={handleFileChange}
       />
       <Header
-        // onSolve={handleSolve}
         onReset={handleReset}
         onClearNetwork={handleClearNetwork}
         onExportPng={handleExportPng}
         onLoadNetwork={handleLoadNetworkClick}
         onSaveNetwork={handleSaveNetwork}
-      // isSolving={isSolving}
-      // lastSolvedAt={lastSolvedAt}
       />
 
       <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexDirection: { xs: "column", lg: "row" } }}>
