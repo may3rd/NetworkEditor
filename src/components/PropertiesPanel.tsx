@@ -861,11 +861,11 @@ export function PropertiesPanel({
 
                 <Stack spacing={2}>
                   <TextField
-                    label="Safety Factor"
+                    label="Pipe & Fitting Safety Factor (%)"
                     size="small"
                     type="number"
                     inputProps={{ step: "any" }}
-                    value={pipe.pipingFittingSafetyFactor ?? 1}
+                    value={pipe.pipingFittingSafetyFactor ?? 0}
                     onChange={(event) => {
                       const value = event.target.value === "" ? undefined : Number(event.target.value);
                       onUpdatePipe(pipe.id, { pipingFittingSafetyFactor: value });

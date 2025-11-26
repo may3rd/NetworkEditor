@@ -33,7 +33,7 @@ type RowConfig =
         type: "data";
         label: string;
         unit?: string;
-        getValue: (pipe: PipeProps) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string };
+        getValue: (pipe: PipeProps) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string; color?: string; helperText?: string };
         subLabel?: string;
         decimals?: number
     };
@@ -115,7 +115,7 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "Design Flow Rate",
             unit: u("kg/h", "lb/h"),
-            getValue: (pipe) => pipe.designMassFlowRate ? convertUnit(pipe.designMassFlowRate, pipe.designMassFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : pipe.massFlowRate ? convertUnit(pipe.massFlowRate, pipe.massFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : undefined   
+            getValue: (pipe) => pipe.designMassFlowRate ? convertUnit(pipe.designMassFlowRate, pipe.designMassFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : pipe.massFlowRate ? convertUnit(pipe.massFlowRate, pipe.massFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : undefined
         },
         {
             type: "data",
@@ -367,8 +367,7 @@ export function SummaryTable({ network }: Props) {
                 const inletDiameter = pipe.inletDiameter;
                 if (inletDiameter == null) return ""
                 else {
-                    console.log(diameter, inletDiameter)
-                    const K_each = getFittingK(pipe, "input_swage", 3);
+                    const K_each = getFittingK(pipe, "inlet_swage", 3);
                     if (diameter > inletDiameter) return "reduce" + " x " + K_each;
                     if (diameter < inletDiameter) return "expand" + " x " + K_each;
                     return "none";
@@ -381,8 +380,7 @@ export function SummaryTable({ network }: Props) {
                 const outletDiameter = pipe.outletDiameter;
                 if (outletDiameter == null) return ""
                 else {
-                    console.log(diameter, outletDiameter)
-                    const K_each = getFittingK(pipe, "output_swage", 3);
+                    const K_each = getFittingK(pipe, "outlet_swage", 3);
                     if (diameter > outletDiameter) return "reduce" + " x " + K_each;
                     if (diameter < outletDiameter) return "expand" + " x " + K_each;
                     return "none";
@@ -393,8 +391,18 @@ export function SummaryTable({ network }: Props) {
         { type: "data", label: "Fitting K", getValue: (pipe) => pipe.pressureDropCalculationResults?.fittingK },
         { type: "data", label: "Pipe Length K", getValue: (pipe) => pipe.pressureDropCalculationResults?.pipeLengthK },
         { type: "data", label: "User Supply K", getValue: (pipe) => pipe.userK },
-        { type: "data", label: "Total K", getValue: (pipe) => pipe.pressureDropCalculationResults?.totalK },
+        {
+            type: "data",
+            label: "Total K",
+            getValue: (pipe) => {
+                const fittingK = pipe.pressureDropCalculationResults?.fittingK || 0;
+                const pipeLengthK = pipe.pressureDropCalculationResults?.pipeLengthK || 0;
+                const userK = pipe.userK || 0;
+                return fittingK + pipeLengthK + userK;
+            }
+        },
         { type: "data", label: "Pipe & Fitting Safety Factor", unit: "%", getValue: (pipe) => pipe.pipingFittingSafetyFactor },
+        { type: "data", label: "Total K (with safety factor)", getValue: (pipe) => pipe.pressureDropCalculationResults?.totalK },
 
         { type: "section", label: "IV. OPTIONAL CALCULATIONS" },
         { type: "data", label: "Control Valve Cv", getValue: (pipe) => pipe.controlValve?.cv },
@@ -522,14 +530,35 @@ export function SummaryTable({ network }: Props) {
                 return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : undefined;
             }
         },
-        { type: "data", label: "INLET Mach Number", getValue: (pipe) => pipe.resultSummary?.inletState?.machNumber },
+        {
+            type: "data",
+            label: "INLET Mach Number",
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.machNumber;
+                if (typeof val === 'number') {
+                    if (val > 1.0) return { value: val, color: "error.main", helperText: "Mach > 1.0" };
+                    if (val > 0.5) return { value: val, color: "warning.main", helperText: "Mach > 0.5" };
+                }
+                return val;
+            }
+        },
         {
             type: "data",
             label: "INLET Velocity",
             unit: u("m/s", "ft/s"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.velocity;
-                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+                const erosional = pipe.resultSummary?.inletState?.erosionalVelocity;
+                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+
+                if (val && erosional && val > erosional) {
+                    return {
+                        value: convertedVal,
+                        color: "error.main",
+                        helperText: "Velocity > Erosional Limit"
+                    };
+                }
+                return convertedVal;
             }
         },
         {
@@ -579,14 +608,35 @@ export function SummaryTable({ network }: Props) {
                 return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : undefined;
             }
         },
-        { type: "data", label: "OUTLET Mach Number", getValue: (pipe) => pipe.resultSummary?.outletState?.machNumber },
+        {
+            type: "data",
+            label: "OUTLET Mach Number",
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.outletState?.machNumber;
+                if (typeof val === 'number') {
+                    if (val > 1.0) return { value: val, color: "error.main", helperText: "Mach > 1.0" };
+                    if (val > 0.5) return { value: val, color: "warning.main", helperText: "Mach > 0.5" };
+                }
+                return val;
+            }
+        },
         {
             type: "data",
             label: "OUTLET Velocity",
             unit: u("m/s", "ft/s"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.outletState?.velocity;
-                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+                const erosional = pipe.resultSummary?.outletState?.erosionalVelocity;
+                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : undefined;
+
+                if (val && erosional && val > erosional) {
+                    return {
+                        value: convertedVal,
+                        color: "error.main",
+                        helperText: "Velocity > Erosional Limit"
+                    };
+                }
+                return convertedVal;
             }
         },
         {
@@ -752,13 +802,13 @@ export function SummaryTable({ network }: Props) {
                 `}
             </style>
             <TableContainer sx={{ maxHeight: 800 }}>
-                <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'collapse' }}>
+                <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'collapse', border: '1px solid #e0e0e0' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold', minWidth: 250, position: 'sticky', left: 0, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
+                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200, position: 'sticky', left: 0, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
                                 Property
                             </TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 250, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
+                            <TableCell sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 200, background: 'white', zIndex: 10, borderRight: '1px solid #e0e0e0' }}>
                                 Unit
                             </TableCell>
                             {visiblePipes.map((pipe, index) => (
@@ -790,20 +840,27 @@ export function SummaryTable({ network }: Props) {
                                             </Typography>
                                         )}
                                     </TableCell>
-                                    <TableCell align="center" sx={{ position: 'sticky', left: 250, background: 'white', borderRight: '1px solid #e0e0e0', color: 'text.secondary', fontSize: '0.75rem' }}>
+                                    <TableCell align="center" sx={{ position: 'sticky', left: 200, background: 'white', borderRight: '1px solid #e0e0e0', color: 'text.secondary', fontSize: '0.75rem' }}>
                                         {row.unit || "-"}
                                     </TableCell>
                                     {visiblePipes.map((pipe) => {
                                         const result = row.getValue(pipe);
                                         const value = typeof result === 'object' && result !== null ? result.value : result;
                                         const cellSubLabel = typeof result === 'object' && result !== null ? result.subLabel : undefined;
+                                        const cellColor = typeof result === 'object' && result !== null ? result.color : undefined;
+                                        const cellHelperText = typeof result === 'object' && result !== null ? result.helperText : undefined;
 
                                         return (
-                                            <TableCell key={pipe.id} align="center" sx={{ borderRight: '1px solid #e0e0e0' }}>
+                                            <TableCell key={pipe.id} align="center" sx={{ borderRight: '1px solid #e0e0e0', color: cellColor }}>
                                                 {formatNumber(value, row.decimals)}
                                                 {cellSubLabel && (
                                                     <Typography variant="caption" display="block" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                                                         {cellSubLabel}
+                                                    </Typography>
+                                                )}
+                                                {cellHelperText && (
+                                                    <Typography variant="caption" display="block" color={cellColor || "text.secondary"} sx={{ fontSize: '0.7rem', fontWeight: 'bold' }}>
+                                                        {cellHelperText}
                                                     </Typography>
                                                 )}
                                             </TableCell>

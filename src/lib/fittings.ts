@@ -324,17 +324,17 @@ function calculatePressureDropResults(
 
   const totalSegmentPressureDrop =
     pipeAndFittingPressureDrop === undefined &&
-    elevationPressureDrop === undefined &&
-    userSpecifiedPressureDrop === undefined
+      elevationPressureDrop === undefined &&
+      userSpecifiedPressureDrop === undefined
       ? undefined
       : (pipeAndFittingPressureDrop ?? 0) +
-        (elevationPressureDrop ?? 0) +
-        (userSpecifiedPressureDrop ?? 0);
+      (elevationPressureDrop ?? 0) +
+      (userSpecifiedPressureDrop ?? 0);
 
   const normalizedPressureDrop =
     pipeAndFittingPressureDrop !== undefined &&
-    typeof lengthResult.equivalentLength === "number" &&
-    lengthResult.equivalentLength > 0
+      typeof lengthResult.equivalentLength === "number" &&
+      lengthResult.equivalentLength > 0
       ? pipeAndFittingPressureDrop / lengthResult.equivalentLength
       : undefined;
 
@@ -470,8 +470,8 @@ function finalizeGasResults(
   const totalDrop = Math.abs(inletPressure - outletPressure);
   const normalizedPressureDrop =
     totalDrop !== undefined &&
-    typeof pipeResult.equivalentLength === "number" &&
-    pipeResult.equivalentLength > 0
+      typeof pipeResult.equivalentLength === "number" &&
+      pipeResult.equivalentLength > 0
       ? totalDrop / pipeResult.equivalentLength
       : undefined;
   const userK =
@@ -1196,10 +1196,11 @@ function applyUserAndSafety(pipe: PipeProps, pipeLengthK?: number, fittingK?: nu
   if (!Number.isFinite(base)) {
     return undefined;
   }
-  const safety = typeof pipe.pipingFittingSafetyFactor === "number" && pipe.pipingFittingSafetyFactor > 0
+  const safetyPercent = typeof pipe.pipingFittingSafetyFactor === "number" && Number.isFinite(pipe.pipingFittingSafetyFactor)
     ? pipe.pipingFittingSafetyFactor
-    : 1;
-  const adjusted = base * safety;
+    : 0;
+  const multiplier = 1 + (safetyPercent / 100);
+  const adjusted = base * multiplier;
   return Number.isFinite(adjusted) ? adjusted : undefined;
 }
 
