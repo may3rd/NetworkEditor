@@ -33,7 +33,7 @@ type RowConfig =
         type: "data";
         label: string;
         unit?: string;
-        getValue: (pipe: PipeProps) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string; color?: string; helperText?: string };
+        getValue: (pipe: PipeProps) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string; color?: string; helperText?: string; fontWeight?: string };
         subLabel?: string;
         decimals?: number
     };
@@ -549,9 +549,12 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "Segment Total Loss",
             unit: u("kPa", "psi"),
-            getValue: (pipe) => {
+            getValue: (pipe: PipeProps) => {
                 const val = pipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
-                return val ? convertUnit(val, "Pa", u("kPa", "psi")) : undefined;
+                if (typeof val !== 'number') return undefined;
+                const inputVal = pipe.resultSummary?.inletState?.pressure || 1e12;
+                if (val > inputVal) return { value: val, color: "error.main", fontWeight: "bold", helperText:"Total loss exceeds inlet pressure" };
+                return { value: convertUnit(val, "Pa", u("kPa", "psi")), color: "primary.main", fontWeight: "bold" };
             }
         },
         {
@@ -572,7 +575,9 @@ export function SummaryTable({ network }: Props) {
             unit: u("kPag", "psig"),
             getValue: (pipe) => {
                 const val = pipe.resultSummary?.inletState?.pressure;
-                return val ? convertUnit(val, "Pa", u("kPag", "psig")) : undefined;
+                if (typeof val !== 'number') return undefined;
+                if (val < 0.0) return { value: val, color: "error.main", fontWeight: "bold" };
+                return { value: convertUnit(val, "Pa", u("kPag", "psig")), color: "primary.main", fontWeight: "bold" };
             }
         },
         {
@@ -648,9 +653,11 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "OUTLET Pressure",
             unit: u("kPag", "psig"),
-            getValue: (pipe) => {
+            getValue: (pipe: PipeProps) => {
                 const val = pipe.resultSummary?.outletState?.pressure;
-                return val ? convertUnit(val, "Pa", u("kPag", "psig")) : undefined;
+                if (typeof val !== 'number') return undefined;
+                if (val < 0.0) return { value: val, color: "error.main", fontWeight: "bold", helperText:"Pressure cannot be negative [Pa]" };
+                return { value: convertUnit(val, "Pa", u("kPag", "psig")), color: "primary.main", fontWeight: "bold" };
             }
         },
         {
@@ -922,9 +929,10 @@ export function SummaryTable({ network }: Props) {
                                         const cellSubLabel = typeof result === 'object' && result !== null ? result.subLabel : undefined;
                                         const cellColor = typeof result === 'object' && result !== null ? result.color : undefined;
                                         const cellHelperText = typeof result === 'object' && result !== null ? result.helperText : undefined;
+                                        const cellFontWeight = typeof result === 'object' && result !== null ? result.fontWeight : undefined;
 
                                         return (
-                                            <TableCell key={pipe.id} align="center" sx={{ borderRight: '1px solid #e0e0e0', color: cellColor }}>
+                                            <TableCell key={pipe.id} align="center" sx={{ borderRight: '1px solid #e0e0e0', color: cellColor, fontWeight: cellFontWeight }}>
                                                 {formatNumber(value, row.decimals)}
                                                 {cellSubLabel && (
                                                     <Typography variant="caption" display="block" color="text.secondary" sx={{ fontSize: '0.7rem' }}>

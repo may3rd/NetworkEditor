@@ -920,7 +920,7 @@ export function PropertiesPanel({
                           <Stack
                             key={`${fitting.type}-${index}`}
                             direction="row"
-                            spacing={2}
+                            spacing={1}
                             alignItems="flex-end"
                           >
                             <FormControl sx={{ width: "240px" }} size="small">
@@ -951,8 +951,7 @@ export function PropertiesPanel({
                               label="Count"
                               size="small"
                               type="number"
-                              sx={{ width: "80px" }}
-                              inputProps={{ min: 0, step: 1 }}
+                              sx={{ width: "100px" }}
                               disabled={isSwage}
                               value={fitting.count ?? 0}
                               onChange={(event) => {
