@@ -205,13 +205,31 @@ export function SummaryTable({ network }: Props) {
             type: "data",
             label: "Pipe Length",
             unit: u("m", "ft"),
-            getValue: (pipe) => pipe.length ? convertUnit(pipe.length, pipe.lengthUnit || "m", u("m", "ft")) : undefined
+            getValue: (pipe) => {
+                if (!pipe.pipeSectionType) return "";
+                const length = pipe.length ? convertUnit(pipe.length, pipe.lengthUnit || "m", u("m", "ft")) : undefined
+                const sectionType = pipe.pipeSectionType || "pipeline";
+                if (sectionType == "pipeline") {
+                    return length;
+                } else {
+                    return "";
+                }
+            }
         },
         {
             type: "data",
             label: "Elevation Change (- for DOWN)",
             unit: u("m", "ft"),
-            getValue: (pipe) => pipe.elevation ? convertUnit(pipe.elevation, pipe.elevationUnit || "m", u("m", "ft")) : undefined
+            getValue: (pipe) => {
+                if (!pipe.pipeSectionType) return "";
+                const elevation = pipe.elevation ? convertUnit(pipe.elevation, pipe.elevationUnit || "m", u("m", "ft")) : undefined
+                const sectionType = pipe.pipeSectionType || "pipeline";
+                if (sectionType == "pipeline") {
+                    return elevation;
+                } else {
+                    return "";
+                }
+            }
         },
         { type: "data", label: "Erosional Constant C (API 14E)", getValue: (pipe) => pipe.erosionalConstant },
 
@@ -388,21 +406,58 @@ export function SummaryTable({ network }: Props) {
             }
         },
 
-        { type: "data", label: "Fitting K", getValue: (pipe) => pipe.pressureDropCalculationResults?.fittingK },
-        { type: "data", label: "Pipe Length K", getValue: (pipe) => pipe.pressureDropCalculationResults?.pipeLengthK },
-        { type: "data", label: "User Supply K", getValue: (pipe) => pipe.userK },
+        {
+            type: "data",
+            label: "Fitting K",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
+                return pipe.pressureDropCalculationResults?.fittingK;
+            }
+        },
+        {
+            type: "data",
+            label: "Pipe Length K",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
+                return pipe.pressureDropCalculationResults?.pipeLengthK;
+            }
+        },
+        {
+            type: "data",
+            label: "User Supply K",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
+                return pipe.userK;
+            }
+        },
         {
             type: "data",
             label: "Total K",
             getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
                 const fittingK = pipe.pressureDropCalculationResults?.fittingK || 0;
                 const pipeLengthK = pipe.pressureDropCalculationResults?.pipeLengthK || 0;
                 const userK = pipe.userK || 0;
                 return fittingK + pipeLengthK + userK;
             }
         },
-        { type: "data", label: "Pipe & Fitting Safety Factor", unit: "%", getValue: (pipe) => pipe.pipingFittingSafetyFactor },
-        { type: "data", label: "Total K (with safety factor)", getValue: (pipe) => pipe.pressureDropCalculationResults?.totalK },
+        {
+            type: "data",
+            label: "Pipe & Fitting Safety Factor",
+            unit: "%",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
+                return pipe.pipingFittingSafetyFactor;
+            }
+        },
+        {
+            type: "data",
+            label: "Total K (with safety factor)",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return undefined;
+                return pipe.pressureDropCalculationResults?.totalK;
+            }
+        },
 
         { type: "section", label: "IV. OPTIONAL CALCULATIONS" },
         { type: "data", label: "Control Valve Cv", getValue: (pipe) => pipe.controlValve?.cv },

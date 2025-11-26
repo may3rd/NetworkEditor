@@ -6,6 +6,8 @@ import {
   STANDARD_GRAVITY,
   darcyFrictionFactor,
   determineFlowScheme,
+  calculateReynoldsNumber,
+  relativeRoughness,
 } from "./calculations/basicCaculations";
 import {
   solveIsothermal,
@@ -70,17 +72,24 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
   let pressureDropResults: PressureDropCalculationResults | undefined;
   let resultSummary: resultSummary | undefined;
 
+  let pipeLengthCompForSummary: PipeLengthComputation = {};
+  if (context) {
+    const area = 0.25 * Math.PI * context.pipeDiameter * context.pipeDiameter;
+    const velocity = context.volumetricFlowRate / area;
+    pipeLengthCompForSummary = { velocity };
+  }
+
   if (pipe.pipeSectionType === "control valve") {
     const { results, updatedControlValve } = calculateControlValvePressureDrop(pipe, context);
     pressureDropResults = results;
-    resultSummary = calculateResultSummary(pipe, context, {}, pressureDropResults);
+    resultSummary = calculateResultSummary(pipe, context, pipeLengthCompForSummary, pressureDropResults);
     if (updatedControlValve) {
       pipe = { ...pipe, controlValve: updatedControlValve };
     }
   } else if (pipe.pipeSectionType === "orifice") {
     const { results, updatedOrifice } = calculateOrificePressureDrop(pipe, context);
     pressureDropResults = results;
-    resultSummary = calculateResultSummary(pipe, context, {}, pressureDropResults);
+    resultSummary = calculateResultSummary(pipe, context, pipeLengthCompForSummary, pressureDropResults);
     if (updatedOrifice) {
       pipe = { ...pipe, orifice: updatedOrifice };
     }
@@ -590,7 +599,19 @@ function calculateLiquidControlValveContribution(
     }
   }
 
-  const results = buildControlValveResults(pressureDrop);
+  const area = 0.25 * Math.PI * context.pipeDiameter * context.pipeDiameter;
+  const velocity = context.volumetricFlowRate / area;
+  const reynolds = calculateReynoldsNumber({
+    density: context.density,
+    viscosity: context.viscosity,
+    diameter: context.pipeDiameter,
+    velocity,
+  });
+  const flowScheme = determineFlowScheme(reynolds);
+  const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
+  const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
+
+  const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor);
   return { results, updatedControlValve };
 }
 
@@ -696,12 +717,27 @@ function calculateGasControlValveContribution(
     pressureDrop = boundedDrop;
   }
 
-  const results = buildControlValveResults(pressureDrop);
+  const area = 0.25 * Math.PI * context.pipeDiameter * context.pipeDiameter;
+  const velocity = context.volumetricFlowRate / area;
+  const reynolds = calculateReynoldsNumber({
+    density: context.density,
+    viscosity: context.viscosity,
+    diameter: context.pipeDiameter,
+    velocity,
+  });
+  const flowScheme = determineFlowScheme(reynolds);
+  const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
+  const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
+
+  const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor);
   return { results, updatedControlValve };
 }
 
 function buildControlValveResults(
   pressureDrop?: number,
+  reynoldsNumber: number = 0,
+  flowScheme: "laminar" | "transition" | "turbulent" = "laminar",
+  frictionalFactor: number = 0
 ): PressureDropCalculationResults {
   return {
     pipeLengthK: 0,
@@ -709,9 +745,9 @@ function buildControlValveResults(
     userK: 0,
     pipingFittingSafetyFactor: 1,
     totalK: 0,
-    reynoldsNumber: 0,
-    frictionalFactor: 0,
-    flowScheme: "laminar",
+    reynoldsNumber,
+    frictionalFactor,
+    flowScheme,
     pipeAndFittingPressureDrop: 0,
     elevationPressureDrop: 0,
     controlValvePressureDrop: pressureDrop,
@@ -877,6 +913,9 @@ function calculateOrificePressureDrop(
     return { results: undefined, updatedOrifice: orifice };
   }
 
+  const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
+  const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
+
   const orificeResult = calculateSharpEdgedPlateOrificePressureDrop({
     beta: betaRatio,
     reynolds,
@@ -907,7 +946,7 @@ function calculateOrificePressureDrop(
     pipingFittingSafetyFactor: 1,
     totalK: 0,
     reynoldsNumber: reynolds,
-    frictionalFactor: 0,
+    frictionalFactor: frictionFactor,
     flowScheme: reynolds <= 2500 ? "laminar" : "turbulent",
     pipeAndFittingPressureDrop: 0,
     elevationPressureDrop: 0,
