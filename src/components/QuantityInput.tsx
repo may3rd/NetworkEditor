@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Select, MenuItem, SelectChangeEvent, TextField, InputAdornment } from "@mui/material";
+import { Box, Select, MenuItem, SelectChangeEvent, TextField, InputAdornment, SxProps, Theme } from "@mui/material";
 import { convertUnit, type UnitFamily } from "@/lib/unitConversion";
 
 export const QUANTITY_UNIT_OPTIONS = {
@@ -29,6 +29,10 @@ type QuantityInputProps = {
   placeholder?: string;
   isDisabled?: boolean;
   decimalPlaces?: number;
+  helperText?: string;
+  min?: number;
+  minUnit?: string;
+  sx?: SxProps<Theme>;
 };
 
 export function QuantityInput({
@@ -42,6 +46,10 @@ export function QuantityInput({
   placeholder,
   isDisabled = false,
   decimalPlaces,
+  helperText,
+  min,
+  minUnit,
+  sx,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
   const formatValue = useMemo(
@@ -86,10 +94,36 @@ export function QuantityInput({
     onUnitChange?.(nextUnit);
   };
 
+  // Validation Logic
+  let error = false;
+  let validationMessage = "";
+
+  if (min !== undefined) {
+    const numericValue = Number(inputValue);
+    if (!Number.isNaN(numericValue) && inputValue !== "") {
+      let limit = min;
+      // If minUnit is provided and different from current unit, convert min to current unit
+      if (minUnit && minUnit !== unit && unitFamily) {
+        limit = convertUnit(min, minUnit, unit, unitFamily);
+      }
+
+      if (numericValue < limit) {
+        error = true;
+        // Format limit to match decimal places if possible, or default to 3
+        const formattedLimit = decimalPlaces !== undefined ? limit.toFixed(decimalPlaces) : limit.toFixed(3);
+        validationMessage = `Value cannot be less than ${formattedLimit} ${unit}`;
+      }
+    }
+  }
+
+  const displayedHelperText = error ? validationMessage : helperText;
+
   return (
     <TextField
       label={label}
       value={inputValue}
+      error={error}
+      sx={sx}
       onChange={(e) => {
         const next = e.target.value;
         if (
@@ -161,6 +195,7 @@ export function QuantityInput({
           </InputAdornment>
         ),
       }}
+      helperText={displayedHelperText}
     />
   );
 }

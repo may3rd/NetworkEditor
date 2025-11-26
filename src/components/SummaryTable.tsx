@@ -89,7 +89,14 @@ export function SummaryTable({ network }: Props) {
         { type: "data", label: "Fluid Phase", getValue: (pipe) => pipe.fluid?.phase },
         { type: "data", label: "Calculation Type", getValue: (pipe) => pipe.pipeSectionType },
         { type: "data", label: "Flow Direction", getValue: (pipe) => pipe.direction },
-        { type: "data", label: "Flow Type (Adiabatic or Isothermal)", getValue: (pipe) => pipe.gasFlowModel },
+        {
+            type: "data",
+            label: "Flow Type (Adiabatic or Isothermal)",
+            getValue: (pipe) => {
+                if (pipe.fluid?.phase !== "gas") return "N/A";
+                return pipe.gasFlowModel;
+            }
+        },
         {
             type: "data",
             label: "Pressure",
@@ -140,7 +147,8 @@ export function SummaryTable({ network }: Props) {
                     const val = convertUnit(volFlowM3H, "m3/h", targetUnit, "volumeFlowRate");
                     return {
                         value: val,
-                        subLabel: targetUnit
+                        subLabel: targetUnit,
+                        helperText: phase === "gas" ? "(at 1 atm, 25°C)" : undefined
                     };
                 }
                 return undefined;
@@ -236,7 +244,7 @@ export function SummaryTable({ network }: Props) {
         // Fittings
         { type: "section", label: "Fitting Count" },
         {
-            type: "data", label: "Elbow 45 °C", getValue: (pipe) => {
+            type: "data", label: "Elbow 45°", getValue: (pipe) => {
                 const count = getFittingCount(pipe, "elbow_45") || 0;
                 if (count == 0) return "";
                 const K_each = getFittingK(pipe, "elbow_45") || 0;
@@ -244,7 +252,7 @@ export function SummaryTable({ network }: Props) {
             }
         },
         {
-            type: "data", label: "Elbow 90 °C", getValue: (pipe) => {
+            type: "data", label: "Elbow 90°", getValue: (pipe) => {
                 const count = getFittingCount(pipe, "elbow_90") || 0;
                 if (count == 0) return "";
                 const K_each = getFittingK(pipe, "elbow_90") || 0;

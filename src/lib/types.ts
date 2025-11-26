@@ -286,7 +286,7 @@ const baseNetwork: NetworkState = {
     },
     {
       id: "n7",
-      label: "G2",
+      label: "G3",
       position: { x: 400, y: 150 },
       pressure: 101.08,
       pressureUnit: 'kPag',
@@ -304,7 +304,7 @@ const baseNetwork: NetworkState = {
     },
     {
       id: "n8",
-      label: "G2",
+      label: "G4",
       position: { x: 600, y: 150 },
       pressure: 101.08,
       pressureUnit: 'kPag',

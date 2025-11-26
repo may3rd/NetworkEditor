@@ -226,6 +226,8 @@ export function PropertiesPanel({
                 ...(node.temperatureUnit === undefined && { temperatureUnit: "C" })
               })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { temperatureUnit: newUnit })}
+              min={0}
+              minUnit="K"
             />
 
             <QuantityInput
@@ -239,6 +241,8 @@ export function PropertiesPanel({
                 ...(node.pressureUnit === undefined && { pressureUnit: "kPag" })
               })}
               onUnitChange={(newUnit) => onUpdateNode(node.id, { pressureUnit: newUnit })}
+              min={0}
+              minUnit="Pa"
             />
 
             <Button
@@ -388,6 +392,7 @@ export function PropertiesPanel({
                     },
                   }))
                 }
+                min={0}
               />
             )}
             {nodeFluidPhase === "gas" && (
@@ -397,8 +402,9 @@ export function PropertiesPanel({
                     label="Gas Molecular Weight"
                     size="small"
                     type="number"
-                    inputProps={{ step: "any" }}
                     value={node.fluid?.molecularWeight ?? ""}
+                    error={(node.fluid?.molecularWeight ?? 0) < 0}
+                    helperText={(node.fluid?.molecularWeight ?? 0) < 0 ? "Value cannot be less than 0" : undefined}
                     onChange={(event) => {
                       const value =
                         event.target.value === "" ? undefined : Number(event.target.value);
@@ -417,8 +423,9 @@ export function PropertiesPanel({
                     label="Z Factor"
                     size="small"
                     type="number"
-                    inputProps={{ step: "any" }}
                     value={node.fluid?.zFactor ?? ""}
+                    error={(node.fluid?.zFactor ?? 0) < 0}
+                    helperText={(node.fluid?.zFactor ?? 0) < 0 ? "Value cannot be less than 0" : undefined}
                     onChange={(event) => {
                       const value =
                         event.target.value === "" ? undefined : Number(event.target.value);
@@ -437,8 +444,9 @@ export function PropertiesPanel({
                     label="Specific Heat Ratio"
                     size="small"
                     type="number"
-                    inputProps={{ step: "any" }}
                     value={node.fluid?.specificHeatRatio ?? ""}
+                    error={(node.fluid?.specificHeatRatio ?? 0) < 0}
+                    helperText={(node.fluid?.specificHeatRatio ?? 0) < 0 ? "Value cannot be less than 0" : undefined}
                     onChange={(event) => {
                       const value =
                         event.target.value === "" ? undefined : Number(event.target.value);
@@ -594,6 +602,7 @@ export function PropertiesPanel({
             onUnitChange={(newUnit) =>
               onUpdatePipe(pipe.id, { massFlowRateUnit: newUnit, designMassFlowRateUnit: newUnit })
             }
+            min={0}
           />
 
           <Stack spacing={2}>
@@ -602,6 +611,8 @@ export function PropertiesPanel({
               size="small"
               type="number"
               value={pipe.designMargin ?? ""}
+              error={(pipe.designMargin ?? 0) < 0}
+              helperText={(pipe.designMargin ?? 0) < 0 ? "Value cannot be less than 0" : undefined}
               onChange={(event) => {
                 const parsedValue =
                   event.target.value === "" ? undefined : Number(event.target.value);
@@ -673,6 +684,7 @@ export function PropertiesPanel({
               onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { designFlowRateDisplayUnit: newUnit })}
               isDisabled={false} // Allow unit selection
               decimalPlaces={3}
+              helperText={isGasPipe ? "Standard Conditions: 1 atm, 25°C" : undefined}
             />
           </Stack>
 
@@ -710,6 +722,7 @@ export function PropertiesPanel({
               unitFamily="diameter"
               onValueChange={(newValue) => onUpdatePipe(pipe.id, { diameter: newValue })}
               onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { diameterUnit: newUnit })}
+              min={0}
             />
           ) : (
             <Stack spacing={2}>
@@ -783,6 +796,7 @@ export function PropertiesPanel({
             unitFamily="diameter"
             onValueChange={(newValue) => onUpdatePipe(pipe.id, { inletDiameter: newValue })}
             onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { inletDiameterUnit: newUnit })}
+            min={0}
           />
 
           <QuantityInput
@@ -793,6 +807,7 @@ export function PropertiesPanel({
             unitFamily="diameter"
             onValueChange={(newValue) => onUpdatePipe(pipe.id, { outletDiameter: newValue })}
             onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { outletDiameterUnit: newUnit })}
+            min={0}
           />
 
           <Stack spacing={2}>
@@ -800,8 +815,9 @@ export function PropertiesPanel({
               label="Erosional Constant"
               size="small"
               type="number"
-              inputProps={{ step: "any" }}
               value={pipe.erosionalConstant ?? 100}
+              error={(pipe.erosionalConstant ?? 100) < 0}
+              helperText={(pipe.erosionalConstant ?? 100) < 0 ? "Value cannot be less than 0" : undefined}
               onChange={(event) => {
                 const value = event.target.value === "" ? undefined : Number(event.target.value);
                 onUpdatePipe(pipe.id, { erosionalConstant: value });
@@ -819,6 +835,7 @@ export function PropertiesPanel({
                 unitFamily="roughness"
                 onValueChange={(newValue) => onUpdatePipe(pipe.id, { roughness: newValue })}
                 onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { roughnessUnit: newUnit })}
+                min={0}
               />
 
               <QuantityInput
@@ -829,6 +846,7 @@ export function PropertiesPanel({
                 unitFamily="length"
                 onValueChange={(newValue) => onUpdatePipe(pipe.id, { length: newValue })}
                 onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { lengthUnit: newUnit })}
+                min={0}
               />
 
               {pipeFluidPhase === "liquid" && (
@@ -864,8 +882,9 @@ export function PropertiesPanel({
                     label="Pipe & Fitting Safety Factor (%)"
                     size="small"
                     type="number"
-                    inputProps={{ step: "any" }}
                     value={pipe.pipingFittingSafetyFactor ?? 0}
+                    error={(pipe.pipingFittingSafetyFactor ?? 0) < 0}
+                    helperText={(pipe.pipingFittingSafetyFactor ?? 0) < 0 ? "Value cannot be less than 0" : undefined}
                     onChange={(event) => {
                       const value = event.target.value === "" ? undefined : Number(event.target.value);
                       onUpdatePipe(pipe.id, { pipingFittingSafetyFactor: value });
@@ -967,8 +986,9 @@ export function PropertiesPanel({
                     label="User K"
                     size="small"
                     type="number"
-                    inputProps={{ step: "any" }}
                     value={pipe.userK ?? ""}
+                    error={(pipe.userK ?? 0) < 0}
+                    helperText={(pipe.userK ?? 0) < 0 ? "Value cannot be less than 0" : undefined}
                     onChange={(event) => {
                       const value = event.target.value === "" ? undefined : Number(event.target.value);
                       onUpdatePipe(pipe.id, { userK: value });
@@ -990,6 +1010,8 @@ export function PropertiesPanel({
                   })
                 }
                 onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { userSpecifiedPressureLossUnit: newUnit })}
+                min={0}
+                minUnit="Pa"
               />
             </>
           )}
@@ -1035,6 +1057,8 @@ export function PropertiesPanel({
                       label="Gas Valve Constant (C1)"
                       size="small"
                       type="number"
+                      disabled={true}
+                      helperText="Typically 15 to 35"
                       value={
                         typeof pipe.controlValve?.C1 === "number"
                           ? pipe.controlValve.C1.toFixed(4)
@@ -1065,6 +1089,8 @@ export function PropertiesPanel({
                       label="Pressure Drop Ratio (xT)"
                       size="small"
                       type="number"
+                      disabled={true}
+                      helperText="Typically 0.15 to 0.75"
                       value={
                         typeof pipe.controlValve?.xT === "number"
                           ? pipe.controlValve.xT.toFixed(4)
@@ -1100,7 +1126,6 @@ export function PropertiesPanel({
                       label={controlValveCoefficientLabel}
                       size="small"
                       type="number"
-                      inputProps={{ step: "any" }}
                       value={controlValveCoefficientValue}
                       onChange={(event) => {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
@@ -1220,6 +1245,7 @@ export function PropertiesPanel({
                       label={controlValveCalculatedCoefficientLabel}
                       size="small"
                       type="number"
+                      sx={{ input: { color: 'success.main' } }}
                       value={
                         typeof controlValveCalculatedCoefficientValue === "number"
                           ? controlValveCalculatedCoefficientValue.toFixed(4)
@@ -1274,6 +1300,7 @@ export function PropertiesPanel({
                   unit={orificePressureDropUnit}
                   units={QUANTITY_UNIT_OPTIONS.pressureDrop}
                   unitFamily="pressureDrop"
+                  sx={{ input: { color: 'success.main' } }}
                   onValueChange={() => { }} // Read-only
                   onUnitChange={(newUnit) => {
                     onUpdatePipe(pipe.id, (currentPipe) => {
