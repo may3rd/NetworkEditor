@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useEffect, useState, useRef } from "react";
+import { useMemo, useCallback, useEffect, useState, useRef, type ChangeEventHandler } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   Button,
@@ -10,9 +10,11 @@ import {
   IconButton,
   ToggleButton,
   ToggleButtonGroup,
-  Tooltip
+  Tooltip,
+  Paper,
+  useTheme,
 } from "@mui/material";
-import { Add, Delete, Undo, Redo, Grid3x3, GridOn, PanTool, Speed } from "@mui/icons-material";
+import { Add, Delete, Undo, Redo, Grid3x3, GridOn, PanTool, Speed, DarkMode } from "@mui/icons-material";
 import {
   ReactFlow,
   Background,
@@ -30,12 +32,14 @@ import {
   type DefaultEdgeOptions,
   type HandleType,
   type OnConnectStartParams,
+  type ColorMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
 import { NetworkState, type NodeProps, type PipeProps } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { convertUnit } from "@/lib/unitConversion";
+import { useColorMode } from "@/contexts/ColorModeContext";
 
 const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
@@ -258,12 +262,12 @@ export function NetworkEditor({
           labelStyle: {
             fontSize: "9px",
             fontWeight: 500,
-            fill: isSelectedPipe ? "#92400e" : "#0f172a",
+            fill: isSelectedPipe ? "#92400e" : "text.secondary",
           },
           labelBgPadding: [8, 4] as [number, number],
           labelBgBorderRadius: 4,
           labelBgStyle: {
-            fill: isSelectedPipe ? "#fffbeb" : "#ffffff",
+            fill: isSelectedPipe ? "#fffbeb" : "text.secondary",
             fillOpacity: 0.92,
             stroke: isSelectedPipe ? "#f59e0b" : "#cbd5f5",
             strokeWidth: 0.5,
@@ -440,7 +444,31 @@ export function NetworkEditor({
 
   return (
     <ReactFlowProvider>
-      <EditorCanvas {...{ network, onSelect, selectedId, selectedType, onDelete, onUndo, onRedo, canUndo, canRedo, historyIndex, historyLength, onNetworkChange, height, localNodes, setLocalNodes, rfEdges, nodeTypes, defaultEdgeOptions, handleNodesChange, handleConnect, mapNodeToReactFlow, showPressures, setShowPressures }} />
+      <EditorCanvas {...{
+        network,
+        onSelect,
+        selectedId,
+        selectedType,
+        onDelete,
+        onUndo,
+        onRedo,
+        canUndo,
+        canRedo,
+        historyIndex,
+        historyLength,
+        onNetworkChange,
+        height,
+        localNodes,
+        setLocalNodes,
+        rfEdges,
+        nodeTypes,
+        defaultEdgeOptions,
+        handleNodesChange,
+        handleConnect,
+        mapNodeToReactFlow,
+        showPressures,
+        setShowPressures
+      }} />
     </ReactFlowProvider>
   );
 }
@@ -792,19 +820,23 @@ function EditorCanvas({
 
   const canEditNetwork = Boolean(onNetworkChange);
   const editorCursor = isAddingNode ? ADD_NODE_CURSOR : isPanMode ? "grab" : "default";
+  const theme = useTheme();
+  const { toggleColorMode } = useColorMode();
+  const colorMode = theme.palette.mode;
 
   return (
-    <div
-      style={{
+    <Paper
+      elevation={0}
+      sx={{
         height,
         width: "100%",
-        borderRadius: 12,
         overflow: "hidden",
-        background: "#fff",
-        border: "1px solid #e2e8f0",
         position: "relative",
         display: "flex",
         flexDirection: "column",
+        borderRadius: 2,
+        border: "1px solid",
+        borderColor: "divider",
       }}
     >
       {/* Toolbar */}
@@ -816,14 +848,14 @@ function EditorCanvas({
           height: 48,
           width: "100%",
           flexShrink: 0,
-          bgcolor: "#f8fafc",
+          bgcolor: "background.paper",
           borderBottom: "1px solid",
           borderColor: "divider",
           px: 2,
           zIndex: 10,
         }}
       >
-        <ButtonGroup variant="contained" size="small">
+        <ButtonGroup variant="contained" size="small" sx={{ borderColor: "divider", backgroundColor: "background.paper" }}>
           <Tooltip title="Add new node">
             <IconButton
               onClick={() => setIsAddingNode((value) => !value)}
@@ -871,12 +903,16 @@ function EditorCanvas({
             showGrid && "grid",
             panModeEnabled && "pan",
             showPressures && "pressure",
+            colorMode === "dark" && "dark",
           ].filter(Boolean)}
           onChange={(event, newFormats) => {
             setSnapToGrid(newFormats.includes("snap"));
             setShowGrid(newFormats.includes("grid"));
             setPanModeEnabled(newFormats.includes("pan"));
             setShowPressures(newFormats.includes("pressure"));
+            if (newFormats.includes("dark") !== (colorMode === "dark")) {
+              toggleColorMode();
+            }
           }}
           size="small"
           aria-label="Editor settings"
@@ -901,6 +937,11 @@ function EditorCanvas({
               <Speed fontSize="small" />
             </Tooltip>
           </ToggleButton>
+          <ToggleButton value="dark" aria-label="Dark Mode">
+            <Tooltip title="Dark Mode">
+              <DarkMode fontSize="small" />
+            </Tooltip>
+          </ToggleButton>
         </ToggleButtonGroup>
 
         <Box sx={{ flexGrow: 1 }} />
@@ -922,6 +963,7 @@ function EditorCanvas({
         }}>
         <ReactFlow
           className={isPanMode ? "pan-mode" : "design-mode"}
+          colorMode={colorMode}
           nodes={localNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
@@ -954,8 +996,8 @@ function EditorCanvas({
             className="network-minimap"
             pannable
             zoomable
-            nodeColor={(n) => (n.data?.isSelected ? "#f59e0b" : "#5a5a5cff")}
-            style={{ background: "#f8f5f9", opacity: 0.7, width: 140, height: 90 }}
+            nodeColor={(n) => (n.data?.isSelected ? "#f59e0b" : "#5a5a5cff")} // Set themee color
+            style={{ background: "background.paper", opacity: 0.7, width: 140, height: 90 }}
           />
           <Controls />
         </ReactFlow>
@@ -974,6 +1016,6 @@ function EditorCanvas({
           }
         `}</style>
       </div>
-    </div >
+    </Paper >
   );
 }

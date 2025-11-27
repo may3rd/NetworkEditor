@@ -299,7 +299,7 @@ export default function Home() {
   );
 
   return (
-    <Stack sx={{ bgcolor: "#f8fafc", minHeight: "100vh", gap: 3, p: 4 }}>
+    <Stack sx={{ bgcolor: "background.default", minHeight: "100vh", gap: 3, p: 4 }}>
       <input
         ref={fileInputRef}
         type="file"

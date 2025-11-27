@@ -25,18 +25,18 @@ const ROLE_COLORS: Record<NodeRole, string> = {
 
 function PressureNode({ data }: { data: NodeData }) {
   const {
+    label,
     isSelected,
     showPressures,
     pressure,
     pressureUnit,
-    label,
     flowRole = "neutral",
     needsAttention = false,
   } = data;
 
   const roleColor = ROLE_COLORS[flowRole] ?? ROLE_COLORS.neutral;
   const fillColor = isSelected ? "#fde047" : roleColor;
-  const borderColor = needsAttention ? "#dc2626" : "#1e293b";
+  const borderColor = needsAttention ? "#dc2626" : "black";
   const borderWidth = needsAttention ? 0 : 1;
   const baseShadow = "0 4px 12px rgba(0,0,0,0.15)";
   const selectionShadow = isSelected
@@ -44,14 +44,14 @@ function PressureNode({ data }: { data: NodeData }) {
     : baseShadow;
   const scaleAmount = isSelected ? 1 : 1;
   const circleSize = 20;
-  const dashThickness = needsAttention ? 3 : 0;
+  const dashThickness = needsAttention ? 2 : 0;
   const handleStyle: CSSProperties = {
     opacity: 1,
     border: "none",
-    background: needsAttention ? "#dc2626" : borderColor,
+    background: needsAttention ? "#dc2626" : "black",
     width: 7,
     height: 7,
-    zIndex: 1,
+    zIndex: 0,
   };
 
   return (
@@ -102,14 +102,13 @@ function PressureNode({ data }: { data: NodeData }) {
           }}
         />
       </div>
-
       <div
         style={{
           marginTop: 8,
           textAlign: "center",
           fontWeight: 700,
           fontSize: 9,
-          color: "#0f172a",
+          color: "text.primary",
           pointerEvents: "none",
           userSelect: "none",
           whiteSpace: "nowrap",
