@@ -282,7 +282,26 @@ export function NetworkEditor({
   );
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
-  useEffect(() => setLocalNodes(rfNodes), [rfNodes]);
+  const pastedNodeIdsRef = useRef<Set<string> | null>(null);
+
+  useEffect(() => {
+    if (pastedNodeIdsRef.current) {
+      const allPresent = Array.from(pastedNodeIdsRef.current).every(id => rfNodes.some(n => n.id === id));
+      if (allPresent) {
+        setLocalNodes(rfNodes.map(n => ({
+          ...n,
+          selected: pastedNodeIdsRef.current!.has(n.id)
+        })));
+        pastedNodeIdsRef.current = null;
+        return;
+      }
+    }
+    setLocalNodes(rfNodes);
+  }, [rfNodes]);
+
+  const handlePaste = useCallback((ids: string[]) => {
+    pastedNodeIdsRef.current = new Set(ids);
+  }, []);
 
   useEffect(() => {
     if (selectedType === "pipe" && selectedId) {
@@ -562,6 +581,7 @@ export function NetworkEditor({
         onLoad,
         onSave,
         onExport,
+        onPaste: handlePaste,
       }} />
     </ReactFlowProvider>
   );
@@ -600,6 +620,7 @@ function EditorCanvas({
   onLoad,
   onSave,
   onExport,
+  onPaste,
 }: Props & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
@@ -620,6 +641,7 @@ function EditorCanvas({
   handleRotateCCW: () => void;
   handleSwapLeftRight: () => void;
   handleSwapUpDown: () => void;
+  onPaste: (ids: string[]) => void;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
@@ -634,7 +656,7 @@ function EditorCanvas({
   const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
   const NODE_SIZE = 20;
 
-  useCopyPaste(network, onNetworkChange);
+  useCopyPaste(network, onNetworkChange, onPaste);
 
   const onConnectStart = useCallback(
     (_: MouseEvent | TouchEvent, { nodeId, handleType }: OnConnectStartParams) => {
