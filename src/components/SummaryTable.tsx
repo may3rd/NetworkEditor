@@ -124,7 +124,7 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
     };
 
     const rows: RowConfig[] = [
-        { type: "data", label: "Segment ID", getValue: (pipe) => pipe.label || "" },
+        { type: "data", label: "Segment ID", getValue: (pipe) => pipe.name || "" },
         { type: "data", label: "Description", getValue: (pipe) => pipe.description || "" },
         { type: "data", label: "From", getValue: (pipe) => getNodeLabel(pipe.startNodeId) || "" },
         { type: "data", label: "To", getValue: (pipe) => getNodeLabel(pipe.endNodeId) || "" },
@@ -793,7 +793,7 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
 
     const handleExportCSV = () => {
         // 1. Headers
-        const headerRow = ["Property", "Unit", ...pipes.map((_, i) => `Pipe ${i + 1}`)];
+        const headerRow = ["Property", "Unit", ...pipes.map((pipe, i) => pipe.name || `Pipe ${i + 1}`)];
         const csvRows = [headerRow.map(cell => `"${cell}"`).join(",")];
 
         // 2. Data Rows
@@ -1027,7 +1027,7 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
                             </TableCell>
                             {visiblePipes.map((pipe, index) => (
                                 <TableCell key={pipe.id} align="center" sx={{ minWidth: 110, borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0', bgcolor: 'background.default' }}>
-                                    {index + 1 + (page * rowsPerPage)}
+                                    {pipe.name || (index + 1 + (page * rowsPerPage))}
                                 </TableCell>
                             ))}
                         </TableRow>

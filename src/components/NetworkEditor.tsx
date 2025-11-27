@@ -91,6 +91,17 @@ type NodeFlowState = {
   needsAttention: boolean;
 };
 
+const generateUniquePipeName = (pipes: PipeProps[]): string => {
+  let counter = 1;
+  while (true) {
+    const name = `P-${String(counter).padStart(3, "0")}`;
+    if (!pipes.some((p) => p.name === name)) {
+      return name;
+    }
+    counter++;
+  }
+};
+
 export function NetworkEditor({
   network,
   onSelect,
@@ -263,7 +274,13 @@ export function NetworkEditor({
     () =>
       network.pipes.map((pipe, index) => {
         const isSelectedPipe = selectedType === "pipe" && selectedId === pipe.id;
-        let label = `P${index + 1}: `;
+        let label = pipe.name || `P${index + 1}: `;
+        if (!pipe.name) {
+          label = `P${index + 1}: `;
+        } else {
+          label = `${pipe.name}: `;
+        }
+
         if (pipe.pipeSectionType === "control valve") {
           label += "CV";
         } else if (pipe.pipeSectionType === "orifice") {
@@ -378,6 +395,7 @@ export function NetworkEditor({
         startNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined;
       const newPipe = {
         id: `pipe-${connection.source}-${connection.target}-${Date.now()}`,
+        name: generateUniquePipeName(network.pipes),
         startNodeId: connection.source,
         endNodeId: connection.target,
         pipeSectionType: "pipeline" as "pipeline" | "control valve" | "orifice",
@@ -728,6 +746,7 @@ function EditorCanvas({
         pipeStartNode?.fluid?.phase?.toLowerCase() === "gas" ? "adiabatic" : undefined;
       const newPipe = {
         id: `pipe-${startsFromSourceHandle ? fromId : newNodeId}-${startsFromSourceHandle ? newNodeId : fromId}-${Date.now()}`,
+        name: generateUniquePipeName(network.pipes),
         startNodeId: pipeStartNodeId,
         endNodeId: startsFromSourceHandle ? newNodeId : fromId,
         pipeSectionType: "pipeline" as "pipeline" | "control valve" | "orifice",

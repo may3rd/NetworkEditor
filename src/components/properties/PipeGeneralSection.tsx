@@ -10,16 +10,24 @@ import {
     FormControlLabel,
     Radio,
 } from "@mui/material";
+import { useState, useEffect } from "react";
 import { PipeProps, PipePatch, NodeProps } from "@/lib/types";
 
 type Props = {
     pipe: PipeProps;
+    pipes: PipeProps[];
     startNode?: NodeProps;
     endNode?: NodeProps;
     onUpdatePipe: (id: string, patch: PipePatch) => void;
 };
 
-export function PipeGeneralSection({ pipe, startNode, endNode, onUpdatePipe }: Props) {
+export function PipeGeneralSection({ pipe, pipes, startNode, endNode, onUpdatePipe }: Props) {
+    const [localLabel, setLocalLabel] = useState(pipe.name ?? "");
+
+    useEffect(() => {
+        setLocalLabel(pipe.name ?? "");
+    }, [pipe.id, pipe.name]);
+
     const pipeHelperText = () => {
         if (!pipe) {
             return "Unknown";
@@ -36,15 +44,44 @@ export function PipeGeneralSection({ pipe, startNode, endNode, onUpdatePipe }: P
         }
     };
 
+    const isDuplicateLabel = (label: string) => {
+        return pipes.some(p => p.id !== pipe.id && p.name === label);
+    };
+
+    const handleCommit = () => {
+        if (localLabel === pipe.name) return; // No change
+
+        if (isDuplicateLabel(localLabel)) {
+            // Revert to old label if duplicate
+            setLocalLabel(pipe.name ?? "");
+            // Optional: You could show a snackbar or alert here if needed, 
+            // but the requirement is just "return to old name".
+        } else {
+            // Update if valid
+            onUpdatePipe(pipe.id, { name: localLabel });
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            handleCommit();
+            (e.target as HTMLElement).blur(); // Remove focus
+        }
+    };
+
     return (
         <Stack spacing={2}>
             <Stack spacing={2}>
                 <TextField
-                    label="Label"
+                    label="Name"
                     size="small"
-                    value={pipe.label ?? ""}
-                    onChange={(e) => onUpdatePipe(pipe.id, { label: e.target.value })}
-                    placeholder="Enter label"
+                    value={localLabel}
+                    onChange={(e) => setLocalLabel(e.target.value)}
+                    onBlur={handleCommit}
+                    onKeyDown={handleKeyDown}
+                    error={isDuplicateLabel(localLabel)}
+                    helperText={isDuplicateLabel(localLabel) ? "Name already exists" : undefined}
+                    placeholder="Enter name"
                     fullWidth
                 />
 

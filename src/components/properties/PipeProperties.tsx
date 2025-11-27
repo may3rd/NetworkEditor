@@ -1,4 +1,16 @@
-import { Stack } from "@mui/material";
+import {
+    Stack,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemText,
+    DialogActions,
+} from "@mui/material";
+import { useState } from "react";
 import { PipeProps, PipePatch, NetworkState } from "@/lib/types";
 import { PipeGeneralSection } from "./PipeGeneralSection";
 import { PipeFluidSection } from "./PipeFluidSection";
@@ -14,6 +26,8 @@ type Props = {
 };
 
 export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
+    const [openCopyDialog, setOpenCopyDialog] = useState(false);
+
     const startNode = network.nodes.find((n) => n.id === pipe.startNodeId);
     const endNode = network.nodes.find((n) => n.id === pipe.endNodeId);
     const pipeFluidPhase = pipe.fluid?.phase ?? startNode?.fluid?.phase ?? "liquid";
@@ -21,10 +35,50 @@ export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
         typeof pipeFluidPhase === "string" ? pipeFluidPhase.toLowerCase() : undefined;
     const isGasPipe = normalizedPipeFluidPhase === "gas";
 
+    const handleCopyFromPipe = (sourcePipe: PipeProps) => {
+        const patch: PipePatch = {
+            pipeSectionType: sourcePipe.pipeSectionType,
+            pipeNPD: sourcePipe.pipeNPD,
+            pipeSchedule: sourcePipe.pipeSchedule,
+            diameter: sourcePipe.diameter,
+            diameterUnit: sourcePipe.diameterUnit,
+            diameterInputMode: sourcePipe.diameterInputMode,
+            pipeDiameter: sourcePipe.pipeDiameter,
+            pipeDiameterUnit: sourcePipe.pipeDiameterUnit,
+            inletDiameter: sourcePipe.inletDiameter,
+            inletDiameterUnit: sourcePipe.inletDiameterUnit,
+            outletDiameter: sourcePipe.outletDiameter,
+            outletDiameterUnit: sourcePipe.outletDiameterUnit,
+            roughness: sourcePipe.roughness,
+            roughnessUnit: sourcePipe.roughnessUnit,
+            length: sourcePipe.length,
+            lengthUnit: sourcePipe.lengthUnit,
+            elevation: sourcePipe.elevation,
+            elevationUnit: sourcePipe.elevationUnit,
+            fittingType: sourcePipe.fittingType,
+            fittings: sourcePipe.fittings ? JSON.parse(JSON.stringify(sourcePipe.fittings)) : undefined,
+            pipeLengthK: sourcePipe.pipeLengthK,
+            fittingK: sourcePipe.fittingK,
+            userK: sourcePipe.userK,
+            pipingFittingSafetyFactor: sourcePipe.pipingFittingSafetyFactor,
+            erosionalConstant: sourcePipe.erosionalConstant,
+            gasFlowModel: sourcePipe.gasFlowModel,
+            designMargin: sourcePipe.designMargin,
+            controlValve: sourcePipe.controlValve ? { ...sourcePipe.controlValve } : undefined,
+            orifice: sourcePipe.orifice ? { ...sourcePipe.orifice } : undefined,
+            massFlowRate: sourcePipe.massFlowRate,
+            massFlowRateUnit: sourcePipe.massFlowRateUnit,
+        };
+
+        onUpdatePipe(pipe.id, patch);
+        setOpenCopyDialog(false);
+    };
+
     return (
         <Stack spacing={2}>
             <PipeGeneralSection
                 pipe={pipe}
+                pipes={network.pipes}
                 startNode={startNode}
                 endNode={endNode}
                 onUpdatePipe={onUpdatePipe}
@@ -64,6 +118,30 @@ export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
                     onUpdatePipe={onUpdatePipe}
                 />
             )}
+
+            <Button variant="outlined" onClick={() => setOpenCopyDialog(true)}>
+                Copy Properties
+            </Button>
+
+            <Dialog open={openCopyDialog} onClose={() => setOpenCopyDialog(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Copy Properties From</DialogTitle>
+                <DialogContent dividers>
+                    <List>
+                        {network.pipes
+                            .filter((p) => p.id !== pipe.id)
+                            .map((p, index) => (
+                                <ListItem disablePadding key={p.id}>
+                                    <ListItemButton onClick={() => handleCopyFromPipe(p)}>
+                                        <ListItemText primary={p.name || `P-${index + 1}`} secondary={p.description} />
+                                    </ListItemButton>
+                                </ListItem>
+                            ))}
+                    </List>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenCopyDialog(false)}>Cancel</Button>
+                </DialogActions>
+            </Dialog>
         </Stack>
     );
 }

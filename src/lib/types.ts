@@ -87,7 +87,7 @@ export type PipeSchedule =
 
 export type PipeProps = {
   id: string;
-  label?: string;
+  name?: string;
   description?: string;
   startNodeId: string;
   endNodeId: string;
@@ -346,6 +346,8 @@ const baseNetwork: NetworkState = {
   pipes: [
     {
       id: "1",
+      name: "P-001",
+      description: "Pipeline 1",
       startNodeId: "n1",
       endNodeId: "n2",
       massFlowRate: 90513.6,
@@ -373,6 +375,8 @@ const baseNetwork: NetworkState = {
     },
     {
       id: "2",
+      name: "P-002",
+      description: "Pipeline 2",
       startNodeId: "n2",
       endNodeId: "n3",
       massFlowRate: 90513.6,
@@ -400,6 +404,8 @@ const baseNetwork: NetworkState = {
     },
     {
       id: "3",
+      name: "P-003",
+      description: "Pipeline 3",
       startNodeId: "n3",
       endNodeId: "n4",
       massFlowRate: 90513.6,
@@ -427,6 +433,8 @@ const baseNetwork: NetworkState = {
     },
     {
       id: "4",
+      name: "P-004",
+      description: "Pipeline 4",
       startNodeId: "n5",
       endNodeId: "n6",
       massFlowRate: 1000.0,
@@ -455,6 +463,8 @@ const baseNetwork: NetworkState = {
     },
     {
       id: "5",
+      name: "P-005",
+      description: "Pipeline 5",
       startNodeId: "n6",
       endNodeId: "n7",
       massFlowRate: 1000.0,
@@ -483,12 +493,13 @@ const baseNetwork: NetworkState = {
     },
     {
       id: "6",
+      name: "P-006",
+      description: "Pipeline 6",
       startNodeId: "n7",
       endNodeId: "n8",
       massFlowRate: 1000.0,
       massFlowRateUnit: "kg/h",
       gasFlowModel: "adiabatic",
-      pipeSectionType: "control valve",
       direction: "forward",
       diameter: 102.26,
       diameterUnit: "mm",
@@ -509,13 +520,6 @@ const baseNetwork: NetworkState = {
         molecularWeight: 28,
         zFactor: 0.9,
         specificHeatRatio: 1.3,
-      },
-      controlValve: {
-        id: "cv1",
-        tag: "cv1",
-        pressureDrop: 70,
-        pressureDropUnit: "kPa",
-        calculation_note: "dp_to_cv",
       },
     },
   ],
