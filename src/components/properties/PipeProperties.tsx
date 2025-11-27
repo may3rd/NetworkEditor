@@ -100,6 +100,8 @@ export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
                 <PipePhysicalSection
                     pipe={pipe}
                     pipeFluidPhase={pipeFluidPhase}
+                    startNode={startNode}
+                    endNode={endNode}
                     onUpdatePipe={onUpdatePipe}
                 />
             )}
