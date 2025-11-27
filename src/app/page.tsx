@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Box, Typography, Stack, Slide, Paper } from "@mui/material";
+import { Button, Box, Typography, Stack, Slide, Paper, Dialog, DialogTitle, DialogContent, IconButton } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import { useCallback, useState, useEffect, useRef, ChangeEvent } from "react";
 import { toPng } from "html-to-image";
 import { SummaryTable } from "@/components/SummaryTable";
@@ -36,6 +37,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
   const [showSnapshot, setShowSnapshot] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isExporting, setIsExporting] = useState(false);
@@ -308,7 +310,7 @@ export default function Home() {
   );
 
   return (
-    <Stack sx={{ bgcolor: "background.default", minHeight: "100vh", gap: 3, p: 4 }}>
+    <Stack sx={{ bgcolor: "background.default", height: "100vh", gap: 3, p: 4 }}>
       <input
         ref={fileInputRef}
         type="file"
@@ -324,7 +326,7 @@ export default function Home() {
         onSaveNetwork={handleSaveNetwork}
       />
 
-      <Box sx={{ position: "relative", height: "640px", width: "100%", overflow: "hidden", borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+      <Box sx={{ position: "relative", flex: 1, width: "100%", overflow: "hidden", borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
         <Box sx={{ width: "100%", height: "100%" }}>
           <NetworkEditor
             network={network}
@@ -344,6 +346,8 @@ export default function Home() {
             onLoad={handleLoadNetworkClick}
             onSave={handleSaveNetwork}
             onExport={handleExportPng}
+            onToggleSnapshot={() => setShowSnapshot(true)}
+            onToggleSummary={() => setShowSummary(true)}
           />
         </Box>
 
@@ -444,46 +448,66 @@ export default function Home() {
 
 
 
-      <SummaryTable network={network} />
+      <Dialog
+        open={showSummary}
+        onClose={() => setShowSummary(false)}
+        maxWidth="xl"
+        fullWidth
+        PaperProps={{
+          sx: {
+            height: "90vh",
+            bgcolor: "background.paper",
+            borderRadius: 2,
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Summary Table
+          <IconButton onClick={() => setShowSummary(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          <SummaryTable network={network} />
+        </DialogContent>
+      </Dialog>
 
-      <Stack spacing={2}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="subtitle2" color="text.secondary">
-            Network Snapshot
-          </Typography>
-          <Button
-            size="small"
-            onClick={() => setShowSnapshot(prev => !prev)}
-            aria-label="Toggle network snapshot visibility"
-            sx={{ color: "text.primary", minWidth: 0, p: 0.5 }}
-          >
-            {showSnapshot ? (
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-                <path d="m16.01 10.62-1.4 1.4L9 6.45l-5.59 5.59-1.4-1.41 7-7z" />
-              </svg>
-            ) : (
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 18 18" fill="currentColor">
-                <path d="m16.01 7.43-1.4-1.41L9 11.6 3.42 6l-1.4 1.42 7 7z" />
-              </svg>
-            )}
-          </Button>
-        </Box>
-        {showSnapshot && (
+      <Dialog
+        open={showSnapshot}
+        onClose={() => setShowSnapshot(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0f172a",
+            color: "#86efac",
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "divider",
+          }
+        }}
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
+          Network Snapshot
+          <IconButton onClick={() => setShowSnapshot(false)} sx={{ color: 'white' }} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <pre
             style={{
-              background: "#0f172a",
-              color: "#86efac",
+              margin: 0,
               padding: "16px",
-              borderRadius: "8px",
-              maxHeight: "640px",
               overflow: "auto",
               fontSize: "12px",
+              fontFamily: "monospace",
             }}
           >
             {JSON.stringify(network, null, 2)}
           </pre>
-        )}
-      </Stack>
-    </Stack>
+        </DialogContent>
+      </Dialog>
+
+    </Stack >
   );
 }

@@ -31,6 +31,8 @@ import {
   Save as SaveIcon,
   FolderOpen as LoadIcon,
   Image as ExportIcon,
+  Visibility as VisibilityIcon,
+  TableChart as TableChartIcon,
 } from "@mui/icons-material";
 import {
   ReactFlow,
@@ -68,7 +70,7 @@ const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
 )}") 12 12, auto`;
 
-type Props = {
+type NetworkEditorProps = {
   network: NetworkState;
   onSelect: (id: string | null, type: "node" | "pipe" | null) => void;
   selectedId: string | null;
@@ -88,6 +90,8 @@ type Props = {
   onLoad?: () => void;
   onSave?: () => void;
   onExport?: () => void;
+  onToggleSnapshot?: () => void;
+  onToggleSummary?: () => void;
 };
 
 type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
@@ -128,7 +132,9 @@ export function NetworkEditor({
   onLoad,
   onSave,
   onExport,
-}: Props) {
+  onToggleSnapshot,
+  onToggleSummary,
+}: NetworkEditorProps) {
   const theme = useTheme();
   const [viewSettings, setViewSettings] = useState<ViewSettings>({
     node: {
@@ -628,6 +634,8 @@ export function NetworkEditor({
         onSave,
         onExport,
         onPaste: handlePaste,
+        onToggleSnapshot,
+        onToggleSummary,
       }} />
     </ReactFlowProvider>
   );
@@ -667,7 +675,9 @@ function EditorCanvas({
   onSave,
   onExport,
   onPaste,
-}: Props & {
+  onToggleSnapshot,
+  onToggleSummary,
+}: NetworkEditorProps & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
   rfEdges: Edge[];
@@ -688,6 +698,8 @@ function EditorCanvas({
   handleSwapLeftRight: () => void;
   handleSwapUpDown: () => void;
   onPaste: (ids: string[]) => void;
+  onToggleSnapshot?: () => void;
+  onToggleSummary?: () => void;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
@@ -1058,6 +1070,13 @@ function EditorCanvas({
                 </IconButton>
               </span>
             </Tooltip>
+            {onToggleSummary && (
+              <Tooltip title="Summary Table">
+                <IconButton size="small" onClick={onToggleSummary}>
+                  <TableChartIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </ButtonGroup>
 
           <ButtonGroup variant="contained" size="small" aria-label="Edit tools">
@@ -1178,9 +1197,16 @@ function EditorCanvas({
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <Box sx={{ display: 'flex', alignItems: 'center', px: 2, fontSize: '0.75rem', color: 'text.secondary' }}>
+        {/* <Box sx={{ display: 'flex', alignItems: 'center', px: 2, fontSize: '0.75rem', color: 'text.secondary' }}>
           {canUndo || canRedo ? `${(historyIndex ?? 0) + 1} / ${historyLength ?? 0}` : "No history"}
-        </Box>
+        </Box> */}
+        {onToggleSnapshot && (
+          <Tooltip title="Network Snapshot">
+            <IconButton size="small" onClick={onToggleSnapshot}>
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
       </Stack>
 
       {/* React Flow */}
