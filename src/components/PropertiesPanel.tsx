@@ -8,7 +8,9 @@ import {
   Typography,
   Paper,
   Stack,
+  IconButton,
 } from "@mui/material";
+import { Close as CloseIcon } from "@mui/icons-material";
 import { NetworkState, NodePatch, PipePatch, SelectedElement } from "@/lib/types";
 
 type Props = {
@@ -17,6 +19,7 @@ type Props = {
   onUpdateNode: (id: string, patch: NodePatch) => void;
   onUpdatePipe: (id: string, patch: PipePatch) => void;
   onReset: () => void;
+  onClose?: () => void;
 };
 
 export function PropertiesPanel({
@@ -25,6 +28,7 @@ export function PropertiesPanel({
   onReset,
   onUpdateNode,
   onUpdatePipe,
+  onClose,
 }: Props) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -92,6 +96,11 @@ export function PropertiesPanel({
             <Typography variant="h6" fontWeight="bold">No Node or Pipe Selected</Typography>
             {!isScrolled && <Typography>Select a node or pipe to view or edit its values.</Typography>}
           </Box>
+        )}
+        {onClose && (
+          <IconButton size="small" onClick={onClose} sx={{ position: 'absolute', right: 8, top: 12 }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
         )}
       </Box>
 

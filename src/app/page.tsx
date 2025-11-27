@@ -156,24 +156,38 @@ export default function Home() {
     const viewport = flowElement.querySelector(".react-flow__viewport") as HTMLElement | null;
     const NODE_SIZE = 20;
     const PADDING = 80;
-    const hasNodes = network.nodes.length > 0;
-    const bounds = hasNodes
-      ? network.nodes.reduce(
-        (acc, node) => {
-          const { x = 0, y = 0 } = node.position ?? {};
-          return {
-            minX: Math.min(acc.minX, x),
-            minY: Math.min(acc.minY, y),
-            maxX: Math.max(acc.maxX, x),
-            maxY: Math.max(acc.maxY, y),
-          };
-        },
-        { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
-      )
-      : { minX: 0, minY: 0, maxX: flowElement.clientWidth, maxY: flowElement.clientHeight };
+    const hasContent = network.nodes.length > 0 || !!network.backgroundImage;
 
-    const exportWidth = hasNodes ? Math.max(1, bounds.maxX - bounds.minX + NODE_SIZE + PADDING * 2) : flowElement.clientWidth;
-    const exportHeight = hasNodes ? Math.max(1, bounds.maxY - bounds.minY + NODE_SIZE + PADDING * 2) : flowElement.clientHeight;
+    const bounds = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+
+    if (network.nodes.length > 0) {
+      network.nodes.forEach(node => {
+        const { x = 0, y = 0 } = node.position ?? {};
+        bounds.minX = Math.min(bounds.minX, x);
+        bounds.minY = Math.min(bounds.minY, y);
+        bounds.maxX = Math.max(bounds.maxX, x);
+        bounds.maxY = Math.max(bounds.maxY, y);
+      });
+    }
+
+    if (network.backgroundImage && network.backgroundImageSize) {
+      const { x = 0, y = 0 } = network.backgroundImagePosition ?? {};
+      const { width, height } = network.backgroundImageSize;
+      bounds.minX = Math.min(bounds.minX, x);
+      bounds.minY = Math.min(bounds.minY, y);
+      bounds.maxX = Math.max(bounds.maxX, x + width);
+      bounds.maxY = Math.max(bounds.maxY, y + height);
+    }
+
+    if (bounds.minX === Infinity) {
+      bounds.minX = 0;
+      bounds.minY = 0;
+      bounds.maxX = flowElement.clientWidth;
+      bounds.maxY = flowElement.clientHeight;
+    }
+
+    const exportWidth = hasContent ? Math.max(1, bounds.maxX - bounds.minX + NODE_SIZE + PADDING * 2) : flowElement.clientWidth;
+    const exportHeight = hasContent ? Math.max(1, bounds.maxY - bounds.minY + NODE_SIZE + PADDING * 2) : flowElement.clientHeight;
 
     const originalStyles = {
       width: flowElement.style.width,
@@ -185,7 +199,7 @@ export default function Home() {
     const hiddenGridLayers: Array<{ el: HTMLElement; display: string }> = [];
 
     try {
-      if (hasNodes && viewport) {
+      if (hasContent && viewport) {
         flowElement.style.width = `${exportWidth}px`;
         flowElement.style.height = `${exportHeight}px`;
         flowElement.style.overflow = "visible";
@@ -441,6 +455,7 @@ export default function Home() {
                 }))
               }
               onReset={handleReset}
+              onClose={() => handleSelect(null, null)}
             />
           </Paper>
         </Slide>

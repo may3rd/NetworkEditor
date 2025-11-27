@@ -198,6 +198,11 @@ export type FittingType = {
 export type NetworkState = {
   nodes: NodeProps[];
   pipes: PipeProps[];
+  backgroundImage?: string;
+  backgroundImageSize?: { width: number; height: number };
+  backgroundImageOpacity?: number;
+  backgroundImagePosition?: { x: number; y: number };
+  backgroundImageLocked?: boolean;
 };
 
 const baseNetwork: NetworkState = {

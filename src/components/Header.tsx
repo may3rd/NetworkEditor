@@ -48,7 +48,7 @@ export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, on
             </Tooltip>
           </ButtonGroup>
 
-          <ButtonGroup variant="outlined">
+          {/* <ButtonGroup variant="outlined">
             <Tooltip title="Export network as PNG">
                 <Button onClick={onExportPng} startIcon={<Image />}>
                     Export
@@ -64,7 +64,7 @@ export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, on
                     Save
                 </Button>
             </Tooltip>
-          </ButtonGroup>
+          </ButtonGroup> */}
         </Box>
       </Box>
     </Paper>

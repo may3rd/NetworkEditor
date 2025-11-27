@@ -13,6 +13,15 @@ import {
   Tooltip,
   Paper,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Slider,
+  TextField,
+  Switch,
+  FormControlLabel,
+  Typography,
 } from "@mui/material";
 import {
   Add as AddIcon,
@@ -33,6 +42,9 @@ import {
   Image as ExportIcon,
   Visibility as VisibilityIcon,
   TableChart as TableChartIcon,
+  Wallpaper as WallpaperIcon,
+  Settings as SettingsIcon,
+  Close as CloseIcon,
 } from "@mui/icons-material";
 import {
   ReactFlow,
@@ -55,6 +67,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
+import BackgroundNode from "@/components/BackgroundNode";
 import PipeEdge from "@/components/PipeEdge";
 import { NetworkState, type NodeProps, type PipeProps } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
@@ -295,12 +308,33 @@ export function NetworkEditor({
   );
 
   const rfNodes = useMemo<Node[]>(
-    () =>
-      network.nodes.map(node => {
+    () => {
+      const nodes = network.nodes.map(node => {
         const isSelected = selectedType === "node" && selectedId === node.id;
         return mapNodeToReactFlow(node, isSelected);
-      }),
-    [network.nodes, selectedId, selectedType, mapNodeToReactFlow]
+      });
+
+      if (network.backgroundImage && network.backgroundImageSize) {
+        const isLocked = network.backgroundImageLocked ?? true;
+        nodes.unshift({
+          id: "background-image-node",
+          type: "background",
+          position: network.backgroundImagePosition ?? { x: 0, y: 0 },
+          data: {
+            url: network.backgroundImage,
+            width: network.backgroundImageSize.width,
+            height: network.backgroundImageSize.height,
+            opacity: network.backgroundImageOpacity ?? 1,
+          },
+          draggable: !isLocked,
+          selectable: false,
+          zIndex: -1,
+        });
+      }
+
+      return nodes;
+    },
+    [network.nodes, network.backgroundImage, network.backgroundImageSize, network.backgroundImageOpacity, network.backgroundImagePosition, network.backgroundImageLocked, selectedId, selectedType, mapNodeToReactFlow]
   );
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
@@ -356,7 +390,7 @@ export function NetworkEditor({
     [network.pipes, selectedId, selectedType, viewSettings, theme, forceLightMode]
   );
 
-  const nodeTypes = useMemo(() => ({ pressure: PressureNode }), []);
+  const nodeTypes = useMemo(() => ({ pressure: PressureNode, background: BackgroundNode }), []);
   const edgeTypes = useMemo(() => ({ pipe: PipeEdge }), []);
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
@@ -376,6 +410,7 @@ export function NetworkEditor({
 
       changes.forEach(c => {
         if (c.type === 'select') {
+          if (c.id === 'background-image-node') return;
           selectionChanged = true;
           if (c.selected) newSelectedIds.add(c.id);
           else newSelectedIds.delete(c.id);
@@ -395,13 +430,26 @@ export function NetworkEditor({
       if (dragEndedChanges.length > 0) {
         // Persist positions to parent state
         if (onNetworkChange) {
-          onNetworkChange({
-            ...network,
-            nodes: network.nodes.map((node) => {
+          let updatedNetwork = { ...network };
+
+          // Check for background node drag
+          const bgChange = dragEndedChanges.find(c => c.id === "background-image-node");
+          if (bgChange) {
+            updatedNetwork = {
+              ...updatedNetwork,
+              backgroundImagePosition: bgChange.position
+            };
+          }
+
+          updatedNetwork = {
+            ...updatedNetwork,
+            nodes: updatedNetwork.nodes.map((node) => {
               const change = dragEndedChanges.find((c) => c.id === node.id);
               return change ? { ...node, position: change.position! } : node;
             }),
-          });
+          };
+
+          onNetworkChange(updatedNetwork);
         }
       }
     },
@@ -704,6 +752,7 @@ function EditorCanvas({
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
   const [isAddingNode, setIsAddingNode] = useState(false);
+  const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
   const [isSpacePanning, setIsSpacePanning] = useState(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
@@ -711,6 +760,7 @@ function EditorCanvas({
   const connectingNodeId = useRef<string | null>(null);
   const connectingHandleType = useRef<HandleType | null>(null);
   const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null);
+  const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
   const NODE_SIZE = 20;
 
@@ -904,6 +954,35 @@ function EditorCanvas({
     [isAddingNode, onNetworkChange, screenToFlowPosition, snapToGrid, snapGrid, network, onSelect, mapNodeToReactFlow],
   );
 
+  const handleUploadBackground = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !onNetworkChange) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        onNetworkChange({
+          ...network,
+          backgroundImage: result,
+          backgroundImageSize: { width: img.width, height: img.height },
+          backgroundImageOpacity: 1,
+          backgroundImagePosition: { x: 0, y: 0 },
+          backgroundImageLocked: true,
+        });
+        setShowBackgroundSettings(true);
+      };
+      img.src = result;
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input
+    if (backgroundInputRef.current) {
+      backgroundInputRef.current.value = "";
+    }
+  }, [network, onNetworkChange]);
+
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || !isAddingNode) return;
@@ -1031,6 +1110,13 @@ function EditorCanvas({
         borderColor: "divider",
       }}
     >
+      <input
+        type="file"
+        accept="image/*"
+        ref={backgroundInputRef}
+        style={{ display: "none" }}
+        onChange={handleUploadBackground}
+      />
       {/* Toolbar */}
       <Stack
         direction="row"
@@ -1074,6 +1160,18 @@ function EditorCanvas({
               <Tooltip title="Summary Table">
                 <IconButton size="small" onClick={onToggleSummary}>
                   <TableChartIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Tooltip title="Upload Background">
+              <IconButton size="small" onClick={() => backgroundInputRef.current?.click()}>
+                <WallpaperIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            {network.backgroundImage && (
+              <Tooltip title="Background Settings">
+                <IconButton size="small" onClick={() => setShowBackgroundSettings(true)}>
+                  <SettingsIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             )}
@@ -1229,8 +1327,15 @@ function EditorCanvas({
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           fitViewOptions={{ padding: 0.2 }}
-          onNodeClick={(_, node) => onSelect(node.id, "node")}
+          onNodeClick={(_, node) => {
+            if (node.type === 'background') {
+              onSelect(null, null);
+              return;
+            }
+            onSelect(node.id, "node");
+          }}
           onNodeDragStart={(_, node) => {
+            if (node.type === 'background') return;
             if (!node.selected) {
               onSelect(node.id, "node");
             }
@@ -1260,7 +1365,14 @@ function EditorCanvas({
             className="network-minimap"
             pannable
             zoomable
-            nodeColor={(n) => (n.data?.isSelected ? "#f59e0b" : "#5a5a5cff")} // Set themee color
+            nodeColor={(n) => {
+              if (n.type === 'background') return 'transparent';
+              return n.data?.isSelected ? "#f59e0b" : "#5a5a5cff";
+            }}
+            nodeStrokeColor={(n) => {
+              if (n.type === 'background') return 'transparent';
+              return '#222';
+            }}
             style={{ background: "background.paper", opacity: 0.7, width: 140, height: 90 }}
           />
           <Controls />
@@ -1280,6 +1392,89 @@ function EditorCanvas({
           }
         `}</style>
       </div>
+
+      <Dialog open={showBackgroundSettings} onClose={() => setShowBackgroundSettings(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          Background Settings
+          <IconButton onClick={() => setShowBackgroundSettings(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={3}>
+            <Box>
+              <Typography gutterBottom>Opacity</Typography>
+              <Slider
+                value={(network.backgroundImageOpacity ?? 1) * 100}
+                onChange={(_, value) => onNetworkChange?.({ ...network, backgroundImageOpacity: (value as number) / 100 })}
+                valueLabelDisplay="auto"
+              />
+            </Box>
+
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="Width"
+                type="number"
+                size="small"
+                value={network.backgroundImageSize?.width ?? 0}
+                onChange={(e) => onNetworkChange?.({ ...network, backgroundImageSize: { ...network.backgroundImageSize!, width: Number(e.target.value) } })}
+              />
+              <TextField
+                label="Height"
+                type="number"
+                size="small"
+                value={network.backgroundImageSize?.height ?? 0}
+                onChange={(e) => onNetworkChange?.({ ...network, backgroundImageSize: { ...network.backgroundImageSize!, height: Number(e.target.value) } })}
+              />
+            </Stack>
+
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label="X Position"
+                type="number"
+                size="small"
+                value={network.backgroundImagePosition?.x ?? 0}
+                onChange={(e) => onNetworkChange?.({ ...network, backgroundImagePosition: { ...network.backgroundImagePosition!, x: Number(e.target.value) } })}
+              />
+              <TextField
+                label="Y Position"
+                type="number"
+                size="small"
+                value={network.backgroundImagePosition?.y ?? 0}
+                onChange={(e) => onNetworkChange?.({ ...network, backgroundImagePosition: { ...network.backgroundImagePosition!, y: Number(e.target.value) } })}
+              />
+            </Stack>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={network.backgroundImageLocked ?? true}
+                  onChange={(e) => onNetworkChange?.({ ...network, backgroundImageLocked: e.target.checked })}
+                />
+              }
+              label="Lock Background (Prevent Dragging)"
+            />
+
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                onNetworkChange?.({
+                  ...network,
+                  backgroundImage: undefined,
+                  backgroundImageSize: undefined,
+                  backgroundImageOpacity: undefined,
+                  backgroundImagePosition: undefined,
+                  backgroundImageLocked: undefined
+                });
+                setShowBackgroundSettings(false);
+              }}
+            >
+              Remove Background
+            </Button>
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </Paper >
   );
 }
