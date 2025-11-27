@@ -20,11 +20,14 @@ import {
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import PrintIcon from '@mui/icons-material/Print';
+import DownloadIcon from '@mui/icons-material/Download';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { NetworkState, PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 
 type Props = {
     network: NetworkState;
+    isSnapshot?: boolean;
 };
 
 type RowConfig =
@@ -38,7 +41,7 @@ type RowConfig =
         decimals?: number
     };
 
-export function SummaryTable({ network }: Props) {
+export function SummaryTable({ network, isSnapshot = false }: Props) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(8);
     const [unitSystem, setUnitSystem] = useState<"metric" | "imperial" | "fieldSI" | "metric_kgcm2">("metric");
@@ -75,7 +78,7 @@ export function SummaryTable({ network }: Props) {
     };
 
     const pipes = network.pipes;
-    const visiblePipes = pipes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+    const visiblePipes = isSnapshot ? pipes : pipes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     const u = (metric: string, imperial: string, fieldSI?: string, metricKgCm2?: string) => {
         if (unitSystem === "metric_kgcm2" && metricKgCm2) return metricKgCm2;
@@ -788,6 +791,57 @@ export function SummaryTable({ network }: Props) {
         window.print();
     };
 
+    const handleExportCSV = () => {
+        // 1. Headers
+        const headerRow = ["Property", "Unit", ...pipes.map((_, i) => `Pipe ${i + 1}`)];
+        const csvRows = [headerRow.map(cell => `"${cell}"`).join(",")];
+
+        // 2. Data Rows
+        rows.forEach(row => {
+            if (row.type === "section") {
+                // Section header row
+                const sectionRow = [`"${row.label}"`, ...Array(pipes.length + 1).fill("")];
+                csvRows.push(sectionRow.join(","));
+            } else {
+                // Data row
+                const rowData = [
+                    `"${row.label}"`,
+                    `"${row.unit || ""}"`
+                ];
+
+                pipes.forEach(pipe => {
+                    const result = row.getValue(pipe);
+                    let value = "";
+
+                    if (result !== null && result !== undefined) {
+                        if (typeof result === 'object') {
+                            value = result.value !== null && result.value !== undefined ? String(result.value) : "";
+                        } else {
+                            value = String(result);
+                        }
+                    }
+                    // Escape quotes in value
+                    value = value.replace(/"/g, '""');
+                    rowData.push(`"${value}"`);
+                });
+
+                csvRows.push(rowData.join(","));
+            }
+        });
+
+        // 3. Create Blob and Download
+        const csvContent = csvRows.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "network_summary.csv");
+        link.style.visibility = "hidden";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <Paper id="summary-table-print-area" className={fitToPage ? "fit-to-page" : ""} sx={{ width: "100%", overflow: "hidden", p: 2 }}>
             <Box className="print-header-container" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
@@ -829,6 +883,21 @@ export function SummaryTable({ network }: Props) {
                     <Button variant="outlined" onClick={handlePrint} startIcon={<PrintIcon />}>
                         Print
                     </Button>
+                    <Button variant="outlined" onClick={handleExportCSV} startIcon={<DownloadIcon />}>
+                        CSV
+                    </Button>
+                    {!isSnapshot && (
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                localStorage.setItem("networkSnapshot", JSON.stringify(network));
+                                window.open("/summary", "_blank");
+                            }}
+                            startIcon={<OpenInNewIcon />}
+                        >
+                            Open Snapshot
+                        </Button>
+                    )}
                 </Box>
             </Box>
             <style type="text/css" media="print">
@@ -946,7 +1015,7 @@ export function SummaryTable({ network }: Props) {
                 }
                 `}
             </style>
-            <TableContainer sx={{ maxHeight: 800, border: '1px solid #e0e0e0' }}>
+            <TableContainer sx={{ maxHeight: isSnapshot ? "none" : 800, border: '1px solid #e0e0e0' }}>
                 <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'separate' }}>
                     <TableHead>
                         <TableRow>
@@ -971,7 +1040,7 @@ export function SummaryTable({ network }: Props) {
                                         <TableCell colSpan={2} sx={{ position: 'sticky', left: 0, width: 300, fontWeight: "bold" }}>
                                             {row.label}
                                         </TableCell>
-                                        <TableCell colSpan={visiblePipes.length} sx={{ }} />
+                                        <TableCell colSpan={visiblePipes.length} sx={{}} />
                                     </TableRow>
                                 );
                             }
@@ -1019,17 +1088,19 @@ export function SummaryTable({ network }: Props) {
                     </TableBody>
                 </Table>
             </TableContainer>
-            <TablePagination
-                className="no-print"
-                rowsPerPageOptions={[8, 16, 24, 100]}
-                component="div"
-                count={pipes.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                labelRowsPerPage="Pipes per page:"
-            />
+            {!isSnapshot && (
+                <TablePagination
+                    className="no-print"
+                    rowsPerPageOptions={[8, 16, 24, 100]}
+                    component="div"
+                    count={pipes.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleChangeRowsPerPage}
+                    labelRowsPerPage="Pipes per page:"
+                />
+            )}
         </Paper>
     );
 }

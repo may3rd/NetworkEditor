@@ -38,6 +38,8 @@ export default function Home() {
   const [showSnapshot, setShowSnapshot] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [isExporting, setIsExporting] = useState(false);
+
   // ──────────────────────────────────────────────────────────────
   // Multi-step Undo/Redo – fixed logic
   // ──────────────────────────────────────────────────────────────
@@ -143,6 +145,12 @@ export default function Home() {
       alert("Unable to locate the network canvas.");
       return;
     }
+
+    // Force light mode for export
+    setIsExporting(true);
+    // Wait for render to apply light mode styles
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     const viewport = flowElement.querySelector(".react-flow__viewport") as HTMLElement | null;
     const NODE_SIZE = 20;
     const PADDING = 80;
@@ -226,6 +234,7 @@ export default function Home() {
       hiddenGridLayers.forEach(({ el, display }) => {
         el.style.display = display;
       });
+      setIsExporting(false);
     }
   }, [network.nodes]);
 
@@ -331,6 +340,7 @@ export default function Home() {
             historyIndex={historyIndex}
             historyLength={history.length}
             height="640px"
+            forceLightMode={isExporting}
           />
         </Box>
 

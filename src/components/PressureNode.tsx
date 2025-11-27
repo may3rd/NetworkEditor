@@ -8,12 +8,13 @@ type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
 
 type NodeData = {
   label: string;
-  isSelected: boolean;
-  showPressures: boolean;
+  isSelected?: boolean;
+  showPressures?: boolean;
   pressure?: number;
   pressureUnit?: string;
   flowRole?: NodeRole;
   needsAttention?: boolean;
+  forceLightMode?: boolean;
 };
 
 const ROLE_COLORS_LIGHT: Record<NodeRole | "attention", string> = {
@@ -29,14 +30,14 @@ const ROLE_COLORS_DARK: Record<NodeRole | "attention", string> = {
   source: "#4ade80", // Green 400
   sink: "#fb923c",   // Orange 400
   middle: "#60a5fa", // Blue 400
-  isolated: "#cbd5e1", // Slate 300
+  isolated: "#64748b", // Slate 500
   neutral: "#60a5fa", // Blue 400
   attention: "#f87171", // Red 400
 };
 
 function PressureNode({ data }: { data: NodeData }) {
   const theme = useTheme();
-  const isDark = theme.palette.mode === "dark";
+  const isDark = !data.forceLightMode && theme.palette.mode === "dark";
 
   const {
     label,
@@ -51,6 +52,10 @@ function PressureNode({ data }: { data: NodeData }) {
   const roleColors = isDark ? ROLE_COLORS_DARK : ROLE_COLORS_LIGHT;
   const roleColor = roleColors[flowRole] ?? roleColors.neutral;
   const attentionColor = roleColors.attention;
+
+  // If forced light mode, use hardcoded light mode colors, otherwise use theme
+  const textPrimary = data.forceLightMode ? "#000000" : theme.palette.text.primary;
+  const paperBackground = data.forceLightMode ? "#ffffff" : theme.palette.background.paper;
 
   // In dark mode, we might want the selected state to be a bit different, 
   // but yellow #fde047 (Yellow 300) usually pops well on dark too.
@@ -75,7 +80,7 @@ function PressureNode({ data }: { data: NodeData }) {
   const handleStyle: CSSProperties = {
     opacity: 1,
     border: "none",
-    background: needsAttention ? attentionColor : theme.palette.text.primary,
+    background: needsAttention ? attentionColor : textPrimary,
     width: 7,
     height: 7,
     zIndex: 0,

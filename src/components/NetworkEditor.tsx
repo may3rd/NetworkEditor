@@ -61,6 +61,7 @@ type Props = {
   height?: string | number;
   showPressures?: boolean;
   setShowPressures?: (show: boolean) => void;
+  forceLightMode?: boolean;
 };
 
 type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
@@ -86,7 +87,9 @@ export function NetworkEditor({
   height = 520,
   showPressures: externalShowPressures,
   setShowPressures: externalSetShowPressures,
+  forceLightMode = false,
 }: Props) {
+  const theme = useTheme();
   const [internalShowPressures, setInternalShowPressures] = useState(false);
   const showPressures = externalShowPressures ?? internalShowPressures;
   const setShowPressures = externalSetShowPressures ?? setInternalShowPressures;
@@ -202,6 +205,7 @@ export function NetworkEditor({
           pressureUnit: node.pressureUnit,
           flowRole: flowState.role,
           needsAttention: flowState.needsAttention,
+          forceLightMode,
         },
         width: 20,
         height: 20,
@@ -209,7 +213,7 @@ export function NetworkEditor({
         connectable: true,
       };
     },
-    [nodeFlowStates, showPressures]
+    [nodeFlowStates, showPressures, forceLightMode]
   );
 
   const rfNodes = useMemo<Node[]>(
@@ -233,19 +237,19 @@ export function NetworkEditor({
 
   const rfEdges = useMemo<Edge[]>(
     () =>
-      network.pipes.map((pipe) => {
+      network.pipes.map((pipe, index) => {
         const isSelectedPipe = selectedType === "pipe" && selectedId === pipe.id;
-        let label: string;
+        let label = `P${index + 1}: `;
         if (pipe.pipeSectionType === "control valve") {
-          label = "CV";
+          label += "CV";
         } else if (pipe.pipeSectionType === "orifice") {
-          label = "RO";
+          label += "RO";
         } else {
           const roundedLength =
             typeof pipe.length === "number"
               ? pipe.length.toFixed(2)
               : Number(pipe.length ?? 0).toFixed(2);
-          label = `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim();
+          label += `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim();
         }
         if (
           showPressures &&
@@ -254,6 +258,10 @@ export function NetworkEditor({
           const deltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000; // Pa to kPa
           label += `, ΔP: ${deltaP.toFixed(2)} kPa`;
         }
+
+        const labelTextColor = forceLightMode ? "rgba(0, 0, 0, 0.6)" : theme.palette.text.secondary;
+        const labelBgColor = forceLightMode ? "#ffffff" : theme.palette.background.paper;
+
         return {
           id: pipe.id,
           source: pipe.startNodeId,
@@ -262,12 +270,12 @@ export function NetworkEditor({
           labelStyle: {
             fontSize: "9px",
             fontWeight: 500,
-            fill: isSelectedPipe ? "#92400e" : "text.secondary",
+            fill: isSelectedPipe ? "#92400e" : labelTextColor,
           },
           labelBgPadding: [8, 4] as [number, number],
           labelBgBorderRadius: 4,
           labelBgStyle: {
-            fill: isSelectedPipe ? "#fffbeb" : "text.secondary",
+            fill: isSelectedPipe ? "#fffbeb" : labelBgColor,
             fillOpacity: 0.92,
             stroke: isSelectedPipe ? "#f59e0b" : "#cbd5f5",
             strokeWidth: 0.5,
@@ -283,7 +291,7 @@ export function NetworkEditor({
           },
         };
       }),
-    [network.pipes, selectedId, selectedType, showPressures]
+    [network.pipes, selectedId, selectedType, showPressures, theme, forceLightMode]
   );
 
   const nodeTypes = useMemo(() => ({ pressure: PressureNode }), []);
@@ -467,7 +475,8 @@ export function NetworkEditor({
         handleConnect,
         mapNodeToReactFlow,
         showPressures,
-        setShowPressures
+        setShowPressures,
+        forceLightMode,
       }} />
     </ReactFlowProvider>
   );
@@ -497,6 +506,7 @@ function EditorCanvas({
   onDelete,
   selectedId,
   selectedType,
+  forceLightMode,
 }: Props & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
@@ -511,6 +521,7 @@ function EditorCanvas({
   onDelete?: () => void;
   selectedId: string | null;
   selectedType: "node" | "pipe" | null;
+  forceLightMode?: boolean;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
@@ -963,7 +974,7 @@ function EditorCanvas({
         }}>
         <ReactFlow
           className={isPanMode ? "pan-mode" : "design-mode"}
-          colorMode={colorMode}
+          colorMode={forceLightMode ? "light" : colorMode}
           nodes={localNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
