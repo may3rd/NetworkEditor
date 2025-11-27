@@ -947,13 +947,13 @@ export function SummaryTable({ network }: Props) {
                 `}
             </style>
             <TableContainer sx={{ maxHeight: 800, border: '1px solid #e0e0e0' }}>
-                <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'collapse' }}>
+                <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'separate' }}>
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold', minWidth: 240, width: 240, position: 'sticky', left: 0, bgcolor: 'background.default', zIndex: 10, borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0' }}>
+                            <TableCell sx={{ fontWeight: 'bold', width: 240, position: 'sticky', left: 0, bgcolor: 'background.default', zIndex: "9999 !important", borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0' }}>
                                 Property
                             </TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 240, bgcolor: 'background.default', zIndex: 10, borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0' }}>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', width: 60, position: 'sticky', left: 240, bgcolor: 'background.default', zIndex: "9999 !important", borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0' }}>
                                 Unit
                             </TableCell>
                             {visiblePipes.map((pipe, index) => (
@@ -968,16 +968,17 @@ export function SummaryTable({ network }: Props) {
                             if (row.type === "section") {
                                 return (
                                     <TableRow key={index} sx={{ bgcolor: "background.default" }}>
-                                        <TableCell colSpan={2 + visiblePipes.length} sx={{ fontWeight: "bold", borderRight: '1px solid #e0e0e0' }}>
+                                        <TableCell colSpan={2} sx={{ position: 'sticky', left: 0, width: 300, fontWeight: "bold" }}>
                                             {row.label}
                                         </TableCell>
+                                        <TableCell colSpan={visiblePipes.length} sx={{ }} />
                                     </TableRow>
                                 );
                             }
 
                             return (
                                 <TableRow hover key={index}>
-                                    <TableCell component="th" scope="row" sx={{ position: 'sticky', left: 0, background: 'background.paper', borderRight: '1px solid #e0e0e0' }}>
+                                    <TableCell component="th" scope="row" sx={{ minWidth: 240, width: 240, position: 'sticky', left: 0, bgcolor: 'background.paper', boxShadow: "1px 1px 1px text.secondary", borderRight: '1px solid #e0e0e0' }}>
                                         {row.label}
                                         {row.subLabel && (
                                             <Typography variant="caption" display="block" color="text.secondary">
@@ -985,7 +986,7 @@ export function SummaryTable({ network }: Props) {
                                             </Typography>
                                         )}
                                     </TableCell>
-                                    <TableCell align="center" sx={{ position: 'sticky', left: 200, background: 'background.paper', borderRight: '1px solid #e0e0e0', color: 'text.secondary' }}>
+                                    <TableCell align="center" sx={{ width: 60, position: 'sticky', left: 240, bgcolor: 'background.paper', boxShadow: "1px 1px 1px text.secondary", borderRight: '1px solid #e0e0e0', color: 'text.secondary' }}>
                                         {row.unit || ""}
                                     </TableCell>
                                     {visiblePipes.map((pipe) => {

@@ -2,6 +2,7 @@
 
 import { memo, type CSSProperties } from "react";
 import { Handle, Position } from "@xyflow/react";
+import { useTheme } from "@mui/material";
 
 type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
 
@@ -15,15 +16,28 @@ type NodeData = {
   needsAttention?: boolean;
 };
 
-const ROLE_COLORS: Record<NodeRole, string> = {
-  source: "#22c55e",
-  sink: "#f97316",
-  middle: "#3b82f6",
-  isolated: "#94a3b8",
-  neutral: "#3b82f6",
+const ROLE_COLORS_LIGHT: Record<NodeRole | "attention", string> = {
+  source: "#22c55e", // Green 500
+  sink: "#f97316",   // Orange 500
+  middle: "#3b82f6", // Blue 500
+  isolated: "#94a3b8", // Slate 400
+  neutral: "#3b82f6", // Blue 500
+  attention: "#ef4444", // Red 500
+};
+
+const ROLE_COLORS_DARK: Record<NodeRole | "attention", string> = {
+  source: "#4ade80", // Green 400
+  sink: "#fb923c",   // Orange 400
+  middle: "#60a5fa", // Blue 400
+  isolated: "#cbd5e1", // Slate 300
+  neutral: "#60a5fa", // Blue 400
+  attention: "#f87171", // Red 400
 };
 
 function PressureNode({ data }: { data: NodeData }) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
   const {
     label,
     isSelected,
@@ -34,21 +48,34 @@ function PressureNode({ data }: { data: NodeData }) {
     needsAttention = false,
   } = data;
 
-  const roleColor = ROLE_COLORS[flowRole] ?? ROLE_COLORS.neutral;
+  const roleColors = isDark ? ROLE_COLORS_DARK : ROLE_COLORS_LIGHT;
+  const roleColor = roleColors[flowRole] ?? roleColors.neutral;
+  const attentionColor = roleColors.attention;
+
+  // In dark mode, we might want the selected state to be a bit different, 
+  // but yellow #fde047 (Yellow 300) usually pops well on dark too.
   const fillColor = isSelected ? "#fde047" : roleColor;
-  const borderColor = needsAttention ? "#dc2626" : "black";
+
+  // Use theme text color for border to adapt to light/dark mode automatically
+  const borderColor = needsAttention ? attentionColor : theme.palette.text.primary;
   const borderWidth = needsAttention ? 0 : 1;
-  const baseShadow = "0 4px 12px rgba(0,0,0,0.15)";
+
+  const baseShadow = isDark
+    ? "0 4px 12px rgba(0,0,0,0.5)"
+    : "0 4px 12px rgba(0,0,0,0.15)";
+
   const selectionShadow = isSelected
     ? `${baseShadow}, 0 0 0 1px rgba(234, 179, 8, 0.5)`
     : baseShadow;
+
   const scaleAmount = isSelected ? 1 : 1;
   const circleSize = 20;
   const dashThickness = needsAttention ? 2 : 0;
+
   const handleStyle: CSSProperties = {
     opacity: 1,
     border: "none",
-    background: needsAttention ? "#dc2626" : "black",
+    background: needsAttention ? attentionColor : theme.palette.text.primary,
     width: 7,
     height: 7,
     zIndex: 0,
@@ -76,9 +103,9 @@ function PressureNode({ data }: { data: NodeData }) {
               width: circleSize + dashThickness,
               height: circleSize + dashThickness,
               borderRadius: "50%",
-              border: "2px dashed #dc2626",
+              border: `2px dashed ${attentionColor}`,
               boxSizing: "border-box",
-              animation: "dash-rotate 10s linear infinite",
+              animation: "dash-rotate 6s linear infinite",
               pointerEvents: "none",
               transformOrigin: "center",
               zIndex: 3,
@@ -108,10 +135,12 @@ function PressureNode({ data }: { data: NodeData }) {
           textAlign: "center",
           fontWeight: 700,
           fontSize: 9,
-          color: "text.primary",
+          color: "text.primary", // This MUI system prop automatically uses theme.palette.text.primary
           pointerEvents: "none",
           userSelect: "none",
           whiteSpace: "nowrap",
+          // Add a text shadow in dark mode for better readability against complex backgrounds if needed,
+          // but usually text.primary handles contrast well.
         }}
       >
         {showPressures && typeof pressure === "number"
@@ -123,3 +152,5 @@ function PressureNode({ data }: { data: NodeData }) {
 }
 
 export default memo(PressureNode);
+
+
