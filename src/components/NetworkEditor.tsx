@@ -59,6 +59,7 @@ import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { convertUnit } from "@/lib/unitConversion";
 import { useColorMode } from "@/contexts/ColorModeContext";
 import { getPipeEdge } from "@/utils/edgeUtils";
+import { getPressureNode } from "@/utils/nodeUtils";
 import ViewSettingsMenu from "@/components/ViewSettingsMenu";
 import { type ViewSettings } from "@/lib/types";
 
@@ -259,39 +260,13 @@ export function NetworkEditor({
 
   const mapNodeToReactFlow = useCallback(
     (node: NodeProps, isSelected: boolean): Node => {
-      const flowState = nodeFlowStates[node.id] ?? { role: "isolated", needsAttention: false };
-      const labelLines: string[] = [];
-      if (viewSettings.node.name) {
-        labelLines.push(node.label);
-      }
-      if (viewSettings.node.pressure && typeof node.pressure === "number") {
-        labelLines.push(`${node.pressure.toFixed(2)} ${node.pressureUnit ?? ""}`);
-      }
-      if (viewSettings.node.temperature && typeof node.temperature === "number") {
-        labelLines.push(`${node.temperature.toFixed(2)} ${node.temperatureUnit ?? ""}`);
-      }
-
-      return {
-        id: node.id,
-        type: "pressure",
-        position: { ...node.position },
-        data: {
-          label: node.label,
-          labelLines,
-          isSelected,
-          showPressures: viewSettings.node.pressure, // Keep for backward compatibility if needed
-          pressure: node.pressure,
-          pressureUnit: node.pressureUnit,
-          flowRole: flowState.role,
-          needsAttention: flowState.needsAttention,
-          forceLightMode,
-          rotation: node.rotation,
-        },
-        width: 20,
-        height: 20,
-        draggable: true,
-        connectable: true,
-      };
+      return getPressureNode({
+        node,
+        isSelected,
+        viewSettings,
+        nodeFlowStates,
+        forceLightMode,
+      });
     },
     [nodeFlowStates, viewSettings, forceLightMode]
   );
