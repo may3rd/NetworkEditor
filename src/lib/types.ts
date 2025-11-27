@@ -559,3 +559,18 @@ export const copyFluidFromPipeToNode = (pipe: PipeProps, node: NodeProps) => {
   if (!pipe.fluid) return;
   node.fluid = { ...pipe.fluid };
 }
+
+export type ViewSettings = {
+  node: {
+    name: boolean;
+    pressure: boolean;
+    temperature: boolean;
+  };
+  pipe: {
+    name: boolean;
+    length: boolean;
+    deltaP: boolean;
+    velocity: boolean;
+    dPPer100m: boolean;
+  };
+};

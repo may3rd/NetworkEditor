@@ -59,6 +59,8 @@ import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { convertUnit } from "@/lib/unitConversion";
 import { useColorMode } from "@/contexts/ColorModeContext";
 import { getPipeEdge } from "@/utils/edgeUtils";
+import ViewSettingsMenu from "@/components/ViewSettingsMenu";
+import { type ViewSettings } from "@/lib/types";
 
 const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
@@ -126,9 +128,38 @@ export function NetworkEditor({
   onExport,
 }: Props) {
   const theme = useTheme();
-  const [internalShowPressures, setInternalShowPressures] = useState(false);
-  const showPressures = externalShowPressures ?? internalShowPressures;
-  const setShowPressures = externalSetShowPressures ?? setInternalShowPressures;
+  const [viewSettings, setViewSettings] = useState<ViewSettings>({
+    node: {
+      name: true,
+      pressure: false,
+      temperature: false,
+    },
+    pipe: {
+      name: true,
+      length: true,
+      deltaP: false,
+      velocity: false,
+      dPPer100m: false,
+    },
+  });
+
+  // Sync external showPressures prop with viewSettings (backward compatibility)
+  useEffect(() => {
+    if (externalShowPressures !== undefined) {
+      setViewSettings(prev => ({
+        ...prev,
+        node: { ...prev.node, pressure: externalShowPressures },
+        pipe: { ...prev.pipe, deltaP: externalShowPressures }
+      }));
+    }
+  }, [externalShowPressures]);
+
+  // Sync internal changes back to external prop if provided
+  useEffect(() => {
+    if (externalSetShowPressures) {
+      externalSetShowPressures(viewSettings.node.pressure || viewSettings.pipe.deltaP);
+    }
+  }, [viewSettings.node.pressure, viewSettings.pipe.deltaP, externalSetShowPressures]);
 
   const nodeFlowStates = useMemo<Record<string, NodeFlowState>>(() => {
     const PRESSURE_TOLERANCE = 0.001;
@@ -229,9 +260,15 @@ export function NetworkEditor({
   const mapNodeToReactFlow = useCallback(
     (node: NodeProps, isSelected: boolean): Node => {
       const flowState = nodeFlowStates[node.id] ?? { role: "isolated", needsAttention: false };
-      const labelLines: string[] = [node.label];
-      if (showPressures && typeof node.pressure === "number") {
+      const labelLines: string[] = [];
+      if (viewSettings.node.name) {
+        labelLines.push(node.label);
+      }
+      if (viewSettings.node.pressure && typeof node.pressure === "number") {
         labelLines.push(`${node.pressure.toFixed(2)} ${node.pressureUnit ?? ""}`);
+      }
+      if (viewSettings.node.temperature && typeof node.temperature === "number") {
+        labelLines.push(`${node.temperature.toFixed(2)} ${node.temperatureUnit ?? ""}`);
       }
 
       return {
@@ -242,7 +279,7 @@ export function NetworkEditor({
           label: node.label,
           labelLines,
           isSelected,
-          showPressures,
+          showPressures: viewSettings.node.pressure, // Keep for backward compatibility if needed
           pressure: node.pressure,
           pressureUnit: node.pressureUnit,
           flowRole: flowState.role,
@@ -256,7 +293,7 @@ export function NetworkEditor({
         connectable: true,
       };
     },
-    [nodeFlowStates, showPressures, forceLightMode]
+    [nodeFlowStates, viewSettings, forceLightMode]
   );
 
   const rfNodes = useMemo<Node[]>(
@@ -286,12 +323,12 @@ export function NetworkEditor({
           index,
           selectedId,
           selectedType,
-          showPressures,
+          viewSettings,
           theme,
           forceLightMode,
         })
       ),
-    [network.pipes, selectedId, selectedType, showPressures, theme, forceLightMode]
+    [network.pipes, selectedId, selectedType, viewSettings, theme, forceLightMode]
   );
 
   const nodeTypes = useMemo(() => ({ pressure: PressureNode }), []);
@@ -539,8 +576,8 @@ export function NetworkEditor({
         handleNodesChange,
         handleConnect,
         mapNodeToReactFlow,
-        showPressures,
-        setShowPressures,
+        viewSettings,
+        setViewSettings,
         forceLightMode,
         handleRotateCW,
         handleRotateCCW,
@@ -574,8 +611,8 @@ function EditorCanvas({
   historyIndex,
   historyLength,
   mapNodeToReactFlow,
-  showPressures,
-  setShowPressures,
+  viewSettings,
+  setViewSettings,
   onDelete,
   selectedId,
   selectedType,
@@ -597,8 +634,8 @@ function EditorCanvas({
   handleNodesChange: (changes: NodeChange<Node>[]) => void;
   handleConnect: (connection: Connection) => void;
   mapNodeToReactFlow: (node: NodeProps, isSelected: boolean) => Node;
-  showPressures: boolean;
-  setShowPressures: (show: boolean) => void;
+  viewSettings: ViewSettings;
+  setViewSettings: (settings: ViewSettings) => void;
   onDelete?: () => void;
   selectedId: string | null;
   selectedType: "node" | "pipe" | null;
@@ -1081,17 +1118,10 @@ function EditorCanvas({
                 <PanToolIcon fontSize="small" />
               </ToggleButton>
             </Tooltip>
-            <Tooltip title="Show Pressures">
-              <ToggleButton
-                value="pressure"
-                selected={showPressures}
-                onChange={() => setShowPressures(!showPressures)}
-                size="small"
-                sx={{ border: 'none', padding: '5px' }}
-              >
-                <SpeedIcon fontSize="small" />
-              </ToggleButton>
-            </Tooltip>
+            <ViewSettingsMenu
+              settings={viewSettings}
+              onSettingsChange={setViewSettings}
+            />
             <Tooltip title="Toggle Dark Mode">
               <IconButton size="small" onClick={toggleColorMode}>
                 <DarkModeIcon fontSize="small" />
