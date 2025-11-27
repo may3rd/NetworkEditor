@@ -8,6 +8,7 @@ import {
     FormControl,
     FormLabel,
     Typography,
+    Switch,
 } from "@mui/material";
 import { NetworkState, NodeProps, NodePatch, PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";

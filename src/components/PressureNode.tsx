@@ -15,6 +15,7 @@ type NodeData = {
   flowRole?: NodeRole;
   needsAttention?: boolean;
   forceLightMode?: boolean;
+  rotation?: number;
 };
 
 const ROLE_COLORS_LIGHT: Record<NodeRole | "attention", string> = {
@@ -47,6 +48,7 @@ function PressureNode({ data }: { data: NodeData }) {
     pressureUnit,
     flowRole = "neutral",
     needsAttention = false,
+    rotation = 0,
   } = data;
 
   const roleColors = isDark ? ROLE_COLORS_DARK : ROLE_COLORS_LIGHT;
@@ -86,10 +88,47 @@ function PressureNode({ data }: { data: NodeData }) {
     zIndex: 0,
   };
 
+  // Determine handle positions based on rotation
+  // 0: Target Left, Source Right
+  // 90: Target Top, Source Bottom
+  // 180: Target Right, Source Left
+  // 270: Target Bottom, Source Top
+  let targetPos = Position.Left;
+  let sourcePos = Position.Right;
+
+  switch (rotation % 360) {
+    case 90:
+      targetPos = Position.Top;
+      sourcePos = Position.Bottom;
+      break;
+    case 180:
+      targetPos = Position.Right;
+      sourcePos = Position.Left;
+      break;
+    case 270:
+      targetPos = Position.Bottom;
+      sourcePos = Position.Top;
+      break;
+    default: // 0
+      targetPos = Position.Left;
+      sourcePos = Position.Right;
+      break;
+  }
+
   return (
     <>
-      <Handle type="target" position={Position.Left} style={handleStyle} />
-      <Handle type="source" position={Position.Right} style={handleStyle} />
+      <Handle
+        type="target"
+        position={targetPos}
+        style={handleStyle}
+        id="target"
+      />
+      <Handle
+        type="source"
+        position={sourcePos}
+        style={handleStyle}
+        id="source"
+      />
       {needsAttention && (
         <style>
           {`@keyframes dash-rotate {

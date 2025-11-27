@@ -1047,7 +1047,19 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
 
                             return (
                                 <TableRow hover key={index}>
-                                    <TableCell component="th" scope="row" sx={{ minWidth: 240, width: 240, position: 'sticky', left: 0, bgcolor: 'background.paper', boxShadow: "1px 1px 1px text.secondary", borderRight: '1px solid #e0e0e0' }}>
+                                    <TableCell component="th" scope="row" sx={(theme) => ({
+                                        minWidth: 240,
+                                        width: 240,
+                                        position: 'sticky',
+                                        left: 0,
+                                        bgcolor: 'background.paper',
+                                        boxShadow: "1px 1px 1px text.secondary",
+                                        borderRight: '1px solid #e0e0e0',
+                                        '.MuiTableRow-root:hover &': {
+                                            bgcolor: 'background.paper',
+                                            backgroundImage: `linear-gradient(${theme.palette.action.hover}, ${theme.palette.action.hover})`,
+                                        }
+                                    })}>
                                         {row.label}
                                         {row.subLabel && (
                                             <Typography variant="caption" display="block" color="text.secondary">
@@ -1055,7 +1067,19 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
                                             </Typography>
                                         )}
                                     </TableCell>
-                                    <TableCell align="center" sx={{ width: 60, position: 'sticky', left: 240, bgcolor: 'background.paper', boxShadow: "1px 1px 1px text.secondary", borderRight: '1px solid #e0e0e0', color: 'text.secondary' }}>
+                                    <TableCell align="center" sx={(theme) => ({
+                                        width: 60,
+                                        position: 'sticky',
+                                        left: 240,
+                                        bgcolor: 'background.paper',
+                                        boxShadow: "1px 1px 1px text.secondary",
+                                        borderRight: '1px solid #e0e0e0',
+                                        color: 'text.secondary',
+                                        '.MuiTableRow-root:hover &': {
+                                            bgcolor: 'background.paper',
+                                            backgroundImage: `linear-gradient(${theme.palette.action.hover}, ${theme.palette.action.hover})`,
+                                        }
+                                    })}>
                                         {row.unit || ""}
                                     </TableCell>
                                     {visiblePipes.map((pipe) => {

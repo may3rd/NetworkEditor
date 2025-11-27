@@ -21,7 +21,8 @@ export type NodeProps = {
   pressureUnit?: string;
   temperature?: number;
   temperatureUnit?: string;
-  fluid?: Fluid,
+  fluid?: Fluid;
+  rotation?: number; // 0, 90, 180, 270
 };
 
 export type pipeState = {

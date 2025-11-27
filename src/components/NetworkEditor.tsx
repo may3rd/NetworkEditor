@@ -14,7 +14,24 @@ import {
   Paper,
   useTheme,
 } from "@mui/material";
-import { Add, Delete, Undo, Redo, Grid3x3, GridOn, PanTool, Speed, DarkMode } from "@mui/icons-material";
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Undo as UndoIcon,
+  Redo as RedoIcon,
+  Grid3x3 as GridIcon,
+  GridOn as GridOnIcon,
+  PanTool as PanToolIcon,
+  Speed as SpeedIcon,
+  DarkMode as DarkModeIcon,
+  RotateRight as RotateRightIcon,
+  RotateLeft as RotateLeftIcon,
+  SwapHoriz as SwapHorizIcon,
+  SwapVert as SwapVertIcon,
+  Save as SaveIcon,
+  FolderOpen as LoadIcon,
+  Image as ExportIcon,
+} from "@mui/icons-material";
 import {
   ReactFlow,
   Background,
@@ -62,6 +79,9 @@ type Props = {
   showPressures?: boolean;
   setShowPressures?: (show: boolean) => void;
   forceLightMode?: boolean;
+  onLoad?: () => void;
+  onSave?: () => void;
+  onExport?: () => void;
 };
 
 type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
@@ -88,6 +108,9 @@ export function NetworkEditor({
   showPressures: externalShowPressures,
   setShowPressures: externalSetShowPressures,
   forceLightMode = false,
+  onLoad,
+  onSave,
+  onExport,
 }: Props) {
   const theme = useTheme();
   const [internalShowPressures, setInternalShowPressures] = useState(false);
@@ -206,6 +229,7 @@ export function NetworkEditor({
           flowRole: flowState.role,
           needsAttention: flowState.needsAttention,
           forceLightMode,
+          rotation: node.rotation,
         },
         width: 20,
         height: 20,
@@ -450,6 +474,68 @@ export function NetworkEditor({
   }, [onUndo, onRedo, canUndo, canRedo]);
   // ───────────────────────────────────────────────────────────────────────
 
+  const handleRotateCW = useCallback(() => {
+    if (!selectedId || selectedType !== "node") return;
+    const node = network.nodes.find((n) => n.id === selectedId);
+    if (!node) return;
+
+    const currentRotation = node.rotation ?? 0;
+    const newRotation = (currentRotation + 90) % 360;
+
+    const updatedNodes = network.nodes.map((n) =>
+      n.id === selectedId ? { ...n, rotation: newRotation } : n
+    );
+    onNetworkChange?.({ ...network, nodes: updatedNodes });
+  }, [network, selectedId, selectedType, onNetworkChange]);
+
+  const handleRotateCCW = useCallback(() => {
+    if (!selectedId || selectedType !== "node") return;
+    const node = network.nodes.find((n) => n.id === selectedId);
+    if (!node) return;
+
+    const currentRotation = node.rotation ?? 0;
+    const newRotation = (currentRotation - 90 + 360) % 360;
+
+    const updatedNodes = network.nodes.map((n) =>
+      n.id === selectedId ? { ...n, rotation: newRotation } : n
+    );
+    onNetworkChange?.({ ...network, nodes: updatedNodes });
+  }, [network, selectedId, selectedType, onNetworkChange]);
+
+  const handleSwapLeftRight = useCallback(() => {
+    if (!selectedId || selectedType !== "node") return;
+    const node = network.nodes.find((n) => n.id === selectedId);
+    if (!node) return;
+
+    const currentRotation = node.rotation ?? 0;
+    // Only swap if horizontal (0 or 180)
+    if (currentRotation % 180 !== 0) return;
+
+    const newRotation = currentRotation === 0 ? 180 : 0;
+
+    const updatedNodes = network.nodes.map((n) =>
+      n.id === selectedId ? { ...n, rotation: newRotation } : n
+    );
+    onNetworkChange?.({ ...network, nodes: updatedNodes });
+  }, [network, selectedId, selectedType, onNetworkChange]);
+
+  const handleSwapUpDown = useCallback(() => {
+    if (!selectedId || selectedType !== "node") return;
+    const node = network.nodes.find((n) => n.id === selectedId);
+    if (!node) return;
+
+    const currentRotation = node.rotation ?? 0;
+    // Only swap if vertical (90 or 270)
+    if (currentRotation % 180 !== 90) return;
+
+    const newRotation = currentRotation === 90 ? 270 : 90;
+
+    const updatedNodes = network.nodes.map((n) =>
+      n.id === selectedId ? { ...n, rotation: newRotation } : n
+    );
+    onNetworkChange?.({ ...network, nodes: updatedNodes });
+  }, [network, selectedId, selectedType, onNetworkChange]);
+
   return (
     <ReactFlowProvider>
       <EditorCanvas {...{
@@ -477,6 +563,13 @@ export function NetworkEditor({
         showPressures,
         setShowPressures,
         forceLightMode,
+        handleRotateCW,
+        handleRotateCCW,
+        handleSwapLeftRight,
+        handleSwapUpDown,
+        onLoad,
+        onSave,
+        onExport,
       }} />
     </ReactFlowProvider>
   );
@@ -507,6 +600,13 @@ function EditorCanvas({
   selectedId,
   selectedType,
   forceLightMode,
+  handleRotateCW,
+  handleRotateCCW,
+  handleSwapLeftRight,
+  handleSwapUpDown,
+  onLoad,
+  onSave,
+  onExport,
 }: Props & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
@@ -522,6 +622,10 @@ function EditorCanvas({
   selectedId: string | null;
   selectedType: "node" | "pipe" | null;
   forceLightMode?: boolean;
+  handleRotateCW: () => void;
+  handleRotateCCW: () => void;
+  handleSwapLeftRight: () => void;
+  handleSwapUpDown: () => void;
 }) {
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
@@ -866,98 +970,157 @@ function EditorCanvas({
           zIndex: 10,
         }}
       >
-        <ButtonGroup variant="contained" size="small" sx={{ borderColor: "divider", backgroundColor: "background.paper" }}>
-          <Tooltip title="Add new node">
-            <IconButton
-              onClick={() => setIsAddingNode((value) => !value)}
-              disabled={!canEditNetwork}
-              color={isAddingNode ? "primary" : "info"}
-            >
-              <Add />
-            </IconButton>
-          </Tooltip>
+        <Stack direction="row" spacing={2}>
+          <ButtonGroup variant="contained" size="small" aria-label="File tools">
+            <Tooltip title="Load">
+              <span>
+                <IconButton size="small" onClick={onLoad} disabled={!onLoad}>
+                  <LoadIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Save">
+              <span>
+                <IconButton size="small" onClick={onSave} disabled={!onSave}>
+                  <SaveIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Export">
+              <span>
+                <IconButton size="small" onClick={onExport} disabled={!onExport}>
+                  <ExportIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </ButtonGroup>
 
-          <Tooltip title="Delete selected item">
-            <IconButton
-              onClick={onDelete}
-              disabled={!canEditNetwork || !selectedId}
-              color="error"
-            >
-              <Delete />
-            </IconButton>
-          </Tooltip>
+          <ButtonGroup variant="contained" size="small" aria-label="Edit tools">
+            <Tooltip title="Add Node">
+              <span>
+                <IconButton size="small" onClick={() => setIsAddingNode(true)}>
+                  <AddIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Delete Selected">
+              <span>
+                <IconButton size="small" onClick={onDelete} disabled={!selectedId}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Undo">
+              <span>
+                <IconButton size="small" onClick={onUndo} disabled={!canUndo}>
+                  <UndoIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Redo">
+              <span>
+                <IconButton size="small" onClick={onRedo} disabled={!canRedo}>
+                  <RedoIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </ButtonGroup>
 
-          <Tooltip title="Undo (Ctrl+Z)">
-            <IconButton
-              onClick={onUndo}
-              disabled={!canUndo}
-              color="primary"
-            >
-              <Undo />
-            </IconButton>
-          </Tooltip>
+          <ButtonGroup variant="contained" size="small" aria-label="Rotation tools">
+            <Tooltip title="Rotate 90° CW">
+              <span>
+                <IconButton size="small" onClick={handleRotateCW} disabled={!selectedId || selectedType !== "node"}>
+                  <RotateRightIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Rotate 90° CCW">
+              <span>
+                <IconButton size="small" onClick={handleRotateCCW} disabled={!selectedId || selectedType !== "node"}>
+                  <RotateLeftIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Swap Left-Right">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={handleSwapLeftRight}
+                  disabled={!selectedId || selectedType !== "node" || (network.nodes.find(n => n.id === selectedId)?.rotation ?? 0) % 180 !== 0}
+                >
+                  <SwapHorizIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Swap Up-Down">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={handleSwapUpDown}
+                  disabled={!selectedId || selectedType !== "node" || (network.nodes.find(n => n.id === selectedId)?.rotation ?? 0) % 180 !== 90}
+                >
+                  <SwapVertIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </ButtonGroup>
 
-          <Tooltip title="Redo (Ctrl+Y)">
-            <IconButton
-              onClick={onRedo}
-              disabled={!canRedo}
-              color="success"
-            >
-              <Redo />
-            </IconButton>
-          </Tooltip>
-        </ButtonGroup>
-
-        <ToggleButtonGroup
-          value={[
-            snapToGrid && "snap",
-            showGrid && "grid",
-            panModeEnabled && "pan",
-            showPressures && "pressure",
-            colorMode === "dark" && "dark",
-          ].filter(Boolean)}
-          onChange={(event, newFormats) => {
-            setSnapToGrid(newFormats.includes("snap"));
-            setShowGrid(newFormats.includes("grid"));
-            setPanModeEnabled(newFormats.includes("pan"));
-            setShowPressures(newFormats.includes("pressure"));
-            if (newFormats.includes("dark") !== (colorMode === "dark")) {
-              toggleColorMode();
-            }
-          }}
-          size="small"
-          aria-label="Editor settings"
-        >
-          <ToggleButton value="snap" aria-label="Snap to Grid">
+          <ButtonGroup variant="contained" size="small" aria-label="View tools">
             <Tooltip title="Snap to Grid">
-              <Grid3x3 fontSize="small" />
+              <ToggleButton
+                value="snap"
+                selected={snapToGrid}
+                onChange={() => setSnapToGrid(!snapToGrid)}
+                size="small"
+                sx={{ border: 'none', padding: '5px' }}
+              >
+                <GridIcon fontSize="small" />
+              </ToggleButton>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="grid" aria-label="Show Grid">
             <Tooltip title="Show Grid">
-              <GridOn fontSize="small" />
+              <ToggleButton
+                value="grid"
+                selected={showGrid}
+                onChange={() => setShowGrid(!showGrid)}
+                size="small"
+                sx={{ border: 'none', padding: '5px' }}
+              >
+                <GridOnIcon fontSize="small" />
+              </ToggleButton>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="pan" aria-label="Pan Mode">
             <Tooltip title="Pan Mode">
-              <PanTool fontSize="small" />
+              <ToggleButton
+                value="pan"
+                selected={panModeEnabled}
+                onChange={() => setPanModeEnabled(!panModeEnabled)}
+                size="small"
+                sx={{ border: 'none', padding: '5px' }}
+              >
+                <PanToolIcon fontSize="small" />
+              </ToggleButton>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="pressure" aria-label="Show Pressures">
             <Tooltip title="Show Pressures">
-              <Speed fontSize="small" />
+              <ToggleButton
+                value="pressure"
+                selected={showPressures}
+                onChange={() => setShowPressures(!showPressures)}
+                size="small"
+                sx={{ border: 'none', padding: '5px' }}
+              >
+                <SpeedIcon fontSize="small" />
+              </ToggleButton>
             </Tooltip>
-          </ToggleButton>
-          <ToggleButton value="dark" aria-label="Dark Mode">
-            <Tooltip title="Dark Mode">
-              <DarkMode fontSize="small" />
+            <Tooltip title="Toggle Dark Mode">
+              <IconButton size="small" onClick={toggleColorMode}>
+                <DarkModeIcon fontSize="small" />
+              </IconButton>
             </Tooltip>
-          </ToggleButton>
-        </ToggleButtonGroup>
+          </ButtonGroup>
+        </Stack>
 
         <Box sx={{ flexGrow: 1 }} />
 
-        <Box sx={{ fontSize: "13px", color: "text.secondary" }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', px: 2, fontSize: '0.75rem', color: 'text.secondary' }}>
           {canUndo || canRedo ? `${(historyIndex ?? 0) + 1} / ${historyLength ?? 0}` : "No history"}
         </Box>
       </Stack>

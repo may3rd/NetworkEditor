@@ -341,6 +341,9 @@ export default function Home() {
             historyLength={history.length}
             height="640px"
             forceLightMode={isExporting}
+            onLoad={handleLoadNetworkClick}
+            onSave={handleSaveNetwork}
+            onExport={handleExportPng}
           />
         </Box>
 
