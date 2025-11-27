@@ -58,3 +58,61 @@ export const getPressureNode = ({
         connectable: true,
     };
 };
+
+import { type PipeProps } from "@/lib/types";
+
+export type NodeValidationResult = {
+    isValid: boolean;
+    message?: string;
+    updateSource?: 'backward' | 'forward' | 'any';
+};
+
+export const validateNodeConfiguration = (
+    node: NodeProps,
+    pipes: PipeProps[]
+): NodeValidationResult => {
+    const connectedPipes = pipes.filter(
+        (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id
+    );
+
+    const targetPipes = connectedPipes.filter((pipe) => pipe.endNodeId === node.id);
+    const sourcePipes = connectedPipes.filter((pipe) => pipe.startNodeId === node.id);
+
+    const normalizeDirection = (pipe: PipeProps) =>
+        pipe.direction === "backward" ? "backward" : "forward";
+
+    // Pipes flowing INTO the node
+    const incomingForward = targetPipes.filter(
+        (pipe) => normalizeDirection(pipe) === "forward"
+    );
+    const incomingBackward = sourcePipes.filter(
+        (pipe) => normalizeDirection(pipe) === "backward"
+    );
+
+    // Check for invalid middle node configuration:
+    // Forward pipe connected to target handle AND Backward pipe connected to source handle
+    if (incomingForward.length > 0 && incomingBackward.length > 0) {
+        // Exception: If the forward pipe connected to target handle is a control valve
+        const hasControlValveException = incomingForward.some(
+            pipe => pipe.pipeSectionType === "control valve"
+        );
+
+        if (hasControlValveException) {
+            return {
+                isValid: true,
+                updateSource: 'backward' // Allow update from backward pipe
+            };
+        }
+
+        return {
+            isValid: false,
+            message: "Invalid configuration: Node has conflicting flow directions (Forward in, Backward in).",
+            updateSource: undefined
+        };
+    }
+
+    return {
+        isValid: true,
+        updateSource: 'any'
+    };
+};

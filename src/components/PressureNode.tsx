@@ -130,6 +130,7 @@ function PressureNode({ data }: { data: NodeData }) {
         style={handleStyle}
         id="source"
       />
+
       {needsAttention && (
         <style>
           {`@keyframes dash-rotate {
@@ -157,6 +158,7 @@ function PressureNode({ data }: { data: NodeData }) {
             }}
           />
         )}
+
         <div
           style={{
             width: circleSize,

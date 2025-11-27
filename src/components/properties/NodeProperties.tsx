@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { NetworkState, NodeProps, NodePatch, PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
+import { validateNodeConfiguration } from "@/utils/nodeUtils";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
 
 type Props = {
@@ -54,6 +55,8 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
         }
     };
 
+    const validation = validateNodeConfiguration(node, network.pipes);
+
     const handleUpdateFromPipe = (node: NodeProps) => {
         const connectedPipes = network.pipes.filter(
             (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id,
@@ -75,24 +78,25 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
         const findLowestState = (
             pipes: PipeProps[],
             selector: (pipe: PipeProps) => PipeState | undefined,
-        ): PipeState | undefined => {
-            let lowest: { pressure: number; state: PipeState } | null = null;
+        ): { state: PipeState; pipe: PipeProps } | undefined => {
+            let lowest: { pressure: number; state: PipeState; pipe: PipeProps } | null = null;
             for (const pipe of pipes) {
                 const state = selector(pipe);
                 if (!state || typeof state.pressure !== "number") {
                     continue;
                 }
                 if (!lowest || state.pressure < lowest.pressure) {
-                    lowest = { pressure: state.pressure, state };
+                    lowest = { pressure: state.pressure, state, pipe };
                 }
             }
-            return lowest?.state;
+            return lowest ? { state: lowest.state, pipe: lowest.pipe } : undefined;
         };
 
-        const updateFromState = (pipeState?: PipeState) => {
-            if (!pipeState) {
+        const updateFromState = (data?: { state: PipeState; pipe: PipeProps }) => {
+            if (!data) {
                 return false;
             }
+            const { state: pipeState, pipe } = data;
             const updates: Partial<NodeProps> = {};
             if (typeof pipeState.pressure === "number") {
                 updates.pressure = convertUnit(
@@ -110,6 +114,12 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                 );
                 updates.temperatureUnit = node.temperatureUnit ?? "C";
             }
+
+            // Copy fluid if missing on node
+            if (!node.fluid && pipe.fluid) {
+                updates.fluid = { ...pipe.fluid };
+            }
+
             if (Object.keys(updates).length === 0) {
                 return false;
             }
@@ -117,11 +127,22 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
             return true;
         };
 
+        // If validation specifies a source (e.g. 'backward' for control valve exception), prioritize it
+        if (validation.updateSource === 'backward') {
+            const sourceState = findLowestState(inboundSourcePipes, (pipe) => pipe.resultSummary?.outletState);
+            updateFromState(sourceState);
+            return;
+        } else if (validation.updateSource === 'forward') {
+            const targetState = findLowestState(inboundTargetPipes, (pipe) => pipe.resultSummary?.outletState);
+            updateFromState(targetState);
+            return;
+        }
+
         const targetState = findLowestState(inboundTargetPipes, (pipe) => pipe.resultSummary?.outletState);
         if (updateFromState(targetState)) {
             return;
         }
-        const sourceState = findLowestState(inboundSourcePipes, (pipe) => pipe.resultSummary?.inletState);
+        const sourceState = findLowestState(inboundSourcePipes, (pipe) => pipe.resultSummary?.outletState);
         updateFromState(sourceState);
     };
 
@@ -144,6 +165,8 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                         variant="contained"
                         size="small"
                         onClick={() => handleUpdateFromPipe(node)}
+                        disabled={!validation.isValid}
+                        title={validation.message}
                     >
                         Update from Pipe
                     </Button>

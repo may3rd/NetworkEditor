@@ -59,7 +59,7 @@ import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { convertUnit } from "@/lib/unitConversion";
 import { useColorMode } from "@/contexts/ColorModeContext";
 import { getPipeEdge } from "@/utils/edgeUtils";
-import { getPressureNode } from "@/utils/nodeUtils";
+import { getPressureNode, validateNodeConfiguration } from "@/utils/nodeUtils";
 import ViewSettingsMenu from "@/components/ViewSettingsMenu";
 import { type ViewSettings } from "@/lib/types";
 import { useCopyPaste } from "@/hooks/useCopyPaste";
@@ -252,7 +252,23 @@ export function NetworkEditor({
         }
       }
 
-      const needsAttention = missingPressure || missingTemperature || flowMismatch;
+      const validation = validateNodeConfiguration(node, network.pipes);
+      const needsAttention = missingPressure || missingTemperature || flowMismatch || !validation.isValid;
+
+      // Debug logging
+      if (needsAttention) {
+        console.log(`Node ${node.label} (${node.id}) needs attention:`, {
+          missingPressure,
+          missingTemperature,
+          flowMismatch,
+          invalidConfig: !validation.isValid
+        });
+      }
+
+      if (!validation.isValid) {
+        role = "isolated";
+      }
+
       states[node.id] = { role, needsAttention };
     });
 
@@ -415,11 +431,11 @@ export function NetworkEditor({
         startNodeId: connection.source,
         endNodeId: connection.target,
         pipeSectionType: "pipeline" as "pipeline" | "control valve" | "orifice",
-        massFlowRate: 1000, // Default mass flow rate
+        massFlowRate: undefined, // Default mass flow rate
         massFlowRateUnit: "kg/h",
-        length: 100, // Default length
+        length: undefined, // Default length
         lengthUnit: "m",
-        diameter: 102.26, // Default diameter
+        diameter: undefined, // Default diameter
         diameterUnit: "mm",
         roughness: 0.0457, // Default roughness
         roughnessUnit: "mm",
@@ -449,6 +465,7 @@ export function NetworkEditor({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Backspace" && e.key !== "Delete") return;
+      if (e.repeat) return;
       if (!selectedId || !selectedType) return;
 
       // Do not delete while typing in an input field
@@ -463,10 +480,15 @@ export function NetworkEditor({
       }
 
       e.preventDefault();
+      e.stopPropagation();
 
-      if (window.confirm(`Delete this ${selectedType}?`)) {
-        onDelete?.();
-      }
+      // Use setTimeout to allow the event loop to clear before blocking with confirm
+      // This prevents issues where the dialog closes immediately or flashes
+      setTimeout(() => {
+        if (window.confirm(`Delete this ${selectedType}?`)) {
+          onDelete?.();
+        }
+      }, 10);
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -846,10 +868,10 @@ function EditorCanvas({
           label: `Node ${network.nodes.length + 1}`,
           position,
           // fluid is now optional and undefined for new nodes
-          temperature: network.nodes[0]?.temperature,
-          temperatureUnit: network.nodes[0]?.temperatureUnit ?? "°C",
-          pressure: network.nodes[0]?.pressure,
-          pressureUnit: network.nodes[0]?.pressureUnit ?? "kPag",
+          temperature: undefined,
+          temperatureUnit: "C",
+          pressure: undefined,
+          pressureUnit: "kPag",
         };
 
         onNetworkChange({
@@ -1199,6 +1221,7 @@ function EditorCanvas({
           maxZoom={16}
           minZoom={0.1}
           panActivationKeyCode={undefined} // We handle space panning manually
+          deleteKeyCode={null} // We handle delete manually with confirmation
           nodesDraggable={!isPanMode}
           selectionOnDrag={!isPanMode}
           panOnDrag={panModeEnabled || [1, 2]} // Pan on left click if in pan mode, or middle/right click always
