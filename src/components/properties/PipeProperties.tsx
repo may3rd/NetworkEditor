@@ -86,7 +86,7 @@ export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
 
             <PipeFluidSection
                 pipe={pipe}
-                startNode={startNode}
+                sourceNode={pipe.direction === "backward" ? endNode : startNode}
                 isGasPipe={isGasPipe}
                 onUpdatePipe={onUpdatePipe}
             />

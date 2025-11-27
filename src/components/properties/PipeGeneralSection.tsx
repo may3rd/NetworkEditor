@@ -133,9 +133,7 @@ export function PipeGeneralSection({ pipe, pipes, startNode, endNode, onUpdatePi
                             boundaryPressureUnit: boundaryNode?.pressureUnit,
                             boundaryTemperature: boundaryNode?.temperature,
                             boundaryTemperatureUnit: boundaryNode?.temperatureUnit,
-                            ...(nextDirection === "backward" && boundaryNode?.fluid
-                                ? { fluid: { ...boundaryNode.fluid } }
-                                : {}),
+                            fluid: boundaryNode?.fluid ? { ...boundaryNode.fluid } : undefined,
                         });
                     }}
                 >
@@ -145,6 +143,6 @@ export function PipeGeneralSection({ pipe, pipes, startNode, endNode, onUpdatePi
                     </Stack>
                 </RadioGroup>
             </FormControl>
-        </Stack>
+        </Stack >
     );
 }

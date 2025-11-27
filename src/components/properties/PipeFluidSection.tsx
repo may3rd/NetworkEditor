@@ -12,12 +12,12 @@ import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
 
 type Props = {
     pipe: PipeProps;
-    startNode?: NodeProps;
+    sourceNode?: NodeProps;
     isGasPipe: boolean;
     onUpdatePipe: (id: string, patch: PipePatch) => void;
 };
 
-export function PipeFluidSection({ pipe, startNode, isGasPipe, onUpdatePipe }: Props) {
+export function PipeFluidSection({ pipe, sourceNode, isGasPipe, onUpdatePipe }: Props) {
     const computeDesignMassFlowRate = (
         massFlowRateValue?: number,
         marginPercent?: number
@@ -124,7 +124,7 @@ export function PipeFluidSection({ pipe, startNode, isGasPipe, onUpdatePipe }: P
                         );
 
                         if (isGasPipe) {
-                            const mw = startNode?.fluid?.molecularWeight;
+                            const mw = pipe.fluid?.molecularWeight ?? sourceNode?.fluid?.molecularWeight;
                             if (!mw) return "";
                             // Normal flow in Nm3/h
                             const normalFlowNm3H = (massFlowKgH / mw) * 24.465;
@@ -135,12 +135,13 @@ export function PipeFluidSection({ pipe, startNode, isGasPipe, onUpdatePipe }: P
                             if (displayUnit === "MSCFD") return normalFlowNm3H * 0.000847552; // 1 Nm3/h = 35.3147 SCFH * 24 / 1e6 = 0.000847552 MSCFD
                             return normalFlowNm3H;
                         } else {
-                            const density = startNode?.fluid?.density;
+                            const density = pipe.fluid?.density ?? sourceNode?.fluid?.density;
                             if (!density) return "";
 
                             let densityKgM3 = density;
-                            if (startNode?.fluid?.densityUnit && startNode.fluid.densityUnit !== "kg/m3") {
-                                densityKgM3 = convertUnit(density, startNode.fluid.densityUnit, "kg/m3");
+                            const densityUnit = pipe.fluid?.densityUnit ?? sourceNode?.fluid?.densityUnit;
+                            if (densityUnit && densityUnit !== "kg/m3") {
+                                densityKgM3 = convertUnit(density, densityUnit, "kg/m3");
                             }
 
                             const volFlowM3H = massFlowKgH / densityKgM3;

@@ -382,10 +382,6 @@ export default function Home() {
 
                   const pipePatch: Partial<PipeProps> = {};
 
-                  if (isStartNode) {
-                    pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
-                  }
-
                   const direction = pipe.direction ?? "forward";
                   const shouldUpdateBoundary =
                     (direction === "forward" && isStartNode) ||
@@ -396,6 +392,7 @@ export default function Home() {
                     pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
                     pipePatch.boundaryTemperature = updatedNode?.temperature;
                     pipePatch.boundaryTemperatureUnit = updatedNode?.temperatureUnit;
+                    pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
                   }
 
                   if (Object.keys(pipePatch).length === 0) {
