@@ -334,7 +334,6 @@ export default function Home() {
       />
       <Header
         onReset={handleReset}
-        onClearNetwork={handleClearNetwork}
         onExportPng={handleExportPng}
         onLoadNetwork={handleLoadNetworkClick}
         onSaveNetwork={handleSaveNetwork}
@@ -360,6 +359,7 @@ export default function Home() {
             onLoad={handleLoadNetworkClick}
             onSave={handleSaveNetwork}
             onExport={handleExportPng}
+            onNew={handleClearNetwork}
             onToggleSnapshot={() => setShowSnapshot(true)}
             onToggleSummary={() => setShowSummary(true)}
           />

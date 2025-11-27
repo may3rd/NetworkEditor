@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback, useEffect, useState, useRef, type ChangeEventHandler } from "react";
+import { useMemo, useCallback, useEffect, useState, useRef } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   Button,
@@ -9,14 +9,12 @@ import {
   Box,
   IconButton,
   ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Paper,
   useTheme,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Slider,
   TextField,
   Switch,
@@ -31,7 +29,6 @@ import {
   Grid3x3 as GridIcon,
   GridOn as GridOnIcon,
   PanTool as PanToolIcon,
-  Speed as SpeedIcon,
   DarkMode as DarkModeIcon,
   RotateRight as RotateRightIcon,
   RotateLeft as RotateLeftIcon,
@@ -45,6 +42,7 @@ import {
   Wallpaper as WallpaperIcon,
   Settings as SettingsIcon,
   Close as CloseIcon,
+  InsertDriveFileOutlined as NoteAddIcon,
 } from "@mui/icons-material";
 import {
   ReactFlow,
@@ -63,7 +61,6 @@ import {
   type DefaultEdgeOptions,
   type HandleType,
   type OnConnectStartParams,
-  type ColorMode,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
@@ -103,6 +100,7 @@ type NetworkEditorProps = {
   onLoad?: () => void;
   onSave?: () => void;
   onExport?: () => void;
+  onNew?: () => void;
   onToggleSnapshot?: () => void;
   onToggleSummary?: () => void;
 };
@@ -145,6 +143,7 @@ export function NetworkEditor({
   onLoad,
   onSave,
   onExport,
+  onNew,
   onToggleSnapshot,
   onToggleSummary,
 }: NetworkEditorProps) {
@@ -681,6 +680,7 @@ export function NetworkEditor({
         onLoad,
         onSave,
         onExport,
+        onNew,
         onPaste: handlePaste,
         onToggleSnapshot,
         onToggleSummary,
@@ -723,6 +723,7 @@ function EditorCanvas({
   onSave,
   onExport,
   onPaste,
+  onNew,
   onToggleSnapshot,
   onToggleSummary,
 }: NetworkEditorProps & {
@@ -746,6 +747,7 @@ function EditorCanvas({
   handleSwapLeftRight: () => void;
   handleSwapUpDown: () => void;
   onPaste: (ids: string[]) => void;
+  onNew?: () => void;
   onToggleSnapshot?: () => void;
   onToggleSummary?: () => void;
 }) {
@@ -1135,6 +1137,13 @@ function EditorCanvas({
       >
         <Stack direction="row" spacing={2}>
           <ButtonGroup variant="contained" size="small" aria-label="File tools">
+            <Tooltip title="New">
+              <span>
+                <IconButton size="small" onClick={onNew} disabled={!onNew}>
+                  <NoteAddIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Tooltip title="Load">
               <span>
                 <IconButton size="small" onClick={onLoad} disabled={!onLoad}>

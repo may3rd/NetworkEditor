@@ -5,13 +5,12 @@ import { Button, Box, Typography, Stack, ButtonGroup, Paper, Tooltip } from "@mu
 
 type Props = {
   onReset: () => void;
-  onClearNetwork: () => void;
   onExportPng: () => void;
   onLoadNetwork: () => void;
   onSaveNetwork: () => void;
 };
 
-export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, onSaveNetwork }: Props) {
+export function Header({ onReset, onExportPng, onLoadNetwork, onSaveNetwork }: Props) {
   return (
     <Paper
       elevation={0}
@@ -37,15 +36,11 @@ export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, on
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <ButtonGroup variant="outlined" sx={{ mr: 2 }}>
             <Tooltip title="Load example network">
-                <Button onClick={onReset} color="warning">
-                  Example
-                </Button>
+              <Button onClick={onReset} color="warning">
+                Example
+              </Button>
             </Tooltip>
-            <Tooltip title="Clear all nodes and pipes">
-                <Button onClick={onClearNetwork} color="error">
-                  Clear All
-                </Button>
-            </Tooltip>
+
           </ButtonGroup>
 
           {/* <ButtonGroup variant="outlined">
@@ -63,10 +58,9 @@ export function Header({ onReset, onClearNetwork, onExportPng, onLoadNetwork, on
                 <Button onClick={onSaveNetwork} startIcon={<Save />}>
                     Save
                 </Button>
-            </Tooltip>
           </ButtonGroup> */}
         </Box>
       </Box>
-    </Paper>
+    </Paper >
   );
 }
