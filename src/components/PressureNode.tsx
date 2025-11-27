@@ -8,6 +8,7 @@ type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
 
 type NodeData = {
   label: string;
+  labelLines?: string[];
   isSelected?: boolean;
   showPressures?: boolean;
   pressure?: number;
@@ -177,7 +178,6 @@ function PressureNode({ data }: { data: NodeData }) {
         style={{
           marginTop: 8,
           textAlign: "center",
-          fontWeight: 700,
           fontSize: 9,
           color: "text.primary", // This MUI system prop automatically uses theme.palette.text.primary
           pointerEvents: "none",
@@ -187,9 +187,15 @@ function PressureNode({ data }: { data: NodeData }) {
           // but usually text.primary handles contrast well.
         }}
       >
-        {showPressures && typeof pressure === "number"
-          ? `${label} (${pressure.toFixed(2)} ${pressureUnit ?? ""})`
-          : label}
+        {data.labelLines && data.labelLines.length > 0 ? (
+          data.labelLines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))
+        ) : (
+          showPressures && typeof pressure === "number"
+            ? `${label} (${pressure.toFixed(2)} ${pressureUnit ?? ""})`
+            : label
+        )}
       </div>
     </>
   );

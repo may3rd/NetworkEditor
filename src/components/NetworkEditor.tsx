@@ -53,10 +53,12 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
+import PipeEdge from "@/components/PipeEdge";
 import { NetworkState, type NodeProps, type PipeProps } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { convertUnit } from "@/lib/unitConversion";
 import { useColorMode } from "@/contexts/ColorModeContext";
+import { getPipeEdge } from "@/utils/edgeUtils";
 
 const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
@@ -227,12 +229,18 @@ export function NetworkEditor({
   const mapNodeToReactFlow = useCallback(
     (node: NodeProps, isSelected: boolean): Node => {
       const flowState = nodeFlowStates[node.id] ?? { role: "isolated", needsAttention: false };
+      const labelLines: string[] = [node.label];
+      if (showPressures && typeof node.pressure === "number") {
+        labelLines.push(`${node.pressure.toFixed(2)} ${node.pressureUnit ?? ""}`);
+      }
+
       return {
         id: node.id,
         type: "pressure",
         position: { ...node.position },
         data: {
           label: node.label,
+          labelLines,
           isSelected,
           showPressures,
           pressure: node.pressure,
@@ -272,70 +280,22 @@ export function NetworkEditor({
 
   const rfEdges = useMemo<Edge[]>(
     () =>
-      network.pipes.map((pipe, index) => {
-        const isSelectedPipe = selectedType === "pipe" && selectedId === pipe.id;
-        let label = pipe.name || `P${index + 1}: `;
-        if (!pipe.name) {
-          label = `P${index + 1}: `;
-        } else {
-          label = `${pipe.name}: `;
-        }
-
-        if (pipe.pipeSectionType === "control valve") {
-          label += "CV";
-        } else if (pipe.pipeSectionType === "orifice") {
-          label += "RO";
-        } else {
-          const roundedLength =
-            typeof pipe.length === "number"
-              ? pipe.length.toFixed(2)
-              : Number(pipe.length ?? 0).toFixed(2);
-          label += `${roundedLength} ${pipe.lengthUnit ?? ""}`.trim();
-        }
-        if (
-          showPressures &&
-          pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined
-        ) {
-          const deltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000; // Pa to kPa
-          label += `, ΔP: ${deltaP.toFixed(2)} kPa`;
-        }
-
-        const labelTextColor = forceLightMode ? "rgba(0, 0, 0, 0.6)" : theme.palette.text.secondary;
-        const labelBgColor = forceLightMode ? "#ffffff" : theme.palette.background.paper;
-
-        return {
-          id: pipe.id,
-          source: pipe.startNodeId,
-          target: pipe.endNodeId,
-          label,
-          labelStyle: {
-            fontSize: "9px",
-            fontWeight: 500,
-            fill: isSelectedPipe ? "#92400e" : labelTextColor,
-          },
-          labelBgPadding: [8, 4] as [number, number],
-          labelBgBorderRadius: 4,
-          labelBgStyle: {
-            fill: isSelectedPipe ? "#fffbeb" : labelBgColor,
-            fillOpacity: 0.92,
-            stroke: isSelectedPipe ? "#f59e0b" : "#cbd5f5",
-            strokeWidth: 0.5,
-          },
-          type: "smoothstep",
-          style: {
-            strokeWidth: isSelectedPipe ? 2 : 1,
-            stroke: isSelectedPipe ? "#f59e0b" : "#94a3b8",
-          },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: isSelectedPipe ? "#f59e0b" : "#94a3b8",
-          },
-        };
-      }),
+      network.pipes.map((pipe, index) =>
+        getPipeEdge({
+          pipe,
+          index,
+          selectedId,
+          selectedType,
+          showPressures,
+          theme,
+          forceLightMode,
+        })
+      ),
     [network.pipes, selectedId, selectedType, showPressures, theme, forceLightMode]
   );
 
   const nodeTypes = useMemo(() => ({ pressure: PressureNode }), []);
+  const edgeTypes = useMemo(() => ({ pipe: PipeEdge }), []);
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
     style: { strokeWidth: 2, stroke: "#94a3b8" },
@@ -574,6 +534,7 @@ export function NetworkEditor({
         setLocalNodes,
         rfEdges,
         nodeTypes,
+        edgeTypes,
         defaultEdgeOptions,
         handleNodesChange,
         handleConnect,
@@ -602,6 +563,7 @@ function EditorCanvas({
   setLocalNodes,
   rfEdges,
   nodeTypes,
+  edgeTypes,
   defaultEdgeOptions,
   handleNodesChange,
   handleConnect,
@@ -630,6 +592,7 @@ function EditorCanvas({
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
   rfEdges: Edge[];
   nodeTypes: { [key: string]: any };
+  edgeTypes: { [key: string]: any };
   defaultEdgeOptions: DefaultEdgeOptions;
   handleNodesChange: (changes: NodeChange<Node>[]) => void;
   handleConnect: (connection: Connection) => void;
@@ -750,11 +713,11 @@ function EditorCanvas({
         startNodeId: pipeStartNodeId,
         endNodeId: startsFromSourceHandle ? newNodeId : fromId,
         pipeSectionType: "pipeline" as "pipeline" | "control valve" | "orifice",
-        massFlowRate: 1000, // Default mass flow rate
+        // massFlowRate: 1000, // Default mass flow rate
         massFlowRateUnit: "kg/h",
-        length: 100, // Default length
+        // length: 100, // Default length
         lengthUnit: "m",
-        diameter: 102.26, // Default diameter
+        // diameter: 102.26, // Default diameter
         diameterUnit: "mm",
         roughness: 0.0457, // Default roughness
         roughnessUnit: "mm",
@@ -1160,6 +1123,7 @@ function EditorCanvas({
           nodes={localNodes}
           edges={rfEdges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           defaultEdgeOptions={defaultEdgeOptions}
           fitView
           fitViewOptions={{ padding: 0.2 }}
