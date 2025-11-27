@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Box, Typography, Stack } from "@mui/material";
+import { Button, Box, Typography, Stack, Slide, Paper } from "@mui/material";
 import { useCallback, useState, useEffect, useRef, ChangeEvent } from "react";
 import { toPng } from "html-to-image";
 import { SummaryTable } from "@/components/SummaryTable";
@@ -324,8 +324,8 @@ export default function Home() {
         onSaveNetwork={handleSaveNetwork}
       />
 
-      <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start", flexDirection: { xs: "column", lg: "row" } }}>
-        <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>
+      <Box sx={{ position: "relative", height: "640px", width: "100%", overflow: "hidden", borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
+        <Box sx={{ width: "100%", height: "100%" }}>
           <NetworkEditor
             network={network}
             onSelect={handleSelect}
@@ -339,7 +339,7 @@ export default function Home() {
             onNetworkChange={handleNetworkChange}
             historyIndex={historyIndex}
             historyLength={history.length}
-            height="640px"
+            height="100%"
             forceLightMode={isExporting}
             onLoad={handleLoadNetworkClick}
             onSave={handleSaveNetwork}
@@ -347,84 +347,99 @@ export default function Home() {
           />
         </Box>
 
-        <Box sx={{ width: "320px", height: "640px" }}>
-          <PropertiesPanel
-            network={network}
-            selected={selection}
-            onUpdateNode={(id, patch: NodePatch) =>
-              setNetwork(current => {
-                let updatedNode: NodeProps | undefined;
+        <Slide direction="left" in={!!selection} mountOnEnter unmountOnExit>
+          <Paper
+            elevation={4}
+            sx={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: "320px",
+              zIndex: 10,
+              borderLeft: "1px solid",
+              borderColor: "divider",
+              borderRadius: 0,
+            }}
+          >
+            <PropertiesPanel
+              network={network}
+              selected={selection}
+              onUpdateNode={(id, patch: NodePatch) =>
+                setNetwork(current => {
+                  let updatedNode: NodeProps | undefined;
 
-                const nextNodes = current.nodes.map(node => {
-                  if (node.id !== id) return node;
+                  const nextNodes = current.nodes.map(node => {
+                    if (node.id !== id) return node;
 
-                  const nodePatch = typeof patch === "function" ? patch(node) : patch;
-                  const mergedNode = {
-                    ...node,
-                    ...nodePatch,
+                    const nodePatch = typeof patch === "function" ? patch(node) : patch;
+                    const mergedNode = {
+                      ...node,
+                      ...nodePatch,
+                    };
+
+                    updatedNode = mergedNode;
+                    return mergedNode;
+                  });
+
+                  if (!updatedNode) {
+                    return current;
+                  }
+
+                  const nextPipes = current.pipes.map(pipe => {
+                    const isStartNode = pipe.startNodeId === id;
+                    const isEndNode = pipe.endNodeId === id;
+
+                    if (!isStartNode && !isEndNode) {
+                      return pipe;
+                    }
+
+                    const pipePatch: Partial<PipeProps> = {};
+
+                    const direction = pipe.direction ?? "forward";
+                    const shouldUpdateBoundary =
+                      (direction === "forward" && isStartNode) ||
+                      (direction === "backward" && isEndNode);
+
+                    if (shouldUpdateBoundary) {
+                      pipePatch.boundaryPressure = updatedNode?.pressure;
+                      pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
+                      pipePatch.boundaryTemperature = updatedNode?.temperature;
+                      pipePatch.boundaryTemperatureUnit = updatedNode?.temperatureUnit;
+                      pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
+                    }
+
+                    if (Object.keys(pipePatch).length === 0) {
+                      return pipe;
+                    }
+                    return recalculatePipeFittingLosses({ ...pipe, ...pipePatch });
+                  });
+
+                  return {
+                    ...current,
+                    nodes: nextNodes,
+                    pipes: nextPipes,
                   };
-
-                  updatedNode = mergedNode;
-                  return mergedNode;
-                });
-
-                if (!updatedNode) {
-                  return current;
-                }
-
-                const nextPipes = current.pipes.map(pipe => {
-                  const isStartNode = pipe.startNodeId === id;
-                  const isEndNode = pipe.endNodeId === id;
-
-                  if (!isStartNode && !isEndNode) {
-                    return pipe;
-                  }
-
-                  const pipePatch: Partial<PipeProps> = {};
-
-                  const direction = pipe.direction ?? "forward";
-                  const shouldUpdateBoundary =
-                    (direction === "forward" && isStartNode) ||
-                    (direction === "backward" && isEndNode);
-
-                  if (shouldUpdateBoundary) {
-                    pipePatch.boundaryPressure = updatedNode?.pressure;
-                    pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
-                    pipePatch.boundaryTemperature = updatedNode?.temperature;
-                    pipePatch.boundaryTemperatureUnit = updatedNode?.temperatureUnit;
-                    pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
-                  }
-
-                  if (Object.keys(pipePatch).length === 0) {
-                    return pipe;
-                  }
-                  return recalculatePipeFittingLosses({ ...pipe, ...pipePatch });
-                });
-
-                return {
+                })
+              }
+              onUpdatePipe={(id, patch: PipePatch) =>
+                setNetwork(current => ({
                   ...current,
-                  nodes: nextNodes,
-                  pipes: nextPipes,
-                };
-              })
-            }
-            onUpdatePipe={(id, patch: PipePatch) =>
-              setNetwork(current => ({
-                ...current,
-                pipes: current.pipes.map(pipe => {
-                  if (pipe.id !== id) return pipe;
-                  const pipePatch = typeof patch === "function" ? patch(pipe) : patch;
-                  const updatedPipe = { ...pipe, ...pipePatch };
-                  if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
-                    return updatedPipe;
-                  }
-                  return recalculatePipeFittingLosses(updatedPipe);
-                }),
-              }))
-            }
-            onReset={handleReset}
-          />
-        </Box>
+                  pipes: current.pipes.map(pipe => {
+                    if (pipe.id !== id) return pipe;
+                    const pipePatch = typeof patch === "function" ? patch(pipe) : patch;
+                    const updatedPipe = { ...pipe, ...pipePatch };
+                    if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
+                      return updatedPipe;
+                    }
+                    return recalculatePipeFittingLosses(updatedPipe);
+                  }),
+                }))
+              }
+              onReset={handleReset}
+            />
+          </Paper>
+        </Slide>
       </Box>
 
 
