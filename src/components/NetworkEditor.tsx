@@ -62,6 +62,7 @@ import { getPipeEdge } from "@/utils/edgeUtils";
 import { getPressureNode } from "@/utils/nodeUtils";
 import ViewSettingsMenu from "@/components/ViewSettingsMenu";
 import { type ViewSettings } from "@/lib/types";
+import { useCopyPaste } from "@/hooks/useCopyPaste";
 
 const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
@@ -632,6 +633,8 @@ function EditorCanvas({
   const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null);
   const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
   const NODE_SIZE = 20;
+
+  useCopyPaste(network, onNetworkChange);
 
   const onConnectStart = useCallback(
     (_: MouseEvent | TouchEvent, { nodeId, handleType }: OnConnectStartParams) => {
