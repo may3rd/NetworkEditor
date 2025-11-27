@@ -283,21 +283,29 @@ export function NetworkEditor({
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
   const pastedNodeIdsRef = useRef<Set<string> | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (pastedNodeIdsRef.current) {
       const allPresent = Array.from(pastedNodeIdsRef.current).every(id => rfNodes.some(n => n.id === id));
       if (allPresent) {
+        const newSelectedIds = new Set(pastedNodeIdsRef.current);
+        setSelectedNodeIds(newSelectedIds);
         setLocalNodes(rfNodes.map(n => ({
           ...n,
-          selected: pastedNodeIdsRef.current!.has(n.id)
+          selected: newSelectedIds.has(n.id)
         })));
         pastedNodeIdsRef.current = null;
         return;
       }
     }
-    setLocalNodes(rfNodes);
-  }, [rfNodes]);
+
+    // Sync localNodes with rfNodes, but preserve selection state from selectedNodeIds
+    setLocalNodes(rfNodes.map(n => ({
+      ...n,
+      selected: selectedNodeIds.has(n.id) || (selectedType === "node" && selectedId === n.id)
+    })));
+  }, [rfNodes, selectedId, selectedType]); // Added selectedId/Type dependencies
 
   const handlePaste = useCallback((ids: string[]) => {
     pastedNodeIdsRef.current = new Set(ids);
@@ -340,6 +348,22 @@ export function NetworkEditor({
       // Update local nodes for smooth dragging feedback
       setLocalNodes((nds) => applyNodeChanges(changes, nds));
 
+      // Sync selection state
+      let selectionChanged = false;
+      const newSelectedIds = new Set(selectedNodeIds);
+
+      changes.forEach(c => {
+        if (c.type === 'select') {
+          selectionChanged = true;
+          if (c.selected) newSelectedIds.add(c.id);
+          else newSelectedIds.delete(c.id);
+        }
+      });
+
+      if (selectionChanged) {
+        setSelectedNodeIds(newSelectedIds);
+      }
+
       // Detect drag-end events (dragging: false + position exists)
       const dragEndedChanges = changes.filter(
         (c): c is { id: string; type: "position"; dragging: false; position: { x: number; y: number } } =>
@@ -359,7 +383,7 @@ export function NetworkEditor({
         }
       }
     },
-    [network, onNetworkChange]
+    [network, onNetworkChange, selectedNodeIds]
   );
 
   const handleConnect = useCallback(
@@ -1158,7 +1182,11 @@ function EditorCanvas({
           fitView
           fitViewOptions={{ padding: 0.2 }}
           onNodeClick={(_, node) => onSelect(node.id, "node")}
-          onNodeDragStart={(_, node) => onSelect(node.id, "node")}
+          onNodeDragStart={(_, node) => {
+            if (!node.selected) {
+              onSelect(node.id, "node");
+            }
+          }}
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={handlePaneClick}
           onNodesChange={handleNodesChange}
