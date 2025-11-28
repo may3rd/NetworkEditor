@@ -76,8 +76,12 @@ import ViewSettingsDialog from "@/components/ViewSettingsDialog";
 import { type ViewSettings } from "@/lib/types";
 import { useCopyPaste } from "@/hooks/useCopyPaste";
 
-const ADD_NODE_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(
+const ADD_NODE_CURSOR_LIGHT = `url("data:image/svg+xml,${encodeURIComponent(
   "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
+)}") 12 12, auto`;
+
+const ADD_NODE_CURSOR_DARK = `url("data:image/svg+xml,${encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#ffffff' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
 )}") 12 12, auto`;
 
 type NetworkEditorProps = {
@@ -790,6 +794,7 @@ function EditorCanvas({
   onToggleSnapshot?: () => void;
   onToggleSummary?: () => void;
 }) {
+  const theme = useTheme();
   const [snapToGrid, setSnapToGrid] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
   const [isAddingNode, setIsAddingNode] = useState(false);
@@ -1120,7 +1125,7 @@ function EditorCanvas({
 
     let cursor = "";
     if (isAddingNode) {
-      cursor = ADD_NODE_CURSOR;
+      cursor = theme.palette.mode === 'dark' ? ADD_NODE_CURSOR_DARK : ADD_NODE_CURSOR_LIGHT;
     } else if (isPanMode) {
       cursor = "grab";
     }
@@ -1133,8 +1138,9 @@ function EditorCanvas({
   }, [isAddingNode, isPanMode]);
 
   const canEditNetwork = Boolean(onNetworkChange);
-  const editorCursor = isAddingNode ? ADD_NODE_CURSOR : isPanMode ? "grab" : "default";
-  const theme = useTheme();
+  const editorCursor = isAddingNode
+    ? (theme.palette.mode === 'dark' ? ADD_NODE_CURSOR_DARK : ADD_NODE_CURSOR_LIGHT)
+    : isPanMode ? "grab" : "default";
   const { toggleColorMode } = useColorMode();
   const colorMode = theme.palette.mode;
 
