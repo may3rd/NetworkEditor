@@ -142,6 +142,7 @@ export const getPipeEdge = ({
       labelTextColor: isSelectedPipe ? "#92400e" : labelTextColor,
       labelBorderColor,
       isSelected: isSelectedPipe,
+      pipe, // Pass full pipe data for hover card
     },
     style: {
       strokeWidth: isSelectedPipe ? 2 : 1,

@@ -61,6 +61,7 @@ export const getPressureNode = ({
             needsAttention: flowState.needsAttention,
             forceLightMode,
             rotation: node.rotation,
+            node, // Pass full node data for hover card
         },
         width: 20,
         height: 20,

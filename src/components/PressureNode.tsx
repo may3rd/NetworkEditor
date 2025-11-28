@@ -1,9 +1,11 @@
 // components/PressureNode.tsx
 
-import { memo, useState, type CSSProperties } from "react";
+import { memo, useState, useRef, type CSSProperties } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { useTheme } from "@mui/material";
 import { convertUnit } from "@/lib/unitConversion";
+import { HoverCard } from "./HoverCard";
+import { NodeProps } from "@/lib/types";
 
 type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
 
@@ -19,6 +21,7 @@ type NodeData = {
   needsAttention?: boolean;
   forceLightMode?: boolean;
   rotation?: number;
+  node?: NodeProps;
 };
 
 const ROLE_COLORS_LIGHT: Record<NodeRole | "attention", string> = {
@@ -115,6 +118,27 @@ function PressureNode({ data }: { data: NodeData }) {
   }
 
   const [isHovered, setIsHovered] = useState(false);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const currentMousePos = useRef({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    currentMousePos.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    currentMousePos.current = { x: e.clientX, y: e.clientY };
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      setHoverPos(currentMousePos.current);
+      setIsHovered(true);
+    }, 500);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    setIsHovered(false);
+  };
 
   const isVertical = targetPos === Position.Top || targetPos === Position.Bottom;
   const handleWidth = isVertical ? 4 : 4;
@@ -148,8 +172,9 @@ function PressureNode({ data }: { data: NodeData }) {
 
   return (
     <div
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseMove={handleMouseMove}
       style={{ position: "relative" }}
     >
       <Handle
@@ -247,6 +272,21 @@ function PressureNode({ data }: { data: NodeData }) {
             : label
         )}
       </div>
+
+      {isHovered && data.node && (
+        <HoverCard
+          title={data.node.label}
+          subtitle="Node Properties"
+          x={hoverPos.x}
+          y={hoverPos.y}
+          rows={[
+            { label: "Pressure", value: typeof data.node.pressure === 'number' ? `${convertUnit(data.node.pressure, data.node.pressureUnit, data.displayPressureUnit || data.node.pressureUnit).toFixed(2)} ${data.displayPressureUnit || data.node.pressureUnit}` : "N/A" },
+            { label: "Temperature", value: typeof data.node.temperature === 'number' ? `${data.node.temperature.toFixed(2)} ${data.node.temperatureUnit}` : "N/A" },
+            { label: "Fluid", value: data.node.fluid?.id || "None" },
+            { label: "Phase", value: data.node.fluid?.phase || "N/A" },
+          ]}
+        />
+      )}
     </div>
   );
 }
