@@ -104,6 +104,25 @@ export const getPipeEdge = ({
     labelLines.push(`dP: ${dPGradient.toFixed(dPPer100mDecimals)} ${gradientUnit}`);
   }
 
+  // Line 6: Mass Flow Rate
+  if (viewSettings.pipe.massFlowRate) {
+    const massFlowRateDecimals = viewSettings.pipe.decimals?.massFlowRate ?? 2;
+    // Use designMassFlowRate if available (calculated), otherwise input massFlowRate
+    // Actually, for steady state, usually we display the flow going through.
+    // pipe.massFlowRate is the input.
+    // Let's use pipe.massFlowRate for now as it's the primary property.
+    // If we want the calculated one (e.g. if it differs due to some reason), we might check resultSummary.
+    // But resultSummary usually has state (P, T, v), not necessarily mass flow if it's constant.
+    // However, `pipe.massFlowRate` is what we have.
+
+    const massFlow = pipe.massFlowRate;
+    const massFlowUnit = pipe.massFlowRateUnit || "kg/h";
+
+    if (typeof massFlow === "number") {
+      labelLines.push(`m: ${massFlow.toFixed(massFlowRateDecimals)} ${massFlowUnit}`);
+    }
+  }
+
   const labelTextColor = forceLightMode
     ? "rgba(0, 0, 0, 0.6)"
     : theme.palette.text.secondary;

@@ -157,7 +157,33 @@ export function PipeFluidSection({ pipe, sourceNode, isGasPipe, onUpdatePipe }: 
                     onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { designFlowRateDisplayUnit: newUnit })}
                     isDisabled={false} // Allow unit selection
                     decimalPlaces={3}
-                    helperText={isGasPipe ? "Standard Conditions: 1 atm, 25°C" : undefined}
+                    helperText={(() => {
+                        const velocity = pipe.resultSummary?.outletState?.velocity;
+                        const erosionalVelocity = pipe.resultSummary?.outletState?.erosionalVelocity;
+                        const isErosionAlert =
+                            typeof velocity === "number" &&
+                            typeof erosionalVelocity === "number" &&
+                            velocity > erosionalVelocity;
+
+                        const velocityText =
+                            typeof velocity === "number"
+                                ? `Velocity: ${velocity.toFixed(2)} m/s`
+                                : "";
+
+                        const erosionText = isErosionAlert
+                            ? ` (Exceeds Erosional Velocity: ${erosionalVelocity?.toFixed(2)} m/s)`
+                            : "";
+
+                        const standardCondText = isGasPipe ? "Standard Conditions: 1 atm, 25°C. " : "";
+
+                        return (
+                            <span style={{ color: isErosionAlert ? "#d32f2f" : "inherit" }}>
+                                {standardCondText}
+                                {velocityText}
+                                {erosionText}
+                            </span>
+                        ) as any;
+                    })()}
                     sx={{ input: { color: 'success.main' } }}
                     readOnly
                     color="success"

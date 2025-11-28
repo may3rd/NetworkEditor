@@ -1,6 +1,6 @@
 // components/PressureNode.tsx
 
-import { memo, type CSSProperties } from "react";
+import { memo, useState, type CSSProperties } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { useTheme } from "@mui/material";
 import { convertUnit } from "@/lib/unitConversion";
@@ -83,14 +83,9 @@ function PressureNode({ data }: { data: NodeData }) {
   const circleSize = 20;
   const dashThickness = needsAttention ? 2 : 0;
 
-  const handleStyle: CSSProperties = {
-    opacity: 1,
-    border: "none",
-    background: needsAttention ? attentionColor : textPrimary,
-    width: 7,
-    height: 7,
-    zIndex: 0,
-  };
+  // Handle colors
+  const sourceColor = isDark ? "#60a5fa" : "#3b82f6"; // Blue
+  const targetColor = isDark ? "#f87171" : "#ef4444"; // Red
 
   // Determine handle positions based on rotation
   // 0: Target Left, Source Right
@@ -119,18 +114,62 @@ function PressureNode({ data }: { data: NodeData }) {
       break;
   }
 
+  const [isHovered, setIsHovered] = useState(false);
+
+  const isVertical = targetPos === Position.Top || targetPos === Position.Bottom;
+  const handleWidth = isVertical ? 4 : 4;
+  const handleHeight = isVertical ? 4 : 4;
+  const borderRadius = 0;
+
+  const commonHandleStyle: CSSProperties = {
+    opacity: isHovered ? 1 : 0,
+    border: "none",
+    zIndex: -1,
+    borderRadius: borderRadius,
+    width: handleWidth,
+    height: handleHeight,
+  };
+
+  const getHandlePositionStyle = (pos: Position): CSSProperties => {
+    const offset = isHovered ? -1 : 3; // Pull handle inward by 3px normally, 0px on hover
+    switch (pos) {
+      case Position.Left:
+        return { left: offset };
+      case Position.Right:
+        return { right: offset };
+      case Position.Top:
+        return { top: offset };
+      case Position.Bottom:
+        return { bottom: offset };
+      default:
+        return {};
+    }
+  };
+
   return (
-    <>
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{ position: "relative" }}
+    >
       <Handle
         type="target"
         position={targetPos}
-        style={handleStyle}
+        style={{
+          ...commonHandleStyle,
+          ...getHandlePositionStyle(targetPos),
+          background: targetColor,
+        }}
         id="target"
       />
       <Handle
         type="source"
         position={sourcePos}
-        style={handleStyle}
+        style={{
+          ...commonHandleStyle,
+          ...getHandlePositionStyle(sourcePos),
+          background: sourceColor,
+        }}
         id="source"
       />
 
@@ -208,7 +247,7 @@ function PressureNode({ data }: { data: NodeData }) {
             : label
         )}
       </div>
-    </>
+    </div>
   );
 }
 

@@ -4,6 +4,7 @@ import {
     getSmoothStepPath,
     type EdgeProps,
 } from "@xyflow/react";
+import { useTheme } from "@mui/material";
 
 export default function PipeEdge({
     id,
@@ -26,10 +27,11 @@ export default function PipeEdge({
         targetPosition,
     });
 
+    const theme = useTheme();
     const labelLines = (data?.labelLines as string[]) || [];
-    const labelBgColor = (data?.labelBgColor as string) || "#ffffff";
-    const labelTextColor = (data?.labelTextColor as string) || "#000000";
-    const labelBorderColor = (data?.labelBorderColor as string) || "#cbd5f5";
+    const labelBgColor = (data?.labelBgColor as string) || theme.palette.background.paper;
+    const labelTextColor = (data?.labelTextColor as string) || theme.palette.text.primary;
+    const labelBorderColor = (data?.labelBorderColor as string) || theme.palette.divider;
     const isSelected = data?.isSelected as boolean;
 
     return (
@@ -42,7 +44,7 @@ export default function PipeEdge({
                             position: "absolute",
                             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                             background: labelBgColor,
-                            padding: "4px 8px",
+                            padding: "0px 8px",
                             borderRadius: "4px",
                             fontSize: "9px",
                             fontWeight: 500,

@@ -156,7 +156,7 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                             value={settings.node.decimals?.pressure ?? 2}
                                             onChange={(e) => handleNodeDecimalChange("pressure", e.target.value)}
                                             sx={{ width: 60 }}
-                                            inputProps={{ min: 0, max: 10, style: { padding: '4px 8px' } }}
+                                            slotProps={{ htmlInput: { min: 0, max: 10, style: { padding: '4px 8px' } } }}
                                         />
                                     </Stack>
                                     <Stack direction="row" alignItems="center" spacing={1}>
@@ -172,7 +172,7 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                             value={settings.node.decimals?.temperature ?? 2}
                                             onChange={(e) => handleNodeDecimalChange("temperature", e.target.value)}
                                             sx={{ width: 60 }}
-                                            inputProps={{ min: 0, max: 10, style: { padding: '4px 8px' } }}
+                                            slotProps={{ htmlInput: { min: 0, max: 10, style: { padding: '4px 8px' } } }}
                                         />
                                     </Stack>
                                 </Stack>
@@ -188,6 +188,22 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                     />
                                     <Stack direction="row" alignItems="center" spacing={1}>
                                         <FormControlLabel
+                                            control={<Checkbox checked={settings.pipe.massFlowRate} onChange={() => togglePipeSetting("massFlowRate")} />}
+                                            label="Mass Flow Rate"
+                                            sx={{ flex: 1 }}
+                                        />
+                                        <TextField
+                                            type="number"
+                                            size="small"
+                                            variant="outlined"
+                                            value={settings.pipe.decimals?.massFlowRate ?? 2}
+                                            onChange={(e) => handlePipeDecimalChange("massFlowRate", e.target.value)}
+                                            sx={{ width: 60 }}
+                                            slotProps={{ htmlInput: { min: 0, max: 10, style: { padding: '4px 8px' } } }}
+                                        />
+                                    </Stack>
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                        <FormControlLabel
                                             control={<Checkbox checked={settings.pipe.length} onChange={() => togglePipeSetting("length")} />}
                                             label="Length"
                                             sx={{ flex: 1 }}
@@ -199,23 +215,7 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                             value={settings.pipe.decimals?.length ?? 2}
                                             onChange={(e) => handlePipeDecimalChange("length", e.target.value)}
                                             sx={{ width: 60 }}
-                                            inputProps={{ min: 0, max: 10, style: { padding: '4px 8px' } }}
-                                        />
-                                    </Stack>
-                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                        <FormControlLabel
-                                            control={<Checkbox checked={settings.pipe.deltaP} onChange={() => togglePipeSetting("deltaP")} />}
-                                            label="Pressure Drop (ΔP)"
-                                            sx={{ flex: 1 }}
-                                        />
-                                        <TextField
-                                            type="number"
-                                            size="small"
-                                            variant="outlined"
-                                            value={settings.pipe.decimals?.deltaP ?? 2}
-                                            onChange={(e) => handlePipeDecimalChange("deltaP", e.target.value)}
-                                            sx={{ width: 60 }}
-                                            inputProps={{ min: 0, max: 10, style: { padding: '4px 8px' } }}
+                                            slotProps={{ htmlInput: { min: 0, max: 10, style: { padding: '4px 8px' } } }}
                                         />
                                     </Stack>
                                     <Stack direction="row" alignItems="center" spacing={1}>
@@ -231,7 +231,23 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                             value={settings.pipe.decimals?.velocity ?? 2}
                                             onChange={(e) => handlePipeDecimalChange("velocity", e.target.value)}
                                             sx={{ width: 60 }}
-                                            inputProps={{ min: 0, max: 10, style: { padding: '4px 8px' } }}
+                                            slotProps={{ htmlInput: { min: 0, max: 10, style: { padding: '4px 8px' } } }}
+                                        />
+                                    </Stack>
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                        <FormControlLabel
+                                            control={<Checkbox checked={settings.pipe.deltaP} onChange={() => togglePipeSetting("deltaP")} />}
+                                            label="Pressure Drop (ΔP)"
+                                            sx={{ flex: 1 }}
+                                        />
+                                        <TextField
+                                            type="number"
+                                            size="small"
+                                            variant="outlined"
+                                            value={settings.pipe.decimals?.deltaP ?? 2}
+                                            onChange={(e) => handlePipeDecimalChange("deltaP", e.target.value)}
+                                            sx={{ width: 60 }}
+                                            slotProps={{ htmlInput: { min: 0, max: 10, style: { padding: '4px 8px' } } }}
                                         />
                                     </Stack>
                                     <Stack direction="row" alignItems="center" spacing={1}>
@@ -247,7 +263,7 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                             value={settings.pipe.decimals?.dPPer100m ?? 2}
                                             onChange={(e) => handlePipeDecimalChange("dPPer100m", e.target.value)}
                                             sx={{ width: 60 }}
-                                            inputProps={{ min: 0, max: 10, style: { padding: '4px 8px' } }}
+                                            slotProps={{ htmlInput: { min: 0, max: 10, style: { padding: '4px 8px' } } }}
                                         />
                                     </Stack>
                                 </Stack>

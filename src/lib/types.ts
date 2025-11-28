@@ -584,11 +584,13 @@ export type ViewSettings = {
     deltaP: boolean;
     velocity: boolean;
     dPPer100m: boolean;
+    massFlowRate: boolean;
     decimals: {
       length: number;
       deltaP: number;
       velocity: number;
       dPPer100m: number;
+      massFlowRate: number;
     };
   };
 };
