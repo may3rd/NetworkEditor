@@ -9,6 +9,9 @@ import {
     ListItemButton,
     ListItemText,
     DialogActions,
+    Autocomplete,
+    TextField,
+    Typography,
 } from "@mui/material";
 import { useState } from "react";
 import { PipeProps, PipePatch, NetworkState } from "@/lib/types";
@@ -27,6 +30,7 @@ type Props = {
 
 export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
     const [openCopyDialog, setOpenCopyDialog] = useState(false);
+    const [selectedPipeToCopy, setSelectedPipeToCopy] = useState<PipeProps | null>(null);
 
     const startNode = network.nodes.find((n) => n.id === pipe.startNodeId);
     const endNode = network.nodes.find((n) => n.id === pipe.endNodeId);
@@ -130,20 +134,36 @@ export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
             <Dialog open={openCopyDialog} onClose={() => setOpenCopyDialog(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>Copy Properties From</DialogTitle>
                 <DialogContent dividers>
-                    <List>
-                        {network.pipes
-                            .filter((p) => p.id !== pipe.id)
-                            .map((p, index) => (
-                                <ListItem disablePadding key={p.id}>
-                                    <ListItemButton onClick={() => handleCopyFromPipe(p)}>
-                                        <ListItemText primary={p.name || `P-${index + 1}`} secondary={p.description} />
-                                    </ListItemButton>
-                                </ListItem>
-                            ))}
-                    </List>
+                    <Autocomplete
+                        options={network.pipes.filter((p) => p.id !== pipe.id)}
+                        getOptionLabel={(option) => option.name || option.id}
+                        value={selectedPipeToCopy}
+                        onChange={(_, newValue) => setSelectedPipeToCopy(newValue)}
+                        renderInput={(params) => <TextField {...params} label="Select Pipe" />}
+                        renderOption={(props, option) => {
+                            const { key, ...otherProps } = props;
+                            return (
+                                <li key={key} {...otherProps}>
+                                    <Stack>
+                                        <Typography variant="body1">{option.name || option.id}</Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                            {option.description}
+                                        </Typography>
+                                    </Stack>
+                                </li>
+                            );
+                        }}
+                    />
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setOpenCopyDialog(false)}>Cancel</Button>
+                    <Button
+                        onClick={() => selectedPipeToCopy && handleCopyFromPipe(selectedPipeToCopy)}
+                        disabled={!selectedPipeToCopy}
+                        variant="contained"
+                    >
+                        Copy
+                    </Button>
                 </DialogActions>
             </Dialog>
         </Stack>
