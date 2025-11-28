@@ -110,6 +110,8 @@ export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
                 <PipeControlValveSection
                     pipe={pipe}
                     isGasPipe={isGasPipe}
+                    startNode={startNode}
+                    endNode={endNode}
                     onUpdatePipe={onUpdatePipe}
                 />
             )}

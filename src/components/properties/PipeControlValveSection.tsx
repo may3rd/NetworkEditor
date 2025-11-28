@@ -6,18 +6,27 @@ import {
     Stack,
     FormControlLabel,
     Radio,
+    IconButton,
+    Tooltip,
 } from "@mui/material";
-import { PipeProps, PipePatch } from "@/lib/types";
+import {
+    AutoFixHigh as AutoFixHighIcon,
+} from "@mui/icons-material";
+import { PipeProps, PipePatch, NodeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
+import { buildHydraulicContext, convertScalar, PSI_PER_PASCAL, AIR_MOLAR_MASS } from "@/lib/calculations/utils";
+import { calculateRequiredCg, computeStandardFlowScfh } from "@/lib/calculations/controlValve";
 
 type Props = {
     pipe: PipeProps;
     isGasPipe: boolean;
+    startNode?: NodeProps;
+    endNode?: NodeProps;
     onUpdatePipe: (id: string, patch: PipePatch) => void;
 };
 
-export function PipeControlValveSection({ pipe, isGasPipe, onUpdatePipe }: Props) {
+export function PipeControlValveSection({ pipe, isGasPipe, startNode, endNode, onUpdatePipe }: Props) {
     const controlValveInputRadioLabel = isGasPipe
         ? "Input Cg"
         : "Input Cv";
@@ -49,6 +58,201 @@ export function PipeControlValveSection({ pipe, isGasPipe, onUpdatePipe }: Props
     const controlValveCalculatedCoefficientValue = isGasPipe
         ? pipe?.controlValve?.cg ?? ""
         : pipe?.controlValve?.cv ?? "";
+
+    const handleSolveCv = () => {
+        if (!startNode || !endNode) return;
+
+        const p1 = convertScalar(startNode.pressure, startNode.pressureUnit, "Pa");
+        const p2 = convertScalar(endNode.pressure, endNode.pressureUnit, "Pa");
+
+        if (!p1 || !p2) {
+            alert("Both start and end nodes must have valid pressure values.");
+            return;
+        }
+
+        const targetDrop = Math.abs(p1 - p2);
+        if (targetDrop === 0) {
+            alert("Pressure difference is zero. Cannot solve for Cv/Cg.");
+            return;
+        }
+
+        const context = buildHydraulicContext(pipe);
+        if (!context) {
+            alert("Insufficient data to perform calculation (check flow rate, fluid properties, etc).");
+            return;
+        }
+
+        const currentUnit = pipe.controlValve?.pressureDropUnit ?? "kPa";
+        const convertedDrop = convertScalar(targetDrop, "Pa", currentUnit);
+
+        if (isGasPipe) {
+            const flowScfh = computeStandardFlowScfh(context.massFlow, context.molarMass);
+            const molarMass = context.molarMass;
+            const specificGravity = molarMass ? molarMass / AIR_MOLAR_MASS : undefined;
+            const temperatureK = context.temperature;
+            const inletPressurePa = context.pressure; // This comes from boundary pressure (start node)
+            const kFactor = context.gamma ?? 1.4;
+            const xt = pipe.controlValve?.xT ?? 0.72;
+            const c1 = pipe.controlValve?.C1 ?? (39.76 * Math.sqrt(xt));
+
+            // For gas, we need P1 and P2 at the valve.
+            // Assuming the valve is the main restriction, we use node pressures.
+            // Note: context.pressure is typically the start node pressure.
+            // We need to be careful about units.
+            const inletPressurePsia = inletPressurePa * PSI_PER_PASCAL;
+            // Target outlet pressure is P1 - drop, or just P2.
+            // Let's use the actual P2 from the end node for consistency with the "pressure difference" goal.
+            const outletPressurePa = p2;
+            const outletPressurePsia = outletPressurePa * PSI_PER_PASCAL;
+
+            if (!flowScfh || !specificGravity || !temperatureK) {
+                alert("Missing gas properties or flow rate.");
+                return;
+            }
+
+            const tempRankine = temperatureK * (9 / 5);
+
+            const requiredCg = calculateRequiredCg({
+                flowScfh,
+                p1Psia: inletPressurePsia,
+                p2Psia: outletPressurePsia,
+                tempRankine,
+                specificGravity,
+                kFactor,
+                xt,
+                c1,
+            });
+
+            if (requiredCg > 0) {
+                onUpdatePipe(pipe.id, (currentPipe) => {
+                    const currentValve = currentPipe.controlValve ?? { id: currentPipe.id };
+                    return {
+                        controlValve: {
+                            ...currentValve,
+                            calculation_note: "cv_to_dp",
+                            cg: requiredCg,
+                            cv: requiredCg / c1, // Update Cv as well for consistency
+                            pressureDrop: convertedDrop,
+                            pressureDropUnit: currentUnit,
+                        }
+                    };
+                });
+            } else {
+                alert("Could not calculate required Cg (result was 0 or invalid).");
+            }
+
+        } else {
+            // Liquid
+            // Cv = 11.56 * Q_m3h * sqrt(SG / dP_kPa)
+            const density = context.density;
+            const volumetricFlowM3h = context.volumetricFlowRate * 3600;
+            const specificGravity = density / 1000;
+            const pressureDropKPa = convertScalar(targetDrop, "Pa", "kPa");
+
+            if (volumetricFlowM3h > 0 && specificGravity > 0 && pressureDropKPa && pressureDropKPa > 0) {
+                const calculatedCv = 11.56 * volumetricFlowM3h * Math.sqrt(specificGravity / pressureDropKPa);
+                if (Number.isFinite(calculatedCv)) {
+                    onUpdatePipe(pipe.id, (currentPipe) => {
+                        const currentValve = currentPipe.controlValve ?? { id: currentPipe.id };
+                        return {
+                            controlValve: {
+                                ...currentValve,
+                                calculation_note: "cv_to_dp",
+                                cv: calculatedCv,
+                                pressureDrop: convertedDrop,
+                                pressureDropUnit: currentUnit,
+                            }
+                        };
+                    });
+                }
+            } else {
+                alert("Could not calculate Cv. Check flow rate and pressure difference.");
+            }
+        }
+    };
+
+    const handleSetDp = () => {
+        if (!startNode || !endNode) return;
+
+        const p1 = convertScalar(startNode.pressure, startNode.pressureUnit, "Pa");
+        const p2 = convertScalar(endNode.pressure, endNode.pressureUnit, "Pa");
+
+        if (p1 === undefined || p2 === undefined) {
+            alert("Both start and end nodes must have valid pressure values.");
+            return;
+        }
+
+        const targetDrop = Math.abs(p1 - p2);
+        const currentUnit = pipe.controlValve?.pressureDropUnit ?? "kPa";
+        const convertedDrop = convertScalar(targetDrop, "Pa", currentUnit);
+
+        if (convertedDrop !== undefined) {
+            // Calculate Cv/Cg immediately
+            const context = buildHydraulicContext(pipe);
+            let calculatedCg: number | undefined;
+            let calculatedCv: number | undefined;
+
+            if (context) {
+                if (isGasPipe) {
+                    const flowScfh = computeStandardFlowScfh(context.massFlow, context.molarMass);
+                    const molarMass = context.molarMass;
+                    const specificGravity = molarMass ? molarMass / AIR_MOLAR_MASS : undefined;
+                    const temperatureK = context.temperature;
+                    const inletPressurePa = context.pressure;
+                    const kFactor = context.gamma ?? 1.4;
+                    const xt = pipe.controlValve?.xT ?? 0.72;
+                    const c1 = pipe.controlValve?.C1 ?? (39.76 * Math.sqrt(xt));
+                    const inletPressurePsia = inletPressurePa * PSI_PER_PASCAL;
+                    const outletPressurePa = p2; // Use actual P2
+                    const outletPressurePsia = outletPressurePa * PSI_PER_PASCAL;
+
+                    if (flowScfh && specificGravity && temperatureK) {
+                        const tempRankine = temperatureK * (9 / 5);
+                        const requiredCg = calculateRequiredCg({
+                            flowScfh,
+                            p1Psia: inletPressurePsia,
+                            p2Psia: outletPressurePsia,
+                            tempRankine,
+                            specificGravity,
+                            kFactor,
+                            xt,
+                            c1,
+                        });
+                        if (requiredCg > 0) {
+                            calculatedCg = requiredCg;
+                            calculatedCv = requiredCg / c1;
+                        }
+                    }
+                } else {
+                    // Liquid
+                    const density = context.density;
+                    const volumetricFlowM3h = context.volumetricFlowRate * 3600;
+                    const specificGravity = density / 1000;
+                    const pressureDropKPa = convertScalar(targetDrop, "Pa", "kPa");
+
+                    if (volumetricFlowM3h > 0 && specificGravity > 0 && pressureDropKPa && pressureDropKPa > 0) {
+                        const cv = 11.56 * volumetricFlowM3h * Math.sqrt(specificGravity / pressureDropKPa);
+                        if (Number.isFinite(cv)) {
+                            calculatedCv = cv;
+                        }
+                    }
+                }
+            }
+
+            onUpdatePipe(pipe.id, (currentPipe) => {
+                const currentValve = currentPipe.controlValve ?? { id: currentPipe.id };
+                return {
+                    controlValve: {
+                        ...currentValve,
+                        calculation_note: "dp_to_cv",
+                        pressureDrop: convertedDrop,
+                        pressureDropUnit: currentUnit,
+                        ...(isGasPipe ? { cg: calculatedCg, cv: calculatedCv } : { cv: calculatedCv }),
+                    }
+                };
+            });
+        }
+    };
 
     return (
         <>
@@ -127,7 +331,7 @@ export function PipeControlValveSection({ pipe, isGasPipe, onUpdatePipe }: Props
 
             {(pipe.controlValve?.calculation_note === "cv_to_dp") && (
                 <>
-                    <Stack spacing={2}>
+                    <Stack spacing={2} direction="row" alignItems="flex-start">
                         <TextField
                             label={controlValveCoefficientLabel}
                             size="small"
@@ -152,7 +356,13 @@ export function PipeControlValveSection({ pipe, isGasPipe, onUpdatePipe }: Props
                                     };
                                 });
                             }}
+                            sx={{ flex: 1 }}
                         />
+                        <Tooltip title={`Solve for ${isGasPipe ? "Cg" : "Cv"} (adjusts coefficient to match pressure difference)`}>
+                            <IconButton onClick={handleSolveCv} color="primary" sx={{ mt: 0.5 }}>
+                                <AutoFixHighIcon />
+                            </IconButton>
+                        </Tooltip>
                     </Stack>
 
                     <QuantityInput
@@ -204,53 +414,60 @@ export function PipeControlValveSection({ pipe, isGasPipe, onUpdatePipe }: Props
 
             {(pipe.controlValve?.calculation_note === "dp_to_cv" || !pipe.controlValve?.calculation_note) && (
                 <>
-                    <QuantityInput
-                        label="Pressure Drop"
-                        value={
-                            typeof controlValvePressureDropDisplayValue === "number"
-                                ? controlValvePressureDropDisplayValue
-                                : ""
-                        }
-                        unit={controlValvePressureDropUnit}
-                        units={QUANTITY_UNIT_OPTIONS.pressureDrop}
-                        unitFamily="pressureDrop"
-                        onValueChange={(newValue) => {
-                            onUpdatePipe(pipe.id, (currentPipe) => {
-                                const currentValve =
-                                    currentPipe.controlValve ?? {
-                                        id: currentPipe.id,
-                                        tag: currentPipe.id,
+                    <Stack direction="row" alignItems="flex-start" spacing={1}>
+                        <QuantityInput
+                            label="Pressure Drop"
+                            value={
+                                typeof controlValvePressureDropDisplayValue === "number"
+                                    ? controlValvePressureDropDisplayValue
+                                    : ""
+                            }
+                            unit={controlValvePressureDropUnit}
+                            units={QUANTITY_UNIT_OPTIONS.pressureDrop}
+                            unitFamily="pressureDrop"
+                            onValueChange={(newValue) => {
+                                onUpdatePipe(pipe.id, (currentPipe) => {
+                                    const currentValve =
+                                        currentPipe.controlValve ?? {
+                                            id: currentPipe.id,
+                                            tag: currentPipe.id,
+                                        };
+                                    return {
+                                        controlValve: {
+                                            ...currentValve,
+                                            pressureDrop: newValue,
+                                            pressureDropUnit: currentValve.pressureDropUnit ?? "kPa",
+                                            ...(isGasPipe ? { cg: undefined } : { cv: undefined }),
+                                        },
+                                        pressureDropCalculationResults: undefined,
+                                        resultSummary: undefined,
                                     };
-                                return {
-                                    controlValve: {
-                                        ...currentValve,
-                                        pressureDrop: newValue,
-                                        pressureDropUnit: currentValve.pressureDropUnit ?? "kPa",
-                                        ...(isGasPipe ? { cg: undefined } : { cv: undefined }),
-                                    },
-                                    pressureDropCalculationResults: undefined,
-                                    resultSummary: undefined,
-                                };
-                            });
-                        }}
-                        onUnitChange={(newUnit) => {
-                            onUpdatePipe(pipe.id, (currentPipe) => {
-                                const currentValve =
-                                    currentPipe.controlValve ?? {
-                                        id: currentPipe.id,
-                                        tag: currentPipe.id,
+                                });
+                            }}
+                            onUnitChange={(newUnit) => {
+                                onUpdatePipe(pipe.id, (currentPipe) => {
+                                    const currentValve =
+                                        currentPipe.controlValve ?? {
+                                            id: currentPipe.id,
+                                            tag: currentPipe.id,
+                                        };
+                                    return {
+                                        controlValve: {
+                                            ...currentValve,
+                                            pressureDropUnit: newUnit,
+                                        },
+                                        pressureDropCalculationResults: undefined,
+                                        resultSummary: undefined,
                                     };
-                                return {
-                                    controlValve: {
-                                        ...currentValve,
-                                        pressureDropUnit: newUnit,
-                                    },
-                                    pressureDropCalculationResults: undefined,
-                                    resultSummary: undefined,
-                                };
-                            });
-                        }}
-                    />
+                                });
+                            }}
+                        />
+                        <Tooltip title="Set Pressure Drop (sets value to match pressure difference)">
+                            <IconButton onClick={handleSetDp} color="primary" sx={{ mt: 1 }}>
+                                <AutoFixHighIcon />
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
                     <TextField
                         label={controlValveCalculatedCoefficientLabel}
                         size="small"

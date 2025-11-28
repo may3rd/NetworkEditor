@@ -9,7 +9,12 @@ import {
     FormLabel,
     Typography,
     Switch,
+    Tooltip,
+    IconButton,
 } from "@mui/material";
+import {
+    AutoFixHigh as AutoFixHighIcon,
+} from "@mui/icons-material";
 import { NetworkState, NodeProps, NodePatch, PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { validateNodeConfiguration } from "@/utils/nodeUtils";
@@ -161,15 +166,18 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                     <Typography fontSize={12}>
                         Conditions
                     </Typography>
-                    <Button
-                        variant="contained"
-                        size="small"
-                        onClick={() => handleUpdateFromPipe(node)}
-                        disabled={!validation.isValid}
-                        title={validation.message}
-                    >
-                        Update from Pipe
-                    </Button>
+                    <Tooltip title={validation.message || "Update from Pipe"}>
+                        <span>
+                            <IconButton
+                                color="primary"
+                                size="small"
+                                onClick={() => handleUpdateFromPipe(node)}
+                                disabled={!validation.isValid}
+                            >
+                                <AutoFixHighIcon />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
                 </Stack>
                 <QuantityInput
                     label="Temperature"
@@ -253,7 +261,11 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                                 <FormControlLabel value="gas" control={<Radio size="small" />} label="Gas" />
                             </Stack>
                         </RadioGroup>
-                        <Button variant="contained" size="small" onClick={handleAutoFluid}>Auto</Button>
+                        <Tooltip title="Auto-generate fluid properties">
+                            <IconButton color="primary" size="small" onClick={handleAutoFluid}>
+                                <AutoFixHighIcon />
+                            </IconButton>
+                        </Tooltip>
                     </Stack>
                 </FormControl>
 

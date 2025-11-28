@@ -80,28 +80,32 @@ export function PropertiesPanel({
           boxShadow: 1,
         })
       }}>
-        {node || pipe ? (
-          <Stack direction="row" alignItems="baseline" spacing={1}>
-            <Typography variant="h6" fontWeight="bold" sx={{ fontSize: isScrolled ? "1rem" : "1.25rem", transition: "font-size 0.2s" }}>
-              {node ? "Node" : "Pipe"} Properties
-            </Typography>
-            {isScrolled && pipe && (
-              <Typography variant="body2" color="text.secondary">
-                - {pipe.pipeSectionType === "control valve" ? "Control Valve" : pipe.pipeSectionType === "orifice" ? "Orifice" : "Pipeline"}
-              </Typography>
-            )}
-          </Stack>
-        ) : (
+        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Box>
-            <Typography variant="h6" fontWeight="bold">No Node or Pipe Selected</Typography>
-            {!isScrolled && <Typography>Select a node or pipe to view or edit its values.</Typography>}
+            {node || pipe ? (
+              <Stack direction="row" alignItems="baseline" spacing={1}>
+                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: isScrolled ? "1rem" : "1.25rem", transition: "font-size 0.2s" }}>
+                  {node ? "Node" : "Pipe"} Properties
+                </Typography>
+                {isScrolled && pipe && (
+                  <Typography variant="body2" color="text.secondary">
+                    - {pipe.pipeSectionType === "control valve" ? "Control Valve" : pipe.pipeSectionType === "orifice" ? "Orifice" : "Pipeline"}
+                  </Typography>
+                )}
+              </Stack>
+            ) : (
+              <Box>
+                <Typography variant="h6" fontWeight="bold">No Node or Pipe Selected</Typography>
+                {!isScrolled && <Typography>Select a node or pipe to view or edit its values.</Typography>}
+              </Box>
+            )}
           </Box>
-        )}
-        {onClose && (
-          <IconButton size="small" onClick={onClose} sx={{ position: 'absolute', right: 8, top: 12 }}>
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        )}
+          {onClose && (
+            <IconButton size="small" onClick={onClose} sx={{ ml: 1 }}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          )}
+        </Stack>
       </Box>
 
       <Box sx={{ px: 2, pb: 2, pt: 1, display: "flex", flexDirection: "column", gap: 1 }}>

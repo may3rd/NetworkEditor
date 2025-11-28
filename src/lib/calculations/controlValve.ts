@@ -124,8 +124,9 @@ function calculateLiquidControlValveContribution(
     const updatedControlValve = { ...controlValve };
 
     const canCalculate = isPositive(volumetricFlowM3h) && isPositive(specificGravity);
+    const mode = controlValve.calculation_note ?? "dp_to_cv";
 
-    if (canCalculate && controlValve.pressureDrop !== undefined && controlValve.pressureDrop > 0) {
+    if (mode === "dp_to_cv" && canCalculate && controlValve.pressureDrop !== undefined && controlValve.pressureDrop > 0) {
         // Calculate Cv from pressure drop using liquid formula (Cv = 11.56 * Q_m3h * sqrt(SG / ΔP_kPa))
         const pressureDropKPa =
             convertScalar(controlValve.pressureDrop, controlValve.pressureDropUnit ?? "kPa", "kPa") ??
@@ -137,7 +138,7 @@ function calculateLiquidControlValveContribution(
             pressureDrop = pressureDropPa;
             updatedControlValve.cv = Number.isFinite(calculatedCv) ? calculatedCv : undefined;
         }
-    } else if (canCalculate && controlValve.cv && controlValve.cv > 0) {
+    } else if (mode === "cv_to_dp" && canCalculate && controlValve.cv && controlValve.cv > 0) {
         // Calculate pressure drop from Cv rearranging the same formula
         const pressureDropKPa =
             specificGravity *
@@ -216,8 +217,9 @@ function calculateGasControlValveContribution(
     const maxDropPa = Math.max(inletPressurePa - MIN_VALVE_PRESSURE_PA, MIN_VALVE_PRESSURE_PA);
 
     let pressureDrop: number | undefined;
+    const mode = controlValve.calculation_note ?? "dp_to_cv";
 
-    if (isPositive(specifiedPressureDropPa)) {
+    if (mode === "dp_to_cv" && isPositive(specifiedPressureDropPa)) {
         const boundedDrop = Math.min(specifiedPressureDropPa, maxDropPa);
         const outletPressurePa = Math.max(MIN_VALVE_PRESSURE_PA, inletPressurePa - boundedDrop);
         const requiredCg = calculateRequiredCg({
@@ -237,7 +239,7 @@ function calculateGasControlValveContribution(
         updatedControlValve.cv = Number.isFinite(derivedCv) ? derivedCv : updatedControlValve.cv;
         updatedControlValve.cg = requiredCg;
         pressureDrop = boundedDrop;
-    } else {
+    } else if (mode === "cv_to_dp") {
         const targetCg =
             (isPositive(controlValve.cg) ? controlValve.cg : undefined) ??
             (isPositive(controlValve.cv) ? controlValve.cv * c1Value : undefined);
@@ -320,7 +322,7 @@ function buildControlValveResults(
     };
 }
 
-function computeStandardFlowScfh(
+export function computeStandardFlowScfh(
     massFlowKgPerS?: number,
     molarMass?: number,
 ): number | undefined {
