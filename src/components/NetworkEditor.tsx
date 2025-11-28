@@ -149,12 +149,16 @@ export function NetworkEditor({
 }: NetworkEditorProps) {
   const theme = useTheme();
   const [viewSettingsDialogOpen, setViewSettingsDialogOpen] = useState(false);
-  const [viewSettings, setViewSettings] = useState<ViewSettings>({
+  const [viewSettings, setViewSettings] = useState<ViewSettings>(network.viewSettings ?? {
     unitSystem: "metric",
     node: {
       name: true,
       pressure: false,
       temperature: false,
+      decimals: {
+        pressure: 2,
+        temperature: 2,
+      },
     },
     pipe: {
       name: true,
@@ -162,6 +166,12 @@ export function NetworkEditor({
       deltaP: false,
       velocity: false,
       dPPer100m: false,
+      decimals: {
+        length: 2,
+        deltaP: 2,
+        velocity: 2,
+        dPPer100m: 2,
+      },
     },
   });
 
@@ -193,7 +203,21 @@ export function NetworkEditor({
     if (externalSetShowPressures) {
       externalSetShowPressures(viewSettings.node.pressure || viewSettings.pipe.deltaP);
     }
-  }, [viewSettings.node.pressure, viewSettings.pipe.deltaP, externalSetShowPressures]);
+
+    // Sync viewSettings to network state
+    if (onNetworkChange) {
+      // Avoid infinite loops by checking if deep equal or similar, but for now simple check
+      // Actually, onNetworkChange updates the network prop, which might cause re-render.
+      // We need to be careful. 
+      // Let's just update if the network.viewSettings is different from current viewSettings
+      if (JSON.stringify(network.viewSettings) !== JSON.stringify(viewSettings)) {
+        onNetworkChange({
+          ...network,
+          viewSettings
+        });
+      }
+    }
+  }, [viewSettings, externalSetShowPressures, onNetworkChange, network]);
 
   const nodeFlowStates = useMemo<Record<string, NodeFlowState>>(() => {
     const PRESSURE_TOLERANCE = 0.001;

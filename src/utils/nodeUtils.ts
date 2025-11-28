@@ -29,15 +29,20 @@ export const getPressureNode = ({
         needsAttention: false,
     };
     const labelLines: string[] = [];
+
+    // Default decimals if not set (fallback for safety)
+    const pressureDecimals = viewSettings.node.decimals?.pressure ?? 2;
+    const temperatureDecimals = viewSettings.node.decimals?.temperature ?? 2;
+
     if (viewSettings.node.name) {
         labelLines.push(node.label);
     }
     if (viewSettings.node.pressure && typeof node.pressure === "number") {
         const convertedPressure = convertUnit(node.pressure, node.pressureUnit, displayPressureUnit || node.pressureUnit);
-        labelLines.push(`${convertedPressure.toFixed(2)} ${displayPressureUnit || node.pressureUnit || ""}`);
+        labelLines.push(`${convertedPressure.toFixed(pressureDecimals)} ${displayPressureUnit || node.pressureUnit || ""}`);
     }
     if (viewSettings.node.temperature && typeof node.temperature === "number") {
-        labelLines.push(`${node.temperature.toFixed(2)} ${node.temperatureUnit ?? ""}`);
+        labelLines.push(`${node.temperature.toFixed(temperatureDecimals)} ${node.temperatureUnit ?? ""}`);
     }
 
     return {

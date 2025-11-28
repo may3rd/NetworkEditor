@@ -204,6 +204,7 @@ export type NetworkState = {
   backgroundImagePosition?: { x: number; y: number };
   backgroundImageLocked?: boolean;
   visiblePipeIds?: string[];
+  viewSettings?: ViewSettings;
 };
 
 const baseNetwork: NetworkState = {
@@ -572,6 +573,10 @@ export type ViewSettings = {
     name: boolean;
     pressure: boolean;
     temperature: boolean;
+    decimals: {
+      pressure: number;
+      temperature: number;
+    };
   };
   pipe: {
     name: boolean;
@@ -579,5 +584,11 @@ export type ViewSettings = {
     deltaP: boolean;
     velocity: boolean;
     dPPer100m: boolean;
+    decimals: {
+      length: number;
+      deltaP: number;
+      velocity: number;
+      dPPer100m: number;
+    };
   };
 };

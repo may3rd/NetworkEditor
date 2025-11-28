@@ -25,6 +25,12 @@ export const getPipeEdge = ({
   const isSelectedPipe = selectedType === "pipe" && selectedId === pipe.id;
   const labelLines: string[] = [];
 
+  // Default decimals
+  const lengthDecimals = viewSettings.pipe.decimals?.length ?? 2;
+  const deltaPDecimals = viewSettings.pipe.decimals?.deltaP ?? 2;
+  const velocityDecimals = viewSettings.pipe.decimals?.velocity ?? 2;
+  const dPPer100mDecimals = viewSettings.pipe.decimals?.dPPer100m ?? 2;
+
   // Line 1: Name + Type
   if (viewSettings.pipe.name) {
     let line1 = pipe.name || `P${index + 1} `;
@@ -49,7 +55,7 @@ export const getPipeEdge = ({
     // Actually, let's assume storage is 'm' for simplicity or use the stored unit.
     const convertedLength = convertUnit(lengthVal, pipe.lengthUnit || "m", lengthUnit);
 
-    labelLines.push(`${convertedLength.toFixed(2)} ${lengthUnit}`);
+    labelLines.push(`${convertedLength.toFixed(lengthDecimals)} ${lengthUnit}`);
   }
 
   // Line 3: Pressure Drop
@@ -66,7 +72,7 @@ export const getPipeEdge = ({
     else if (viewSettings.unitSystem === "fieldSI") deltaPUnit = "barg";
 
     const deltaP = convertUnit(deltaPPa, "Pa", deltaPUnit);
-    labelLines.push(`ΔP: ${deltaP.toFixed(2)} ${deltaPUnit}`);
+    labelLines.push(`ΔP: ${deltaP.toFixed(deltaPDecimals)} ${deltaPUnit}`);
   }
 
   // Line 4: Velocity
@@ -78,7 +84,7 @@ export const getPipeEdge = ({
     const velocityUnit = viewSettings.unitSystem === "imperial" ? "ft/s" : "m/s";
     const velocity = convertUnit(velocityMS, "m/s", velocityUnit);
 
-    labelLines.push(`v: ${velocity.toFixed(2)} ${velocityUnit}`);
+    labelLines.push(`v: ${velocity.toFixed(velocityDecimals)} ${velocityUnit}`);
   }
 
   // Line 5: dP/100m
@@ -95,7 +101,7 @@ export const getPipeEdge = ({
     else if (viewSettings.unitSystem === "fieldSI") gradientUnit = "bar/100m";
 
     const dPGradient = convertUnit(dPGradientPaM, "Pa/m", gradientUnit);
-    labelLines.push(`dP: ${dPGradient.toFixed(2)} ${gradientUnit}`);
+    labelLines.push(`dP: ${dPGradient.toFixed(dPPer100mDecimals)} ${gradientUnit}`);
   }
 
   const labelTextColor = forceLightMode
