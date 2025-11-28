@@ -1,6 +1,7 @@
 import { MarkerType, type Edge } from "@xyflow/react";
 import { type Theme } from "@mui/material";
 import { type PipeProps, type ViewSettings } from "@/lib/types";
+import { convertUnit } from "@/lib/unitConversion";
 
 interface GetPipeEdgeParams {
   pipe: PipeProps;
@@ -26,9 +27,9 @@ export const getPipeEdge = ({
 
   // Line 1: Name + Type
   if (viewSettings.pipe.name) {
-    let line1 = pipe.name || `P${ index + 1 } `;
+    let line1 = pipe.name || `P${index + 1} `;
     if (!pipe.name) {
-      line1 = `P${ index + 1 } `;
+      line1 = `P${index + 1} `;
     }
     if (pipe.pipeSectionType === "control valve") {
       line1 += ": CV";
@@ -40,11 +41,15 @@ export const getPipeEdge = ({
 
   // Line 2: Length / Dimensions
   if (viewSettings.pipe.length && pipe.pipeSectionType !== "control valve" && pipe.pipeSectionType !== "orifice") {
-    const roundedLength =
-      typeof pipe.length === "number"
-        ? pipe.length.toFixed(2)
-        : Number(pipe.length ?? 0).toFixed(2);
-    labelLines.push(`${ roundedLength } ${ pipe.lengthUnit ?? "" } `.trim());
+    const lengthUnit = viewSettings.unitSystem === "imperial" ? "ft" : "m";
+    const lengthVal = typeof pipe.length === "number" ? pipe.length : Number(pipe.length ?? 0);
+    // Assuming pipe.length is stored in meters (if not specified otherwise, but usually it is)
+    // If pipe.lengthUnit is stored, we should convert from that.
+    // For now assuming storage is 'm' or we use existing unit if we can't convert?
+    // Actually, let's assume storage is 'm' for simplicity or use the stored unit.
+    const convertedLength = convertUnit(lengthVal, pipe.lengthUnit || "m", lengthUnit);
+
+    labelLines.push(`${convertedLength.toFixed(2)} ${lengthUnit}`);
   }
 
   // Line 3: Pressure Drop
@@ -52,9 +57,16 @@ export const getPipeEdge = ({
     viewSettings.pipe.deltaP &&
     pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined
   ) {
-    const deltaP =
-      pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000; // Pa to kPa
-    labelLines.push(`ΔP: ${ deltaP.toFixed(2) } kPa`);
+    // totalSegmentPressureDrop is likely in Pa (based on previous code /1000 to kPa)
+    const deltaPPa = pipe.pressureDropCalculationResults.totalSegmentPressureDrop;
+
+    let deltaPUnit = "kPa";
+    if (viewSettings.unitSystem === "imperial") deltaPUnit = "psi";
+    else if (viewSettings.unitSystem === "metric_kgcm2") deltaPUnit = "kg/cm2";
+    else if (viewSettings.unitSystem === "fieldSI") deltaPUnit = "barg";
+
+    const deltaP = convertUnit(deltaPPa, "Pa", deltaPUnit);
+    labelLines.push(`ΔP: ${deltaP.toFixed(2)} ${deltaPUnit}`);
   }
 
   // Line 4: Velocity
@@ -62,7 +74,11 @@ export const getPipeEdge = ({
     viewSettings.pipe.velocity &&
     pipe.resultSummary?.outletState?.velocity !== undefined
   ) {
-    labelLines.push(`v: ${ pipe.resultSummary.outletState.velocity.toFixed(2) } m / s`);
+    const velocityMS = pipe.resultSummary.outletState.velocity;
+    const velocityUnit = viewSettings.unitSystem === "imperial" ? "ft/s" : "m/s";
+    const velocity = convertUnit(velocityMS, "m/s", velocityUnit);
+
+    labelLines.push(`v: ${velocity.toFixed(2)} ${velocityUnit}`);
   }
 
   // Line 5: dP/100m
@@ -70,8 +86,16 @@ export const getPipeEdge = ({
     viewSettings.pipe.dPPer100m &&
     pipe.pressureDropCalculationResults?.normalizedPressureDrop !== undefined
   ) {
-    const dP100m = pipe.pressureDropCalculationResults.normalizedPressureDrop / 1000 * 100; // Pa/m to kPa/100m
-    labelLines.push(`dP / 100m: ${ dP100m.toFixed(2) } kPa`);
+    // normalizedPressureDrop is likely Pa/m
+    const dPGradientPaM = pipe.pressureDropCalculationResults.normalizedPressureDrop;
+
+    let gradientUnit = "kPa/100m";
+    if (viewSettings.unitSystem === "imperial") gradientUnit = "psi/100ft";
+    else if (viewSettings.unitSystem === "metric_kgcm2") gradientUnit = "kg/cm2/100m";
+    else if (viewSettings.unitSystem === "fieldSI") gradientUnit = "bar/100m";
+
+    const dPGradient = convertUnit(dPGradientPaM, "Pa/m", gradientUnit);
+    labelLines.push(`dP: ${dPGradient.toFixed(2)} ${gradientUnit}`);
   }
 
   const labelTextColor = forceLightMode

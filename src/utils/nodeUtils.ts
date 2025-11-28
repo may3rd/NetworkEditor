@@ -1,5 +1,6 @@
 import { type Node } from "@xyflow/react";
 import { type NodeProps, type ViewSettings } from "@/lib/types";
+import { convertUnit } from "@/lib/unitConversion";
 
 type NodeFlowState = {
     role: "source" | "sink" | "middle" | "isolated" | "neutral";
@@ -12,6 +13,7 @@ interface GetPressureNodeParams {
     viewSettings: ViewSettings;
     nodeFlowStates: Record<string, NodeFlowState>;
     forceLightMode?: boolean;
+    displayPressureUnit?: string;
 }
 
 export const getPressureNode = ({
@@ -20,6 +22,7 @@ export const getPressureNode = ({
     viewSettings,
     nodeFlowStates,
     forceLightMode = false,
+    displayPressureUnit,
 }: GetPressureNodeParams): Node => {
     const flowState = nodeFlowStates[node.id] ?? {
         role: "isolated",
@@ -30,7 +33,8 @@ export const getPressureNode = ({
         labelLines.push(node.label);
     }
     if (viewSettings.node.pressure && typeof node.pressure === "number") {
-        labelLines.push(`${node.pressure.toFixed(2)} ${node.pressureUnit ?? ""}`);
+        const convertedPressure = convertUnit(node.pressure, node.pressureUnit, displayPressureUnit || node.pressureUnit);
+        labelLines.push(`${convertedPressure.toFixed(2)} ${displayPressureUnit || node.pressureUnit || ""}`);
     }
     if (viewSettings.node.temperature && typeof node.temperature === "number") {
         labelLines.push(`${node.temperature.toFixed(2)} ${node.temperatureUnit ?? ""}`);
@@ -47,6 +51,7 @@ export const getPressureNode = ({
             showPressures: viewSettings.node.pressure, // Keep for backward compatibility if needed
             pressure: node.pressure,
             pressureUnit: node.pressureUnit,
+            displayPressureUnit,
             flowRole: flowState.role,
             needsAttention: flowState.needsAttention,
             forceLightMode,

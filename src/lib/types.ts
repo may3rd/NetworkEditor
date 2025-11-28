@@ -567,6 +567,7 @@ export const copyFluidFromPipeToNode = (pipe: PipeProps, node: NodeProps) => {
 }
 
 export type ViewSettings = {
+  unitSystem: "metric" | "imperial" | "fieldSI" | "metric_kgcm2";
   node: {
     name: boolean;
     pressure: boolean;

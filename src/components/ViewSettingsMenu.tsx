@@ -8,6 +8,10 @@ import {
     IconButton,
     Tooltip,
     Divider,
+    Box,
+    Typography,
+    Stack,
+    Button,
 } from "@mui/material";
 import {
     Speed as SpeedIcon,
@@ -123,6 +127,35 @@ export default function ViewSettingsMenu({ settings, onSettingsChange }: Props) 
                     </ListItemIcon>
                     <ListItemText>Pressure</ListItemText>
                 </MenuItem>
+                {settings.node.pressure && (
+                    <Box sx={{ pl: 4, pr: 2, pb: 1 }}>
+                        <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                            Unit
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            {['kPag', 'psig', 'barg', 'kg/cm2g'].map((unit) => (
+                                <Button
+                                    key={unit}
+                                    size="small"
+                                    variant={settings.node.pressureUnit === unit ? "contained" : "outlined"}
+                                    onClick={() => onSettingsChange({
+                                        ...settings,
+                                        node: { ...settings.node, pressureUnit: unit }
+                                    })}
+                                    sx={{
+                                        minWidth: 'auto',
+                                        px: 1,
+                                        py: 0.5,
+                                        fontSize: '0.7rem',
+                                        textTransform: 'none'
+                                    }}
+                                >
+                                    {unit}
+                                </Button>
+                            ))}
+                        </Stack>
+                    </Box>
+                )}
                 <MenuItem onClick={() => toggleNodeSetting("temperature")} dense>
                     <ListItemIcon>
                         <Checkbox

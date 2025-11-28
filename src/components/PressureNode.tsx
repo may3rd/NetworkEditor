@@ -3,6 +3,7 @@
 import { memo, type CSSProperties } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { useTheme } from "@mui/material";
+import { convertUnit } from "@/lib/unitConversion";
 
 type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
 
@@ -13,6 +14,7 @@ type NodeData = {
   showPressures?: boolean;
   pressure?: number;
   pressureUnit?: string;
+  displayPressureUnit?: string;
   flowRole?: NodeRole;
   needsAttention?: boolean;
   forceLightMode?: boolean;
@@ -47,6 +49,7 @@ function PressureNode({ data }: { data: NodeData }) {
     showPressures,
     pressure,
     pressureUnit,
+    displayPressureUnit,
     flowRole = "neutral",
     needsAttention = false,
     rotation = 0,
@@ -178,7 +181,10 @@ function PressureNode({ data }: { data: NodeData }) {
       </div>
       <div
         style={{
-          marginTop: 8,
+          position: "absolute",
+          top: circleSize + 4,
+          left: "50%",
+          transform: "translateX(-50%)",
           textAlign: "center",
           fontSize: 9,
           color: textPrimary,
@@ -189,6 +195,7 @@ function PressureNode({ data }: { data: NodeData }) {
           userSelect: "none",
           whiteSpace: "nowrap",
           border: `1px solid ${theme.palette.divider}`,
+          zIndex: 10,
         }}
       >
         {data.labelLines && data.labelLines.length > 0 ? (
@@ -197,7 +204,7 @@ function PressureNode({ data }: { data: NodeData }) {
           ))
         ) : (
           showPressures && typeof pressure === "number"
-            ? `${label} (${pressure.toFixed(2)} ${pressureUnit ?? ""})`
+            ? `${label} (${convertUnit(pressure, pressureUnit, displayPressureUnit || pressureUnit).toFixed(2)} ${displayPressureUnit || pressureUnit || ""})`
             : label
         )}
       </div>

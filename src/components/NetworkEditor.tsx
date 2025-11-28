@@ -72,7 +72,7 @@ import { convertUnit } from "@/lib/unitConversion";
 import { useColorMode } from "@/contexts/ColorModeContext";
 import { getPipeEdge } from "@/utils/edgeUtils";
 import { getPressureNode, validateNodeConfiguration } from "@/utils/nodeUtils";
-import ViewSettingsMenu from "@/components/ViewSettingsMenu";
+import ViewSettingsDialog from "@/components/ViewSettingsDialog";
 import { type ViewSettings } from "@/lib/types";
 import { useCopyPaste } from "@/hooks/useCopyPaste";
 
@@ -148,7 +148,9 @@ export function NetworkEditor({
   onToggleSummary,
 }: NetworkEditorProps) {
   const theme = useTheme();
+  const [viewSettingsDialogOpen, setViewSettingsDialogOpen] = useState(false);
   const [viewSettings, setViewSettings] = useState<ViewSettings>({
+    unitSystem: "metric",
     node: {
       name: true,
       pressure: false,
@@ -162,6 +164,18 @@ export function NetworkEditor({
       dPPer100m: false,
     },
   });
+
+  const getPressureUnit = (system: ViewSettings["unitSystem"]) => {
+    switch (system) {
+      case "imperial": return "psig";
+      case "fieldSI": return "barg";
+      case "metric_kgcm2": return "kg/cm2g";
+      case "metric":
+      default: return "kPag";
+    }
+  };
+
+  const displayPressureUnit = getPressureUnit(viewSettings.unitSystem);
 
   // Sync external showPressures prop with viewSettings (backward compatibility)
   useEffect(() => {
@@ -301,9 +315,10 @@ export function NetworkEditor({
         viewSettings,
         nodeFlowStates,
         forceLightMode,
+        displayPressureUnit,
       });
     },
-    [nodeFlowStates, viewSettings, forceLightMode]
+    [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit]
   );
 
   const rfNodes = useMemo<Node[]>(
@@ -765,6 +780,8 @@ function EditorCanvas({
   const backgroundInputRef = useRef<HTMLInputElement | null>(null);
   const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
   const NODE_SIZE = 20;
+  const [viewSettingsDialogOpen, setViewSettingsDialogOpen] = useState(false);
+
 
   useCopyPaste(network, onNetworkChange, onPaste);
 
@@ -1290,10 +1307,17 @@ function EditorCanvas({
                 <PanToolIcon fontSize="small" />
               </ToggleButton>
             </Tooltip>
-            <ViewSettingsMenu
+            <ViewSettingsDialog
+              open={viewSettingsDialogOpen}
+              onClose={() => setViewSettingsDialogOpen(false)}
               settings={viewSettings}
               onSettingsChange={setViewSettings}
             />
+            <Tooltip title="View Settings">
+              <IconButton size="small" onClick={() => setViewSettingsDialogOpen(true)}>
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Toggle Dark Mode">
               <IconButton size="small" onClick={toggleColorMode}>
                 <DarkModeIcon fontSize="small" />
