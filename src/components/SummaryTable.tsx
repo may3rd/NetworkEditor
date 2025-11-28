@@ -22,8 +22,10 @@ import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import PrintIcon from '@mui/icons-material/Print';
 import DownloadIcon from '@mui/icons-material/Download';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { NetworkState, PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
+import { PipeVisibilityDialog } from "./PipeVisibilityDialog";
 
 type Props = {
     network: NetworkState;
@@ -46,6 +48,13 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
     const [rowsPerPage, setRowsPerPage] = useState(8);
     const [unitSystem, setUnitSystem] = useState<"metric" | "imperial" | "fieldSI" | "metric_kgcm2">("metric");
     const [fitToPage, setFitToPage] = useState(true);
+    const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
+    const [visiblePipeIds, setVisiblePipeIds] = useState<string[]>([]);
+
+    // Initialize visible pipes if empty
+    if (visiblePipeIds.length === 0 && network.pipes.length > 0) {
+        setVisiblePipeIds(network.pipes.map(p => p.id));
+    }
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -78,7 +87,16 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
     };
 
     const pipes = network.pipes;
-    const visiblePipes = isSnapshot ? pipes : pipes.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+    // Filter and sort pipes based on visiblePipeIds
+    const orderedPipes = visiblePipeIds
+        .map(id => network.pipes.find(p => p.id === id))
+        .filter((p): p is PipeProps => !!p);
+
+    // If no pipes are selected (e.g. initial load before state update), fallback to all pipes
+    const pipesToDisplay = orderedPipes.length > 0 ? orderedPipes : network.pipes;
+
+    const visiblePipes = isSnapshot ? pipesToDisplay : pipesToDisplay.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
     const u = (metric: string, imperial: string, fieldSI?: string, metricKgCm2?: string) => {
         if (unitSystem === "metric_kgcm2" && metricKgCm2) return metricKgCm2;
@@ -880,12 +898,36 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
                         }
                         label="Fit Height to Page"
                     />
-                    <Button variant="outlined" onClick={handlePrint} startIcon={<PrintIcon />}>
-                        Print
-                    </Button>
-                    <Button variant="outlined" onClick={handleExportCSV} startIcon={<DownloadIcon />}>
-                        CSV
-                    </Button>
+                    <Tooltip title="Column Settings">
+                        <Button
+                            variant="outlined"
+                            startIcon={<SettingsIcon />}
+                            onClick={() => setVisibilityDialogOpen(true)}
+                            size="small"
+                        >
+                            Columns
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Print Table">
+                        <Button
+                            variant="outlined"
+                            startIcon={<PrintIcon />}
+                            onClick={handlePrint}
+                            size="small"
+                        >
+                            Print
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="Export CSV">
+                        <Button
+                            variant="outlined"
+                            startIcon={<DownloadIcon />}
+                            onClick={handleExportCSV}
+                            size="small"
+                        >
+                            CSV
+                        </Button>
+                    </Tooltip>
                     {!isSnapshot && (
                         <Button
                             variant="outlined"
@@ -900,6 +942,15 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
                     )}
                 </Box>
             </Box>
+
+            <PipeVisibilityDialog
+                open={visibilityDialogOpen}
+                onClose={() => setVisibilityDialogOpen(false)}
+                allPipes={network.pipes}
+                visiblePipeIds={visiblePipeIds}
+                onSave={setVisiblePipeIds}
+            />
+
             <style type="text/css" media="print">
                 {`
                 @page { size: portrait; margin: 5mm; }
