@@ -57,12 +57,20 @@ export function PropertiesPanel({
         width: "100%",
         height: "100%",
         overflowY: "auto",
-        borderRadius: 2,
-        border: "1px solid",
+        borderTopLeftRadius: 12,
+        borderBottomLeftRadius: 12,
+        borderTopRightRadius: 0,
+        borderBottomRightRadius: 0,
+        borderLeft: "1px solid",
+        borderTop: "1px solid",
+        borderBottom: "1px solid",
+        borderRight: "none",
         borderColor: "divider",
         p: 0, // Remove padding from Paper to allow sticky header to sit flush
         display: "flex",
         flexDirection: "column",
+        backdropFilter: "blur(12px)",
+        backgroundColor: "background.paper",
       }}
     >
       <Box sx={{

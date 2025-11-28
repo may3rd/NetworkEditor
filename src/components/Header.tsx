@@ -23,6 +23,8 @@ export function Header({ onReset, onExportPng, onLoadNetwork, onSaveNetwork }: P
         p: 3,
         gap: 2,
         justifyContent: "center",
+        backdropFilter: "blur(12px)",
+        backgroundColor: "background.paper",
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%", flexWrap: { xs: "wrap", md: "nowrap" } }}>

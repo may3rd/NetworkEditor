@@ -367,7 +367,7 @@ export default function Home() {
 
         <Slide direction="left" in={!!selection} mountOnEnter unmountOnExit>
           <Paper
-            elevation={4}
+            elevation={0}
             sx={{
               position: "absolute",
               top: 0,
@@ -375,9 +375,7 @@ export default function Home() {
               bottom: 0,
               width: "320px",
               zIndex: 10,
-              borderLeft: "1px solid",
-              borderColor: "divider",
-              borderRadius: 0,
+              backgroundColor: "transparent",
             }}
           >
             <PropertiesPanel
