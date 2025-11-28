@@ -37,6 +37,7 @@ type QuantityInputProps = {
   focused?: boolean;
   readOnly?: boolean;
   alwaysShowColor?: boolean;
+  error?: boolean;
 };
 
 export function QuantityInput({
@@ -58,6 +59,7 @@ export function QuantityInput({
   focused,
   readOnly,
   alwaysShowColor,
+  error,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
   const formatValue = useMemo(
@@ -103,7 +105,7 @@ export function QuantityInput({
   };
 
   // Validation Logic
-  let error = false;
+  let isError = error || false;
   let validationMessage = "";
 
   if (min !== undefined) {
@@ -116,7 +118,7 @@ export function QuantityInput({
       }
 
       if (numericValue < limit) {
-        error = true;
+        isError = true;
         // Format limit to match decimal places if possible, or default to 3
         const formattedLimit = decimalPlaces !== undefined ? limit.toFixed(decimalPlaces) : limit.toFixed(3);
         validationMessage = `Value cannot be less than ${formattedLimit} ${unit}`;
@@ -124,13 +126,13 @@ export function QuantityInput({
     }
   }
 
-  const displayedHelperText = error ? validationMessage : helperText;
+  const displayedHelperText = validationMessage || helperText;
 
   return (
     <TextField
       label={label}
       value={inputValue}
-      error={error}
+      error={isError}
       sx={{
         ...sx,
         ...(alwaysShowColor && color ? {

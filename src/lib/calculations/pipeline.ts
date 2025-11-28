@@ -112,10 +112,43 @@ export function computePipeLengthContribution(
 
     const length = context.length;
     const diameter = context.pipeDiameter;
+    const area = 0.25 * Math.PI * diameter * diameter;
 
+    // Calculate velocity and Reynolds number first as they don't depend on length
+    let velocity: number | undefined;
+    let reynolds: number | undefined;
+    let frictionFactor: number | undefined;
+
+    if (area > 0) {
+        velocity = context.volumetricFlowRate / area;
+        if (Number.isFinite(velocity)) {
+            reynolds = (context.density * Math.abs(velocity) * diameter) / context.viscosity;
+
+            if (isPositive(reynolds)) {
+                const relativeRoughness =
+                    context.roughness && context.roughness > 0 ? context.roughness / diameter : 0;
+
+                try {
+                    frictionFactor = darcyFrictionFactor({
+                        reynolds,
+                        relativeRoughness,
+                    });
+                } catch {
+                    // Ignore error, frictionFactor remains undefined
+                }
+            }
+        }
+    }
+
+    // If length is undefined, we can't calculate pipe K, but we can return velocity/reynolds/friction
     if (length === undefined) {
         const totalK = applyUserAndSafety(pipe, undefined, fittingK);
-        return { totalK };
+        return {
+            totalK,
+            velocity,
+            reynolds,
+            frictionFactor
+        };
     }
 
     if (length === 0) {
@@ -124,55 +157,27 @@ export function computePipeLengthContribution(
             pipeLengthK: 0,
             totalK,
             equivalentLength: undefined,
-            velocity: undefined,
-            reynolds: undefined,
-            frictionFactor: undefined,
+            velocity,
+            reynolds,
+            frictionFactor,
         };
     }
 
-    const area = 0.25 * Math.PI * diameter * diameter;
-    if (area <= 0) {
-        return {};
-    }
-
-    const velocity = context.volumetricFlowRate / area;
-    if (!Number.isFinite(velocity)) {
-        return {};
-    }
-
-    const reynolds = (context.density * Math.abs(velocity) * diameter) / context.viscosity;
-    if (!isPositive(reynolds)) {
-        return { velocity };
-    }
-
-    const relativeRoughness =
-        context.roughness && context.roughness > 0 ? context.roughness / diameter : 0;
-
-    let friction: number;
-    try {
-        friction = darcyFrictionFactor({
-            reynolds,
-            relativeRoughness,
-        });
-    } catch {
-        return { velocity, reynolds };
-    }
-
-    if (!Number.isFinite(friction) || friction <= 0) {
+    if (!Number.isFinite(frictionFactor) || frictionFactor! <= 0) {
         const totalK = applyUserAndSafety(pipe, 0, fittingK);
         return {
             pipeLengthK: 0,
             totalK,
             velocity,
             reynolds,
-            frictionFactor: friction,
+            frictionFactor,
         };
     }
 
-    const pipeLengthK = friction * (length / diameter);
+    const pipeLengthK = frictionFactor! * (length / diameter);
     const totalK = applyUserAndSafety(pipe, pipeLengthK, fittingK);
     const equivalentLength =
-        totalK && totalK > 0 ? (totalK * diameter) / friction : undefined;
+        totalK && totalK > 0 ? (totalK * diameter) / frictionFactor! : undefined;
 
     return {
         pipeLengthK,
@@ -180,7 +185,7 @@ export function computePipeLengthContribution(
         equivalentLength,
         velocity,
         reynolds,
-        frictionFactor: friction,
+        frictionFactor,
     };
 }
 
@@ -213,12 +218,20 @@ export function calculatePressureDropResults(
         pipe.elevationUnit ?? "m",
         "m"
     );
-    const elevationPressureDrop =
-        typeof elevationMeters === "number"
-            ? density * STANDARD_GRAVITY * elevationMeters
-            : undefined;
 
-    const totalSegmentPressureDrop =
+    let elevationPressureDrop: number | undefined;
+
+    if (typeof elevationMeters === "number") {
+        const pipeLengthMeters = context.length ?? 0;
+        // If elevation exceeds length (including if length is 0/undefined), set loss to 0
+        if (Math.abs(elevationMeters) > pipeLengthMeters) {
+            elevationPressureDrop = 0.0;
+        } else {
+            elevationPressureDrop = density * STANDARD_GRAVITY * elevationMeters;
+        }
+    }
+
+    let totalSegmentPressureDrop =
         pipeAndFittingPressureDrop === undefined &&
             elevationPressureDrop === undefined &&
             userSpecifiedPressureDrop === undefined
@@ -227,12 +240,27 @@ export function calculatePressureDropResults(
             (elevationPressureDrop ?? 0) +
             (userSpecifiedPressureDrop ?? 0);
 
-    const normalizedPressureDrop =
-        pipeAndFittingPressureDrop !== undefined &&
-            typeof lengthResult.equivalentLength === "number" &&
-            lengthResult.equivalentLength > 0
-            ? pipeAndFittingPressureDrop / lengthResult.equivalentLength
-            : undefined;
+    if (totalSegmentPressureDrop === undefined && typeof velocity === "number") {
+        totalSegmentPressureDrop = 0.0;
+    }
+
+    let normalizedPressureDrop: number | undefined;
+
+    if (pipeAndFittingPressureDrop !== undefined &&
+        typeof lengthResult.equivalentLength === "number" &&
+        lengthResult.equivalentLength > 0) {
+        normalizedPressureDrop = pipeAndFittingPressureDrop / lengthResult.equivalentLength;
+    } else if (
+        typeof lengthResult.frictionFactor === "number" &&
+        lengthResult.frictionFactor > 0 &&
+        typeof velocity === "number" &&
+        isPositive(density) &&
+        isPositive(context.pipeDiameter)
+    ) {
+        // Fallback: dP/L = f/D * 0.5 * rho * v^2
+        const dynamicPressure = 0.5 * density * velocity * velocity;
+        normalizedPressureDrop = (lengthResult.frictionFactor / context.pipeDiameter) * dynamicPressure;
+    }
 
     const reynoldsNumber = lengthResult.reynolds;
     const flowScheme =

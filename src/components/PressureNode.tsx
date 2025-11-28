@@ -181,12 +181,14 @@ function PressureNode({ data }: { data: NodeData }) {
           marginTop: 8,
           textAlign: "center",
           fontSize: 9,
-          color: "text.primary", // This MUI system prop automatically uses theme.palette.text.primary
+          color: textPrimary,
+          background: paperBackground,
+          padding: "2px 4px",
+          borderRadius: 4,
           pointerEvents: "none",
           userSelect: "none",
           whiteSpace: "nowrap",
-          // Add a text shadow in dark mode for better readability against complex backgrounds if needed,
-          // but usually text.primary handles contrast well.
+          border: `1px solid ${theme.palette.divider}`,
         }}
       >
         {data.labelLines && data.labelLines.length > 0 ? (

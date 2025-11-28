@@ -200,6 +200,18 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                     unitFamily="length"
                     onValueChange={(newValue) => onUpdatePipe(pipe.id, { elevation: newValue })}
                     onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { elevationUnit: newUnit })}
+                    error={
+                        pipe.elevation !== undefined &&
+                        Math.abs(convertScalar(pipe.elevation, pipe.elevationUnit ?? "m", "m") ?? 0) >
+                        (convertScalar(pipe.length, pipe.lengthUnit ?? "m", "m") ?? 0)
+                    }
+                    helperText={
+                        pipe.elevation !== undefined &&
+                            Math.abs(convertScalar(pipe.elevation, pipe.elevationUnit ?? "m", "m") ?? 0) >
+                            (convertScalar(pipe.length, pipe.lengthUnit ?? "m", "m") ?? 0)
+                            ? "Elevation change cannot exceed pipe length"
+                            : undefined
+                    }
                 />
             )}
 
