@@ -98,6 +98,15 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
 
     const visiblePipes = isSnapshot ? pipesToDisplay : pipesToDisplay.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
+    // Calculate dummy columns to ensure we always have a multiple of 8 columns (or fill the page)
+    // For pagination, fill up to rowsPerPage.
+    // For snapshot, pad to next multiple of 8.
+    const emptyColumnsCount = isSnapshot
+        ? (8 - (visiblePipes.length % 8)) % 8
+        : Math.max(0, rowsPerPage - visiblePipes.length);
+
+    const emptyColumns = Array(emptyColumnsCount).fill(null);
+
     const u = (metric: string, imperial: string, fieldSI?: string, metricKgCm2?: string) => {
         if (unitSystem === "metric_kgcm2" && metricKgCm2) return metricKgCm2;
         if (unitSystem === "fieldSI" && fieldSI) return fieldSI;
@@ -861,7 +870,7 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
     };
 
     return (
-        <Paper id="summary-table-print-area" className={fitToPage ? "fit-to-page" : ""} sx={{ width: "100%", overflow: "hidden", p: 2 }}>
+        <Paper id="summary-table-print-area" className={fitToPage ? "fit-to-page" : ""} sx={{ width: "100%", overflow: "hidden", p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
             <Box className="print-header-container" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
                 <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', flex: 1, textAlign: "center" }}>
                     SINGLE PHASE FLOW PRESSURE DROP
@@ -1070,10 +1079,15 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
                         transform: scale(0.98);
                         transform-origin: top left;
                     }
+                    /* Ensure dummy cells have borders */
+                    .dummy-cell {
+                        border-right: 1px solid #000 !important;
+                        border-bottom: 1px solid #000 !important;
+                    }
                 }
                 `}
             </style>
-            <TableContainer sx={{ maxHeight: isSnapshot ? "none" : 800, border: '1px solid #e0e0e0' }}>
+            <TableContainer sx={{ flex: 1, minHeight: 0, overflow: 'auto', border: '1px solid #e0e0e0' }}>
                 <Table stickyHeader aria-label="sticky table" size="small" sx={{ borderCollapse: 'separate' }}>
                     <TableHead>
                         <TableRow>
@@ -1088,6 +1102,9 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
                                     {pipe.name || (index + 1 + (page * rowsPerPage))}
                                 </TableCell>
                             ))}
+                            {emptyColumns.map((_, index) => (
+                                <TableCell key={`dummy-head-${index}`} sx={{ minWidth: 110, borderRight: '1px solid #e0e0e0', boxShadow: 'inset 0 -1px 0 #e0e0e0', bgcolor: 'background.default' }} />
+                            ))}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -1098,7 +1115,7 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
                                         <TableCell colSpan={2} sx={{ position: 'sticky', left: 0, width: 300, fontWeight: "bold" }}>
                                             {row.label}
                                         </TableCell>
-                                        <TableCell colSpan={visiblePipes.length} sx={{}} />
+                                        <TableCell colSpan={visiblePipes.length + emptyColumnsCount} sx={{}} />
                                     </TableRow>
                                 );
                             }
@@ -1164,6 +1181,9 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
                                             </TableCell>
                                         );
                                     })}
+                                    {emptyColumns.map((_, index) => (
+                                        <TableCell key={`dummy-cell-${index}`} className="dummy-cell" sx={{ borderRight: '1px solid #e0e0e0' }} />
+                                    ))}
                                 </TableRow>
                             );
                         })}
@@ -1175,7 +1195,7 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
                     className="no-print"
                     rowsPerPageOptions={[8, 16, 24, 100]}
                     component="div"
-                    count={pipes.length}
+                    count={pipesToDisplay.length}
                     rowsPerPage={rowsPerPage}
                     page={page}
                     onPageChange={handleChangePage}
