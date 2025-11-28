@@ -368,7 +368,7 @@ export function PipeControlValveSection({ pipe, isGasPipe, startNode, endNode, o
                     <QuantityInput
                         label="Calculated Pressure Drop"
                         value={
-                            typeof controlValvePressureDropDisplayValue === "number"
+                            (controlValveCoefficientValue !== "" && typeof controlValvePressureDropDisplayValue === "number")
                                 ? controlValvePressureDropDisplayValue
                                 : ""
                         }

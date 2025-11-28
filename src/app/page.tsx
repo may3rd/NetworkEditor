@@ -470,9 +470,10 @@ export default function Home() {
         fullWidth
         PaperProps={{
           sx: {
-            height: "90vh",
+            height: "100vh",
             bgcolor: "background.paper",
-            borderRadius: 2,
+            borderRadius: 0,
+            m: 0,
           }
         }}
       >
