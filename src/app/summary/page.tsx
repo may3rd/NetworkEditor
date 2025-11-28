@@ -29,7 +29,7 @@ export default function SummarySnapshotPage() {
 
     return (
         <Box sx={{ width: "100%", height: "100vh", p: 2, overflow: "auto" }}>
-            <SummaryTable network={network} isSnapshot={true} />
+            <SummaryTable network={network} isSnapshot={true} onNetworkChange={setNetwork} />
         </Box>
     );
 }

@@ -22,6 +22,8 @@ import {
     KeyboardArrowLeft as ArrowLeftIcon,
     KeyboardArrowUp as ArrowUpIcon,
     KeyboardArrowDown as ArrowDownIcon,
+    KeyboardDoubleArrowUp as DoubleArrowUpIcon,
+    KeyboardDoubleArrowDown as DoubleArrowDownIcon,
     DragIndicator as DragIcon,
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
@@ -118,6 +120,30 @@ export function PipeVisibilityDialog({ open, onClose, allPipes, visiblePipeIds, 
         if (index < right.length - 1) {
             const newRight = [...right];
             [newRight[index], newRight[index + 1]] = [newRight[index + 1], newRight[index]];
+            setRight(newRight);
+        }
+    };
+
+    const handleMoveToTop = () => {
+        if (rightChecked.length !== 1) return;
+        const item = rightChecked[0];
+        const index = right.indexOf(item);
+        if (index > 0) {
+            const newRight = [...right];
+            newRight.splice(index, 1);
+            newRight.unshift(item);
+            setRight(newRight);
+        }
+    };
+
+    const handleMoveToBottom = () => {
+        if (rightChecked.length !== 1) return;
+        const item = rightChecked[0];
+        const index = right.indexOf(item);
+        if (index < right.length - 1) {
+            const newRight = [...right];
+            newRight.splice(index, 1);
+            newRight.push(item);
             setRight(newRight);
         }
     };
@@ -236,10 +262,20 @@ export function PipeVisibilityDialog({ open, onClose, allPipes, visiblePipeIds, 
 
                     <Stack spacing={1}>
                         <IconButton
+                            onClick={handleMoveToTop}
+                            disabled={rightChecked.length !== 1 || right.indexOf(rightChecked[0]) === 0}
+                            size="small"
+                            color="primary"
+                            title="Move to Top"
+                        >
+                            <DoubleArrowUpIcon />
+                        </IconButton>
+                        <IconButton
                             onClick={handleMoveUp}
                             disabled={rightChecked.length !== 1 || right.indexOf(rightChecked[0]) === 0}
                             size="small"
                             color="primary"
+                            title="Move Up"
                         >
                             <ArrowUpIcon />
                         </IconButton>
@@ -248,8 +284,18 @@ export function PipeVisibilityDialog({ open, onClose, allPipes, visiblePipeIds, 
                             disabled={rightChecked.length !== 1 || right.indexOf(rightChecked[0]) === right.length - 1}
                             size="small"
                             color="primary"
+                            title="Move Down"
                         >
                             <ArrowDownIcon />
+                        </IconButton>
+                        <IconButton
+                            onClick={handleMoveToBottom}
+                            disabled={rightChecked.length !== 1 || right.indexOf(rightChecked[0]) === right.length - 1}
+                            size="small"
+                            color="primary"
+                            title="Move to Bottom"
+                        >
+                            <DoubleArrowDownIcon />
                         </IconButton>
                     </Stack>
                 </Stack>

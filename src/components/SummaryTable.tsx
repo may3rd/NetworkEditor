@@ -30,6 +30,7 @@ import { PipeVisibilityDialog } from "./PipeVisibilityDialog";
 type Props = {
     network: NetworkState;
     isSnapshot?: boolean;
+    onNetworkChange?: (updatedNetwork: NetworkState) => void;
 };
 
 type RowConfig =
@@ -43,18 +44,17 @@ type RowConfig =
         decimals?: number
     };
 
-export function SummaryTable({ network, isSnapshot = false }: Props) {
+export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: Props) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(8);
     const [unitSystem, setUnitSystem] = useState<"metric" | "imperial" | "fieldSI" | "metric_kgcm2">("metric");
     const [fitToPage, setFitToPage] = useState(true);
     const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
-    const [visiblePipeIds, setVisiblePipeIds] = useState<string[]>([]);
 
-    // Initialize visible pipes if empty
-    if (visiblePipeIds.length === 0 && network.pipes.length > 0) {
-        setVisiblePipeIds(network.pipes.map(p => p.id));
-    }
+    // Use visiblePipeIds from network state, fallback to all pipes if undefined or empty (initially)
+    const visiblePipeIds = network.visiblePipeIds && network.visiblePipeIds.length > 0
+        ? network.visiblePipeIds
+        : network.pipes.map(p => p.id);
 
     const handleChangePage = (event: unknown, newPage: number) => {
         setPage(newPage);
@@ -948,7 +948,14 @@ export function SummaryTable({ network, isSnapshot = false }: Props) {
                 onClose={() => setVisibilityDialogOpen(false)}
                 allPipes={network.pipes}
                 visiblePipeIds={visiblePipeIds}
-                onSave={setVisiblePipeIds}
+                onSave={(newVisiblePipeIds) => {
+                    if (onNetworkChange) {
+                        onNetworkChange({
+                            ...network,
+                            visiblePipeIds: newVisiblePipeIds
+                        });
+                    }
+                }}
             />
 
             <style type="text/css" media="print">

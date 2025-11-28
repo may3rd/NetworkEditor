@@ -484,7 +484,7 @@ export default function Home() {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers sx={{ p: 0 }}>
-          <SummaryTable network={network} />
+          <SummaryTable network={network} onNetworkChange={handleNetworkChange} />
         </DialogContent>
       </Dialog>
 

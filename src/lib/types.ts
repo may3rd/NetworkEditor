@@ -203,6 +203,7 @@ export type NetworkState = {
   backgroundImageOpacity?: number;
   backgroundImagePosition?: { x: number; y: number };
   backgroundImageLocked?: boolean;
+  visiblePipeIds?: string[];
 };
 
 const baseNetwork: NetworkState = {
