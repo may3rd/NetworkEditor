@@ -136,7 +136,7 @@ export function QuantityInput({
       sx={{
         ...sx,
         "& .MuiOutlinedInput-root": {
-          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+          backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : '#ffffff',
           backdropFilter: "blur(4px)",
           transition: "all 0.2s",
           "& fieldset": {

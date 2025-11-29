@@ -70,7 +70,7 @@ export function PropertiesPanel({
         display: "flex",
         flexDirection: "column",
         backdropFilter: "blur(20px) saturate(180%)",
-        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : '#f5f5f5',
         boxShadow: (theme) => theme.palette.mode === 'dark'
           ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
           : '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
@@ -82,7 +82,7 @@ export function PropertiesPanel({
         zIndex: 100,
         bgcolor: "transparent", // Let the parent glass show through, or apply its own if sticky needs it
         backdropFilter: "blur(20px) saturate(180%)", // Re-apply blur for sticky content behind it
-        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : '#f5f5f5',
         borderBottom: isScrolled ? "1px solid" : "none",
         borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
         px: 2,
