@@ -40,3 +40,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 - [x] Add a logic to set the node's color based on the pressure set up conditions.
 - [ ] Add a result summary table, for pipe and for system.
+
+
+----
