@@ -13,6 +13,7 @@ import {
     TextField,
     Typography,
 } from "@mui/material";
+import { glassInputSx } from "@/lib/glassStyles";
 import { useState } from "react";
 import { PipeProps, PipePatch, NetworkState } from "@/lib/types";
 import { PipeGeneralSection } from "./PipeGeneralSection";
@@ -139,7 +140,7 @@ export function PipeProperties({ pipe, network, onUpdatePipe }: Props) {
                         getOptionLabel={(option) => option.name || option.id}
                         value={selectedPipeToCopy}
                         onChange={(_, newValue) => setSelectedPipeToCopy(newValue)}
-                        renderInput={(params) => <TextField {...params} label="Select Pipe" />}
+                        renderInput={(params) => <TextField {...params} label="Select Pipe" sx={glassInputSx} />}
                         renderOption={(props, option) => {
                             const { key, ...otherProps } = props;
                             return (

@@ -9,6 +9,7 @@ import {
     IconButton,
     Box,
 } from "@mui/material";
+import { glassInputSx, glassSelectSx } from "@/lib/glassStyles";
 import {
     Add as AddIcon,
     Refresh as RefreshIcon,
@@ -222,6 +223,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                         label="Fitting Type"
                         value={pipe.fittingType ?? "LR"}
                         onChange={(event) => onUpdatePipe(pipe.id, { fittingType: event.target.value })}
+                        sx={glassSelectSx}
                     >
                         {FITTING_TYPE_OPTIONS.map((option) => (
                             <MenuItem key={option} value={option}>
@@ -243,6 +245,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                             const value = event.target.value === "" ? undefined : Number(event.target.value);
                             onUpdatePipe(pipe.id, { pipingFittingSafetyFactor: value });
                         }}
+                        sx={glassInputSx}
                     />
                 </Stack>
 
@@ -295,6 +298,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                                                     })
                                                 }
                                                 fullWidth
+                                                sx={glassSelectSx}
                                             >
                                                 {PIPE_FITTING_OPTIONS.filter(
                                                     (option) => !option.autoOnly || option.value === fitting.type
@@ -309,7 +313,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                                             label="Count"
                                             size="small"
                                             type="number"
-                                            sx={{ width: "100px" }}
+                                            sx={{ width: "100px", ...glassInputSx }}
                                             disabled={isSwage}
                                             value={fitting.count ?? 0}
                                             onChange={(event) => {
@@ -352,6 +356,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                             const value = event.target.value === "" ? undefined : Number(event.target.value);
                             onUpdatePipe(pipe.id, { userK: value });
                         }}
+                        sx={glassInputSx}
                     />
                 </Stack>
             </Stack>

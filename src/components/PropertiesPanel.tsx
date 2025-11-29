@@ -65,21 +65,26 @@ export function PropertiesPanel({
         borderTop: "1px solid",
         borderBottom: "1px solid",
         borderRight: "none",
-        borderColor: "divider",
+        borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
         p: 0, // Remove padding from Paper to allow sticky header to sit flush
         display: "flex",
         flexDirection: "column",
-        backdropFilter: "blur(12px)",
-        backgroundColor: "background.paper",
+        backdropFilter: "blur(20px) saturate(180%)",
+        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+        boxShadow: (theme) => theme.palette.mode === 'dark'
+          ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+          : '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
       }}
     >
       <Box sx={{
         position: "sticky",
         top: 0,
         zIndex: 100,
-        bgcolor: "background.paper",
+        bgcolor: "transparent", // Let the parent glass show through, or apply its own if sticky needs it
+        backdropFilter: "blur(20px) saturate(180%)", // Re-apply blur for sticky content behind it
+        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.6)',
         borderBottom: isScrolled ? "1px solid" : "none",
-        borderColor: "divider",
+        borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
         px: 2,
         py: 2,
         transition: "all 0.2s",

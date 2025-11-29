@@ -9,6 +9,7 @@ import {
     IconButton,
     Tooltip,
 } from "@mui/material";
+import { glassInputSx } from "@/lib/glassStyles";
 import {
     AutoFixHigh as AutoFixHighIcon,
 } from "@mui/icons-material";
@@ -322,7 +323,8 @@ export function PipeControlValveSection({ pipe, isGasPipe, startNode, endNode, o
                             sx={{
                                 "& .MuiOutlinedInput-notchedOutline": { borderColor: "success.main" },
                                 "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "success.main" },
-                                "& .MuiInputLabel-root": { color: "success.main" },
+                                " & .MuiInputLabel-root": { color: "success.main" },
+                                ...glassInputSx,
                             }}
                         />
                     </Stack>
@@ -356,7 +358,7 @@ export function PipeControlValveSection({ pipe, isGasPipe, startNode, endNode, o
                                     };
                                 });
                             }}
-                            sx={{ flex: 1 }}
+                            sx={{ flex: 1, ...glassInputSx }}
                         />
                         <Tooltip title={`Solve for ${isGasPipe ? "Cg" : "Cv"} (adjusts coefficient to match pressure difference)`}>
                             <IconButton onClick={handleSolveCv} color="primary" sx={{ mt: 0.5 }}>
@@ -375,7 +377,7 @@ export function PipeControlValveSection({ pipe, isGasPipe, startNode, endNode, o
                         unit={controlValvePressureDropUnit}
                         units={QUANTITY_UNIT_OPTIONS.pressureDrop}
                         unitFamily="pressureDrop"
-                        sx={{ input: { color: 'success.main' } }}
+                        sx={{ input: { color: 'success.main' }, ...glassInputSx }}
                         readOnly
                         color="success"
                         alwaysShowColor
@@ -461,6 +463,7 @@ export function PipeControlValveSection({ pipe, isGasPipe, startNode, endNode, o
                                     };
                                 });
                             }}
+                            sx={glassInputSx}
                         />
                         <Tooltip title="Set Pressure Drop (sets value to match pressure difference)">
                             <IconButton onClick={handleSetDp} color="primary" sx={{ mt: 1 }}>
@@ -477,6 +480,7 @@ export function PipeControlValveSection({ pipe, isGasPipe, startNode, endNode, o
                             "& .MuiOutlinedInput-notchedOutline": { borderColor: "success.main" },
                             "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "success.main" },
                             "& .MuiInputLabel-root": { color: "success.main" },
+                            ...glassInputSx,
                         }}
                         value={
                             typeof controlValveCalculatedCoefficientValue === "number"

@@ -12,6 +12,7 @@ import {
     Tooltip,
     IconButton,
 } from "@mui/material";
+import { glassInputSx } from "@/lib/glassStyles";
 import {
     AutoFixHigh as AutoFixHighIcon,
 } from "@mui/icons-material";
@@ -159,6 +160,7 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                     size="small"
                     value={node.label}
                     onChange={(event) => onUpdateNode(node.id, { label: event.target.value })}
+                    sx={glassInputSx}
                 />
             </Stack>
             <Stack spacing={2}>
@@ -229,6 +231,8 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                                 },
                             }))
                         }
+
+                        sx={glassInputSx}
                     />
                 </Stack>
 
@@ -316,6 +320,8 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                                         },
                                     }));
                                 }}
+
+                                sx={glassInputSx}
                             />
                         </Stack>
 
@@ -337,6 +343,8 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                                         },
                                     }));
                                 }}
+
+                                sx={glassInputSx}
                             />
                         </Stack>
 
@@ -358,6 +366,8 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                                         },
                                     }));
                                 }}
+
+                                sx={glassInputSx}
                             />
                         </Stack>
                     </Stack>

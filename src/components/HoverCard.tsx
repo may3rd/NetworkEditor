@@ -70,34 +70,37 @@ export function HoverCard({ title, subtitle, rows, x, y }: HoverCardProps) {
                 minWidth: 200,
                 p: 2,
                 borderRadius: 2,
-                backdropFilter: "blur(12px)",
-                backgroundColor: "rgba(15, 23, 42, 0.9)", // Slightly more opaque for readability
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                color: "white",
+                backdropFilter: "blur(20px) saturate(180%)",
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : 'rgba(255, 255, 255, 0.6)',
+                border: "1px solid",
+                borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                color: "text.primary",
                 pointerEvents: "none",
-                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)",
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                    ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
+                    : '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
                 transition: "opacity 0.1s ease-out",
             }}
         >
             <Stack spacing={1}>
                 <Box>
-                    <Typography variant="subtitle2" fontWeight="bold" sx={{ color: "#38bdf8" }}>
+                    <Typography variant="subtitle2" fontWeight="bold" color="primary">
                         {title}
                     </Typography>
-                    {subtitle && (
-                        <Typography variant="caption" sx={{ color: "#94a3b8" }}>
+                    {/* {subtitle && (
+                        <Typography variant="caption" color="text.secondary">
                             {subtitle}
                         </Typography>
-                    )}
+                    )} */}
                 </Box>
-                <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.1)" }} />
+                <Divider />
                 <Stack spacing={0.5}>
                     {rows.map((row, index) => (
                         <Stack key={index} direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
-                            <Typography variant="caption" sx={{ color: "#cbd5e1" }}>
+                            <Typography variant="caption" color="text.secondary">
                                 {row.label}
                             </Typography>
-                            <Typography variant="caption" fontWeight="medium" sx={{ color: "white" }}>
+                            <Typography variant="caption" fontWeight="medium" color="text.primary">
                                 {row.value}
                             </Typography>
                         </Stack>

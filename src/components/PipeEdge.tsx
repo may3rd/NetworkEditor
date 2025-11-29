@@ -181,13 +181,34 @@ export default function PipeEdge({
                             subtitle="Pipe Properties"
                             x={hoverPos.x}
                             y={hoverPos.y}
-                            rows={[
-                                { label: "Length", value: `${pipe.length ?? 0} ${pipe.lengthUnit ?? "m"}` },
-                                { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
-                                { label: "Mass Flow", value: `${pipe.massFlowRate ?? 0} ${pipe.massFlowRateUnit ?? "kg/h"}` },
-                                { label: "Velocity", value: pipe.resultSummary?.outletState?.velocity ? `${convertUnit(pipe.resultSummary.outletState.velocity, "m/s", "m/s").toFixed(2)} m/s` : "N/A" },
-                                { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.totalSegmentPressureDrop ? `${(pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
-                            ]}
+                            rows={(() => {
+                                const commonRows = [
+                                    { label: "Mass Flow", value: `${pipe.massFlowRate ?? 0} ${pipe.massFlowRateUnit ?? "kg/h"}` },
+                                ];
+
+                                if (pipe.pipeSectionType === "control valve") {
+                                    return [
+                                        ...commonRows,
+                                        { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
+                                        { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.controlValvePressureDrop ? `${(pipe.pressureDropCalculationResults.controlValvePressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
+                                    ];
+                                } else if (pipe.pipeSectionType === "orifice") {
+                                    return [
+                                        ...commonRows,
+                                        { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
+                                        { label: "Beta Ratio", value: pipe.orifice?.betaRatio ?? "N/A" },
+                                        { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.orificePressureDrop ? `${(pipe.pressureDropCalculationResults.orificePressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
+                                    ];
+                                } else {
+                                    return [
+                                        ...commonRows,
+                                        { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
+                                        { label: "Length", value: `${pipe.length ?? 0} ${pipe.lengthUnit ?? "m"}` },
+                                        { label: "Velocity", value: pipe.resultSummary?.outletState?.velocity ? `${convertUnit(pipe.resultSummary.outletState.velocity, "m/s", "m/s").toFixed(2)} m/s` : "N/A" },
+                                        { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.totalSegmentPressureDrop ? `${(pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
+                                    ];
+                                }
+                            })()}
                         />
                     </div>
                 )}

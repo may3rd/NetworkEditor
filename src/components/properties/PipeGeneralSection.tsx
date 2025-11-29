@@ -10,6 +10,7 @@ import {
     FormControlLabel,
     Radio,
 } from "@mui/material";
+import { glassInputSx, glassSelectSx } from "@/lib/glassStyles";
 import { useState, useEffect } from "react";
 import { PipeProps, PipePatch, NodeProps } from "@/lib/types";
 
@@ -83,6 +84,7 @@ export function PipeGeneralSection({ pipe, pipes, startNode, endNode, onUpdatePi
                     helperText={isDuplicateLabel(localLabel) ? "Name already exists" : undefined}
                     placeholder="Enter name"
                     fullWidth
+                    sx={glassInputSx}
                 />
 
                 <TextField
@@ -93,6 +95,7 @@ export function PipeGeneralSection({ pipe, pipes, startNode, endNode, onUpdatePi
                     placeholder="Enter description"
                     helperText={pipeHelperText()}
                     fullWidth
+                    sx={glassInputSx}
                 />
             </Stack>
 
@@ -102,6 +105,7 @@ export function PipeGeneralSection({ pipe, pipes, startNode, endNode, onUpdatePi
                     label="Calculation Type"
                     value={pipe.pipeSectionType ?? "pipeline"}
                     onChange={(event) => onUpdatePipe(pipe.id, { pipeSectionType: event.target.value as "pipeline" | "control valve" | "orifice" })}
+                    sx={glassSelectSx}
                 >
                     <MenuItem value="pipeline">Pipeline</MenuItem>
                     <MenuItem value="control valve">Control Valve</MenuItem>

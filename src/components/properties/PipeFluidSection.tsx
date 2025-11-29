@@ -6,6 +6,7 @@ import {
     InputLabel,
     Stack,
 } from "@mui/material";
+import { glassInputSx, glassSelectSx } from "@/lib/glassStyles";
 import { PipeProps, PipePatch, NodeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
@@ -43,6 +44,7 @@ export function PipeFluidSection({ pipe, sourceNode, isGasPipe, onUpdatePipe }: 
                                 gasFlowModel: event.target.value as "adiabatic" | "isothermal",
                             })
                         }
+                        sx={glassSelectSx}
                     >
                         <MenuItem value="adiabatic">Adiabatic</MenuItem>
                         <MenuItem value="isothermal">Isothermal</MenuItem>
@@ -105,6 +107,7 @@ export function PipeFluidSection({ pipe, sourceNode, isGasPipe, onUpdatePipe }: 
                                     : undefined,
                         });
                     }}
+                    sx={glassInputSx}
                 />
             </Stack>
 

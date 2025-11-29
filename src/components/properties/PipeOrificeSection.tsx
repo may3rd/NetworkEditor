@@ -2,6 +2,7 @@ import {
     TextField,
     Stack,
 } from "@mui/material";
+import { glassInputSx } from "@/lib/glassStyles";
 import { PipeProps, PipePatch } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
@@ -55,6 +56,7 @@ export function PipeOrificeSection({ pipe, onUpdatePipe }: Props) {
                             };
                         });
                     }}
+                    sx={glassInputSx}
                 />
             </Stack>
 
@@ -71,6 +73,12 @@ export function PipeOrificeSection({ pipe, onUpdatePipe }: Props) {
                             : ""
                     }
                     color="success"
+                    sx={{
+                        "& .MuiOutlinedInput-notchedOutline": { borderColor: "success.main" },
+                        "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "success.main" },
+                        "& .MuiInputLabel-root": { color: "success.main" },
+                        ...glassInputSx,
+                    }}
                 />
             </Stack>
 
@@ -84,7 +92,7 @@ export function PipeOrificeSection({ pipe, onUpdatePipe }: Props) {
                 unit={orificePressureDropUnit}
                 units={QUANTITY_UNIT_OPTIONS.pressureDrop}
                 unitFamily="pressureDrop"
-                sx={{ input: { color: 'success.main' } }}
+                sx={{ input: { color: 'success.main' }, ...glassInputSx }}
                 color="success"
                 decimalPlaces={3}
                 alwaysShowColor

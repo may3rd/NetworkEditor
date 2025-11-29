@@ -11,6 +11,7 @@ import {
     Radio,
     FormHelperText,
 } from "@mui/material";
+import { glassInputSx, glassSelectSx } from "@/lib/glassStyles";
 import { PipeProps, PipePatch, PipeSchedule } from "@/lib/types";
 import {
     PIPE_SCHEDULES,
@@ -105,6 +106,7 @@ export function PipeDiameterSection({ pipe, onUpdatePipe }: Props) {
                                         : {}),
                                 });
                             }}
+                            sx={glassSelectSx}
                         >
 
                             {scheduleEntries.map((entry) => (
@@ -135,6 +137,7 @@ export function PipeDiameterSection({ pipe, onUpdatePipe }: Props) {
                                         : {}),
                                 });
                             }}
+                            sx={glassSelectSx}
                         >
                             {PIPE_SCHEDULES.map((schedule) => (
                                 <MenuItem key={schedule} value={schedule}>
@@ -185,6 +188,7 @@ export function PipeDiameterSection({ pipe, onUpdatePipe }: Props) {
                         const value = event.target.value === "" ? undefined : Number(event.target.value);
                         onUpdatePipe(pipe.id, { erosionalConstant: value });
                     }}
+                    sx={glassInputSx}
                 />
             </Stack>
         </>
