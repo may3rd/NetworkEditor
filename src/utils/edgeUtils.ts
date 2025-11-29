@@ -11,6 +11,8 @@ interface GetPipeEdgeParams {
   viewSettings: ViewSettings;
   theme: Theme;
   forceLightMode?: boolean;
+  isAnimationEnabled?: boolean;
+  isConnectingMode?: boolean;
 }
 
 export const getPipeEdge = ({
@@ -21,6 +23,8 @@ export const getPipeEdge = ({
   viewSettings,
   theme,
   forceLightMode = false,
+  isAnimationEnabled = false,
+  isConnectingMode = false,
 }: GetPipeEdgeParams): Edge => {
   const isSelectedPipe = selectedType === "pipe" && selectedId === pipe.id;
   const labelLines: string[] = [];
@@ -143,6 +147,9 @@ export const getPipeEdge = ({
       labelBorderColor,
       isSelected: isSelectedPipe,
       pipe, // Pass full pipe data for hover card
+      isAnimationEnabled,
+      isConnectingMode,
+      velocity: pipe.resultSummary?.outletState?.velocity ?? 0,
     },
     style: {
       strokeWidth: isSelectedPipe ? 2 : 1,

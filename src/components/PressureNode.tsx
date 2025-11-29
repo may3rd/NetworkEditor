@@ -22,6 +22,7 @@ type NodeData = {
   forceLightMode?: boolean;
   rotation?: number;
   node?: NodeProps;
+  isConnectingMode?: boolean;
 };
 
 const ROLE_COLORS_LIGHT: Record<NodeRole | "attention", string> = {
@@ -145,17 +146,20 @@ function PressureNode({ data }: { data: NodeData }) {
   const handleHeight = isVertical ? 4 : 4;
   const borderRadius = 0;
 
+  const isConnectingMode = data.isConnectingMode as boolean;
+
   const commonHandleStyle: CSSProperties = {
-    opacity: isHovered ? 1 : 0,
+    opacity: isConnectingMode ? 1 : 0, // Only show in connecting mode
     border: "none",
-    zIndex: -1,
+    zIndex: isConnectingMode ? 100 : -1, // Bring to front in connecting mode
     borderRadius: borderRadius,
     width: handleWidth,
     height: handleHeight,
+    pointerEvents: isConnectingMode ? "all" : "none", // Only interactive in connecting mode
   };
 
   const getHandlePositionStyle = (pos: Position): CSSProperties => {
-    const offset = isHovered ? -1 : 3; // Pull handle inward by 3px normally, 0px on hover
+    const offset = isHovered || isConnectingMode ? -1 : 3; // Pull handle inward by 3px normally, 0px on hover/connecting
     switch (pos) {
       case Position.Left:
         return { left: offset };
@@ -172,9 +176,9 @@ function PressureNode({ data }: { data: NodeData }) {
 
   return (
     <div
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onMouseMove={handleMouseMove}
+      onMouseEnter={!isConnectingMode ? handleMouseEnter : undefined}
+      onMouseLeave={!isConnectingMode ? handleMouseLeave : undefined}
+      onMouseMove={!isConnectingMode ? handleMouseMove : undefined}
       style={{ position: "relative" }}
     >
       <Handle

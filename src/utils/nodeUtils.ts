@@ -14,6 +14,7 @@ interface GetPressureNodeParams {
     nodeFlowStates: Record<string, NodeFlowState>;
     forceLightMode?: boolean;
     displayPressureUnit?: string;
+    isConnectingMode?: boolean;
 }
 
 export const getPressureNode = ({
@@ -23,6 +24,7 @@ export const getPressureNode = ({
     nodeFlowStates,
     forceLightMode = false,
     displayPressureUnit,
+    isConnectingMode = false,
 }: GetPressureNodeParams): Node => {
     const flowState = nodeFlowStates[node.id] ?? {
         role: "isolated",
@@ -62,6 +64,7 @@ export const getPressureNode = ({
             forceLightMode,
             rotation: node.rotation,
             node, // Pass full node data for hover card
+            isConnectingMode,
         },
         width: 20,
         height: 20,

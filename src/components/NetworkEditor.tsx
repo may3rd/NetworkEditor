@@ -42,8 +42,10 @@ import {
   Wallpaper as WallpaperIcon,
   Settings as SettingsIcon,
   Close as CloseIcon,
+  Cable as CableIcon,
   InsertDriveFileOutlined as NoteAddIcon,
 } from "@mui/icons-material";
+import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
 import {
   ReactFlow,
   Background,
@@ -75,14 +77,9 @@ import { getPressureNode, validateNodeConfiguration } from "@/utils/nodeUtils";
 import ViewSettingsDialog from "@/components/ViewSettingsDialog";
 import { type ViewSettings } from "@/lib/types";
 import { useCopyPaste } from "@/hooks/useCopyPaste";
+import { CustomCursor } from "./CustomCursor";
 
-const ADD_NODE_CURSOR_LIGHT = `url("data:image/svg+xml,${encodeURIComponent(
-  "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#0f172a' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
-)}") 12 12, auto`;
 
-const ADD_NODE_CURSOR_DARK = `url("data:image/svg+xml,${encodeURIComponent(
-  "<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><path fill='#ffffff' d='M11 0h2v24h-2zM0 11h24v2H0z'/></svg>"
-)}") 12 12, auto`;
 
 type NetworkEditorProps = {
   network: NetworkState;
@@ -107,6 +104,11 @@ type NetworkEditorProps = {
   onNew?: () => void;
   onToggleSnapshot?: () => void;
   onToggleSummary?: () => void;
+  isAnimationEnabled?: boolean;
+  isConnectingMode?: boolean;
+  onToggleAnimation?: () => void;
+  onToggleConnectingMode?: () => void;
+  onSelectionChangeProp?: (selection: { nodes: string[]; edges: string[] }) => void;
 };
 
 type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
@@ -150,6 +152,11 @@ export function NetworkEditor({
   onNew,
   onToggleSnapshot,
   onToggleSummary,
+  isAnimationEnabled = false,
+  isConnectingMode = false,
+  onToggleAnimation,
+  onToggleConnectingMode,
+  onSelectionChangeProp,
 }: NetworkEditorProps) {
   const theme = useTheme();
   const [viewSettingsDialogOpen, setViewSettingsDialogOpen] = useState(false);
@@ -372,9 +379,10 @@ export function NetworkEditor({
         nodeFlowStates,
         forceLightMode,
         displayPressureUnit,
+        isConnectingMode,
       });
     },
-    [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit]
+    [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit, isConnectingMode]
   );
 
   const rfNodes = useMemo<Node[]>(
@@ -455,9 +463,11 @@ export function NetworkEditor({
           viewSettings,
           theme,
           forceLightMode,
+          isAnimationEnabled,
+          isConnectingMode,
         })
       ),
-    [network.pipes, selectedId, selectedType, viewSettings, theme, forceLightMode]
+    [network.pipes, selectedId, selectedType, viewSettings, theme, forceLightMode, isAnimationEnabled, isConnectingMode]
   );
 
   const nodeTypes = useMemo(() => ({ pressure: PressureNode, background: BackgroundNode }), []);
@@ -755,6 +765,11 @@ export function NetworkEditor({
         onPaste: handlePaste,
         onToggleSnapshot,
         onToggleSummary,
+        isAnimationEnabled,
+        isConnectingMode,
+        onToggleAnimation,
+        onToggleConnectingMode,
+        onSelectionChangeProp,
       }} />
     </ReactFlowProvider>
   );
@@ -797,6 +812,11 @@ function EditorCanvas({
   onNew,
   onToggleSnapshot,
   onToggleSummary,
+  isAnimationEnabled,
+  isConnectingMode,
+  onToggleAnimation,
+  onToggleConnectingMode,
+  onSelectionChangeProp,
 }: NetworkEditorProps & {
   localNodes: Node[];
   setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
@@ -821,6 +841,11 @@ function EditorCanvas({
   onNew?: () => void;
   onToggleSnapshot?: () => void;
   onToggleSummary?: () => void;
+  isAnimationEnabled?: boolean;
+  isConnectingMode?: boolean;
+  onToggleAnimation?: () => void;
+  onToggleConnectingMode?: () => void;
+  onSelectionChangeProp?: (selection: { nodes: string[]; edges: string[] }) => void;
 }) {
   const theme = useTheme();
   const [snapToGrid, setSnapToGrid] = useState(true);
@@ -1018,16 +1043,28 @@ function EditorCanvas({
         });
         setLocalNodes(current => [
           ...current,
-          mapNodeToReactFlow(newNode, true),
+          mapNodeToReactFlow(newNode, false), // Don't select the new node
         ]);
-        setIsAddingNode(false);
-        onSelect(newNodeId, "node");
+        // Keep adding mode active
+        // setIsAddingNode(false); 
+        // onSelect(newNodeId, "node"); // Don't select the new node
+        return;
         return;
       }
 
       onSelect(null, null);
     },
     [isAddingNode, onNetworkChange, screenToFlowPosition, snapToGrid, snapGrid, network, onSelect, mapNodeToReactFlow],
+  );
+
+  const handlePaneContextMenu = useCallback(
+    (event: MouseEvent | ReactMouseEvent) => {
+      if (isAddingNode) {
+        event.preventDefault();
+        setIsAddingNode(false);
+      }
+    },
+    [isAddingNode],
   );
 
   const handleUploadBackground = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -1153,7 +1190,7 @@ function EditorCanvas({
 
     let cursor = "";
     if (isAddingNode) {
-      cursor = theme.palette.mode === 'dark' ? ADD_NODE_CURSOR_DARK : ADD_NODE_CURSOR_LIGHT;
+      cursor = "none"; // Hide default cursor, use CustomCursor
     } else if (isPanMode) {
       cursor = "grab";
     }
@@ -1167,7 +1204,7 @@ function EditorCanvas({
 
   const canEditNetwork = Boolean(onNetworkChange);
   const editorCursor = isAddingNode
-    ? (theme.palette.mode === 'dark' ? ADD_NODE_CURSOR_DARK : ADD_NODE_CURSOR_LIGHT)
+    ? "none" // Hide default cursor, use CustomCursor
     : isPanMode ? "grab" : "default";
   const { toggleColorMode } = useColorMode();
   const colorMode = theme.palette.mode;
@@ -1365,6 +1402,32 @@ function EditorCanvas({
                 <PanToolIcon fontSize="small" />
               </ToggleButton>
             </Tooltip>
+            {onToggleConnectingMode && (
+              <Tooltip title="Connecting Mode">
+                <ToggleButton
+                  value="connect"
+                  selected={isConnectingMode}
+                  onChange={onToggleConnectingMode}
+                  size="small"
+                  sx={{ border: 'none', padding: '5px' }}
+                >
+                  <CableIcon fontSize="small" />
+                </ToggleButton>
+              </Tooltip>
+            )}
+            {onToggleAnimation && (
+              <Tooltip title="Flow Animation">
+                <ToggleButton
+                  value="animation"
+                  selected={isAnimationEnabled}
+                  onChange={onToggleAnimation}
+                  size="small"
+                  sx={{ border: 'none', padding: '5px' }}
+                >
+                  <DirectionsRunIcon fontSize="small" />
+                </ToggleButton>
+              </Tooltip>
+            )}
             <ViewSettingsDialog
               open={viewSettingsDialogOpen}
               onClose={() => setViewSettingsDialogOpen(false)}
@@ -1433,7 +1496,21 @@ function EditorCanvas({
           }}
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={handlePaneClick}
+          onPaneContextMenu={handlePaneContextMenu}
           onNodesChange={handleNodesChange}
+          onSelectionChange={useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
+            // If multiple items are selected, we don't update the single selection state
+            // unless only one item is selected.
+            if (nodes.length + edges.length === 1) {
+              if (nodes.length > 0) onSelect(nodes[0].id, "node");
+              if (edges.length > 0) onSelect(edges[0].id, "pipe");
+            } else if (nodes.length + edges.length === 0) {
+              onSelect(null, null);
+            }
+
+            // Always pass up the full selection for multi-delete support
+            onSelectionChangeProp?.({ nodes: nodes.map(n => n.id), edges: edges.map(e => e.id) });
+          }, [onSelect, onSelectionChangeProp])}
           onConnect={handleConnect}
           onConnectStart={onConnectStart}
           onConnectEnd={onConnectEnd}
@@ -1467,6 +1544,7 @@ function EditorCanvas({
             style={{ background: "background.paper", opacity: 0.7, width: 140, height: 90 }}
           />
           <Controls />
+          <CustomCursor isAddingNode={isAddingNode} nodeSize={NODE_SIZE} />
         </ReactFlow>
         <style jsx global>{`
           .react-flow.design-mode .react-flow__node {

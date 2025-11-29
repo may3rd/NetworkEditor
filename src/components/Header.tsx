@@ -10,7 +10,12 @@ type Props = {
   onSaveNetwork: () => void;
 };
 
-export function Header({ onReset, onExportPng, onLoadNetwork, onSaveNetwork }: Props) {
+export function Header({
+  onReset,
+  onExportPng,
+  onLoadNetwork,
+  onSaveNetwork,
+}: Props) {
   return (
     <Paper
       elevation={0}
@@ -42,7 +47,6 @@ export function Header({ onReset, onExportPng, onLoadNetwork, onSaveNetwork }: P
                 Example
               </Button>
             </Tooltip>
-
           </ButtonGroup>
 
           {/* <ButtonGroup variant="outlined">

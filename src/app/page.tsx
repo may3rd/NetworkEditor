@@ -41,6 +41,8 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [isExporting, setIsExporting] = useState(false);
+  const [isAnimationEnabled, setIsAnimationEnabled] = useState(false);
+  const [isConnectingMode, setIsConnectingMode] = useState(false);
 
   // ──────────────────────────────────────────────────────────────
   // Multi-step Undo/Redo – fixed logic
@@ -97,26 +99,82 @@ export default function Home() {
     setSelectedId(id);
     setSelectedType(type);
     setSelection(id && type ? { id, type } : null);
+    // Clear multi-selection when single selecting
+    setMultiSelection({ nodes: [], edges: [] });
+  }, []);
+
+  const [multiSelection, setMultiSelection] = useState<{ nodes: string[]; edges: string[] }>({ nodes: [], edges: [] });
+
+  const handleSelectionChange = useCallback((selection: { nodes: string[]; edges: string[] }) => {
+    setMultiSelection(prev => {
+      // Simple deep equality check to prevent infinite loops
+      if (
+        prev.nodes.length === selection.nodes.length &&
+        prev.edges.length === selection.edges.length &&
+        prev.nodes.every((id, i) => id === selection.nodes[i]) &&
+        prev.edges.every((id, i) => id === selection.edges[i])
+      ) {
+        return prev;
+      }
+      return selection;
+    });
+
+    // We only update single selection state if it actually changed
+    // But since setMultiSelection is async, we should probably check against 'selection' argument
+    // However, updating single selection state also triggers re-renders.
+    // Let's rely on the check inside setMultiSelection to stop the loop if selection is stable.
+
+    // Wait, if we update single selection state (setSelectedId), it triggers a re-render of NetworkEditor.
+    // NetworkEditor then calls onSelectionChange again.
+    // If onSelectionChange passes the SAME selection, our check above prevents setMultiSelection update.
+    // But we still execute the code below.
+
+    // If single item selected, update single selection state for backward compatibility/properties panel
+    if (selection.nodes.length + selection.edges.length === 1) {
+      if (selection.nodes.length > 0) {
+        setSelectedId(selection.nodes[0]);
+        setSelectedType("node");
+        setSelection({ id: selection.nodes[0], type: "node" });
+      } else {
+        setSelectedId(selection.edges[0]);
+        setSelectedType("pipe");
+        setSelection({ id: selection.edges[0], type: "pipe" });
+      }
+    } else if (selection.nodes.length + selection.edges.length === 0) {
+      // Only clear if we are sure (React Flow might send empty selection on click)
+      // But we handle single select via onSelect.
+      // Let's trust React Flow's selection change.
+      setSelectedId(null);
+      setSelectedType(null);
+      setSelection(null);
+    } else {
+      // Multiple items selected
+      setSelectedId(null);
+      setSelectedType(null);
+      setSelection(null);
+    }
   }, []);
 
   const handleDelete = useCallback(() => {
-    if (!selectedId || !selectedType) return;
+    const nodesToDelete = new Set(multiSelection.nodes);
+    const edgesToDelete = new Set(multiSelection.edges);
 
-    if (selectedType === "node") {
-      setNetwork(current => ({
-        ...current,
-        nodes: current.nodes.filter(n => n.id !== selectedId),
-        pipes: current.pipes.filter(p => p.startNodeId !== selectedId && p.endNodeId !== selectedId),
-      }));
-    } else if (selectedType === "pipe") {
-      setNetwork(current => ({
-        ...current,
-        pipes: current.pipes.filter(p => p.id !== selectedId),
-      }));
+    if (selectedId && selectedType) {
+      if (selectedType === "node") nodesToDelete.add(selectedId);
+      if (selectedType === "pipe") edgesToDelete.add(selectedId);
     }
 
+    if (nodesToDelete.size === 0 && edgesToDelete.size === 0) return;
+
+    setNetwork(current => ({
+      ...current,
+      nodes: current.nodes.filter(n => !nodesToDelete.has(n.id)),
+      pipes: current.pipes.filter(p => !edgesToDelete.has(p.id) && !nodesToDelete.has(p.startNodeId) && !nodesToDelete.has(p.endNodeId)),
+    }));
+
     handleSelect(null, null);
-  }, [selectedId, selectedType, handleSelect]);
+    setMultiSelection({ nodes: [], edges: [] });
+  }, [selectedId, selectedType, multiSelection, handleSelect]);
 
   const handleNetworkChange = useCallback((updatedNetwork: NetworkState) => {
     setNetwork(updatedNetwork);
@@ -362,6 +420,11 @@ export default function Home() {
             onNew={handleClearNetwork}
             onToggleSnapshot={() => setShowSnapshot(true)}
             onToggleSummary={() => setShowSummary(true)}
+            isAnimationEnabled={isAnimationEnabled}
+            onToggleAnimation={() => setIsAnimationEnabled(!isAnimationEnabled)}
+            isConnectingMode={isConnectingMode}
+            onToggleConnectingMode={() => setIsConnectingMode(!isConnectingMode)}
+            onSelectionChangeProp={handleSelectionChange}
           />
         </Box>
 

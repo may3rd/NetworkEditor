@@ -61,8 +61,48 @@ export default function PipeEdge({
     const isSelected = data?.isSelected as boolean;
     const pipe = data?.pipe as PipeProps | undefined;
 
+    const isAnimationEnabled = data?.isAnimationEnabled as boolean;
+    const isConnectingMode = data?.isConnectingMode as boolean;
+    const velocity = data?.velocity as number || 0;
+    const direction = pipe?.direction || "forward";
+
+    // Calculate animation duration based on velocity
+    // Base speed: 1m/s = 1s duration for a 20px dash cycle?
+    // Let's say we want the dashes to move at 'velocity' pixels per second?
+    // No, that would depend on zoom.
+    // Let's just map velocity magnitude to a reasonable duration range.
+    // Max speed (fastest animation) = 0.2s
+    // Min speed (slowest visible) = 5s
+    // Velocity range: 0.1 m/s to 20 m/s?
+
+    // Let's try: duration = 1 / velocity.
+    // If v=1, d=1s. If v=10, d=0.1s. If v=0.1, d=10s.
+    // Clamp duration to [0.2, 5].
+
+    const absVelocity = Math.abs(velocity);
+    const clampedVelocity = Math.max(0.1, Math.min(absVelocity, 20));
+    const animationDuration = absVelocity > 0 ? 2 / clampedVelocity : 0;
+
+    const isFlowing = isAnimationEnabled && absVelocity > 0;
+    const animationName = direction === "forward" ? "flowAnimationForward" : "flowAnimationBackward";
+
     return (
         <>
+            {isFlowing && (
+                <style>
+                    {`
+                        @keyframes flowAnimationForward {
+                            from { stroke-dashoffset: 20; }
+                            to { stroke-dashoffset: 0; }
+                        }
+                        @keyframes flowAnimationBackward {
+                            from { stroke-dashoffset: 0; }
+                            to { stroke-dashoffset: 20; }
+                        }
+                    `}
+                </style>
+            )}
+
             {/* Wide transparent path for easier hovering */}
             <path
                 d={edgePath}
@@ -70,9 +110,9 @@ export default function PipeEdge({
                 stroke="transparent"
                 fill="none"
                 style={{ cursor: 'pointer' }}
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
-                onMouseMove={handleMouseMove}
+                onMouseEnter={!isConnectingMode ? handleMouseEnter : undefined}
+                onMouseLeave={!isConnectingMode ? handleMouseLeave : undefined}
+                onMouseMove={!isConnectingMode ? handleMouseMove : undefined}
             />
             <BaseEdge
                 id={id}
@@ -80,6 +120,23 @@ export default function PipeEdge({
                 markerEnd={markerEnd}
                 style={{ ...style, strokeWidth: isHovered || isSelected ? 2 : 1 }}
             />
+
+            {/* Animation Layer */}
+            {isFlowing && (
+                <path
+                    d={edgePath}
+                    stroke={theme.palette.info.main}
+                    strokeWidth={3}
+                    strokeDasharray="10 10"
+                    fill="none"
+                    style={{
+                        animation: `${animationName} ${animationDuration}s linear infinite`,
+                        opacity: 0.6,
+                        pointerEvents: "none",
+                    }}
+                />
+            )}
+
             <EdgeLabelRenderer>
                 {labelLines.length > 0 && (
                     <div
