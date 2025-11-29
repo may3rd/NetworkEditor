@@ -501,19 +501,73 @@ export default function Home() {
                   };
                 })
               }
-              onUpdatePipe={(id, patch: PipePatch) =>
-                setNetwork(current => ({
-                  ...current,
-                  pipes: current.pipes.map(pipe => {
-                    if (pipe.id !== id) return pipe;
-                    const pipePatch = typeof patch === "function" ? patch(pipe) : patch;
-                    const updatedPipe = { ...pipe, ...pipePatch };
-                    if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
-                      return updatedPipe;
+              onUpdatePipe={(id, patch) =>
+                setNetwork(current => {
+                  // First, find the pipe and the updated fluid if applicable
+                  const targetPipe = current.pipes.find(p => p.id === id);
+                  const pipePatch = typeof patch === "function" && targetPipe ? patch(targetPipe) : patch as Partial<PipeProps>;
+
+                  // Check if fluid is being updated
+                  const isFluidUpdate = 'fluid' in pipePatch;
+                  // Check if direction is being updated
+                  const isDirectionUpdate = 'direction' in pipePatch;
+
+                  let nextNodes = current.nodes;
+
+                  if (isFluidUpdate && targetPipe && pipePatch.fluid) {
+                    // Use the NEW direction if it's also being updated, otherwise use existing
+                    const direction = pipePatch.direction ?? targetPipe.direction ?? "forward";
+                    const boundaryNodeId = direction === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
+
+                    nextNodes = nextNodes.map(node => {
+                      if (node.id === boundaryNodeId) {
+                        return {
+                          ...node,
+                          fluid: { ...pipePatch.fluid! }
+                        };
+                      }
+                      return node;
+                    });
+                  }
+
+                  if (isDirectionUpdate && targetPipe && pipePatch.direction) {
+                    const newDirection = pipePatch.direction;
+                    const boundaryNodeId = newDirection === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
+                    // Use the NEW fluid if it's also being updated, otherwise use existing
+                    const fluidToSync = pipePatch.fluid || targetPipe.fluid;
+
+                    if (fluidToSync) {
+                      nextNodes = nextNodes.map(node => {
+                        if (node.id === boundaryNodeId) {
+                          return {
+                            ...node,
+                            fluid: { ...fluidToSync }
+                          };
+                        }
+                        return node;
+                      });
                     }
-                    return recalculatePipeFittingLosses(updatedPipe);
-                  }),
-                }))
+                  }
+
+                  return {
+                    ...current,
+                    nodes: nextNodes,
+                    pipes: current.pipes.map(pipe => {
+                      if (pipe.id !== id) return pipe;
+                      // We already calculated pipePatch above, but let's re-apply it safely
+                      // Note: We need to be careful about the patch function being called twice if it has side effects, 
+                      // but here it's likely pure. To be safe, let's use the already calculated pipePatch.
+                      // However, the original code structure handles the map cleanly. 
+                      // Let's stick to the map structure but use the logic we just added.
+
+                      const updatedPipe = { ...pipe, ...pipePatch };
+                      if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
+                        return updatedPipe;
+                      }
+                      return recalculatePipeFittingLosses(updatedPipe);
+                    }),
+                  };
+                })
               }
 
               onClose={() => handleSelect(null, null)}

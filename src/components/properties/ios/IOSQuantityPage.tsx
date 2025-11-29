@@ -132,7 +132,7 @@ export function IOSQuantityPage({
 
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header={label}>
+            <IOSListGroup>
                 <IOSTextField
                     fullWidth
                     value={inputValue}

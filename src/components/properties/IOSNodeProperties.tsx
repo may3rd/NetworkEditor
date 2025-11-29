@@ -64,7 +64,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator }: Pr
         navigator.push("Fluid", (net: NetworkState, nav: Navigator) => {
             const currentNode = net.nodes.find(n => n.id === node.id);
             if (!currentNode) return null;
-            return <NodeFluidPage node={currentNode} onUpdateNode={onUpdateNode} />;
+            return <NodeFluidPage node={currentNode} onUpdateNode={onUpdateNode} navigator={nav} />;
         });
     };
 

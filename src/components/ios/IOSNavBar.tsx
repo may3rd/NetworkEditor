@@ -1,15 +1,16 @@
 import { Box, Typography, IconButton, useTheme, Stack } from "@mui/material";
-import { ArrowBackIosNew } from "@mui/icons-material";
+import { ArrowBackIosNew, Close } from "@mui/icons-material";
 import { ReactNode } from "react";
 
 type Props = {
     title: string;
     onBack?: () => void;
+    onClose?: () => void;
     backLabel?: string;
     rightAction?: ReactNode;
 };
 
-export function IOSNavBar({ title, onBack, backLabel = "Back", rightAction }: Props) {
+export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAction }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
@@ -30,9 +31,9 @@ export function IOSNavBar({ title, onBack, backLabel = "Back", rightAction }: Pr
             pt: 2,
         }}>
             <Box sx={{ width: "80px", display: "flex", alignItems: "center" }}>
-                {onBack && (
+                {(onBack || onClose) && (
                     <IconButton
-                        onClick={onBack}
+                        onClick={onBack || onClose}
                         size="small"
                         sx={{
                             width: "30px",
@@ -49,7 +50,11 @@ export function IOSNavBar({ title, onBack, backLabel = "Back", rightAction }: Pr
                             p: 0,
                         }}
                     >
-                        <ArrowBackIosNew sx={{ fontSize: "18px", ml: "-2px" }} />
+                        {onBack ? (
+                            <ArrowBackIosNew sx={{ fontSize: "18px", ml: "-2px" }} />
+                        ) : (
+                            <Close sx={{ fontSize: "20px" }} />
+                        )}
                     </IconButton>
                 )}
             </Box>

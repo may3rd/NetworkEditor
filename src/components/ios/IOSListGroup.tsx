@@ -18,6 +18,7 @@ export function IOSListGroup({ children, header, footer }: Props) {
                     variant="caption"
                     sx={{
                         display: "block",
+                        fontWeight: "bold",
                         pl: 2,
                         pb: 1,
                         color: isDark ? "#8e8e93" : "#6e6e73",

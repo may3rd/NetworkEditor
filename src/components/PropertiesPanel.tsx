@@ -72,7 +72,7 @@ export function PropertiesPanel({
       render: rootRender
     }]);
 
-  }, [selectedElement?.id, selectedElement?.type, onUpdateNode, onUpdatePipe]);
+  }, [selectedElement?.id, selectedElement?.type]);
 
   if (!selectedElement || stack.length === 0) {
     return null;
@@ -99,17 +99,8 @@ export function PropertiesPanel({
         <IOSNavBar
           title={activePage.title}
           onBack={stack.length > 1 ? pop : undefined}
+          onClose={stack.length === 1 ? onClose : undefined}
           backLabel={stack.length > 1 ? stack[stack.length - 2].title : undefined}
-          rightAction={
-            stack.length === 1 ? (
-              <Typography
-                onClick={onClose}
-                sx={{ color: "primary.main", cursor: "pointer", fontSize: "17px" }}
-              >
-                Done
-              </Typography>
-            ) : undefined
-          }
         />
         {activeComponent}
       </IOSContainer>

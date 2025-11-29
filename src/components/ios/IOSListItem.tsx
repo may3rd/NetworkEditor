@@ -21,7 +21,7 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
             onClick={onClick}
             sx={{
                 pl: 2,
-                pr: 1,
+                pr: 2,
                 cursor: onClick ? "pointer" : "default",
                 "&:active": onClick ? {
                     backgroundColor: isDark ? "#3a3a3c" : "#e5e5ea",
@@ -59,9 +59,15 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
 
                 <Stack direction="row" alignItems="center" spacing={1}>
                     {value && (
-                        <Typography sx={{ fontSize: "14px", color: isDark ? "#8e8e93" : "#8e8e93" }}>
-                            {value}
-                        </Typography>
+                        typeof value === 'string' || typeof value === 'number' ? (
+                            <Typography sx={{ fontSize: "14px", color: isDark ? "#8e8e93" : "#8e8e93" }}>
+                                {value}
+                            </Typography>
+                        ) : (
+                            <Box sx={{ display: 'flex', alignItems: 'center', height: '20px' }}>
+                                {value}
+                            </Box>
+                        )
                     )}
                     {control}
                     {chevron && (

@@ -44,7 +44,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navi
         navigator.push("Fluid", (network: NetworkState, nav: Navigator) => {
             const currentPipe = network.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
-            return <FluidPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} />;
+            return <FluidPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} navigator={nav} />;
         });
     };
 
@@ -56,13 +56,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navi
         });
     };
 
-    const openDiameterPage = () => {
-        navigator.push("Pipe Diameter", (network: NetworkState, nav: Navigator) => {
-            const currentPipe = network.pipes.find(p => p.id === pipe.id);
-            if (!currentPipe) return null;
-            return <DiameterPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} />;
-        });
-    };
+
 
     const openCalculationTypePage = () => {
         navigator.push("Calculation Type", (network: NetworkState, nav: Navigator) => {
@@ -117,6 +111,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navi
                     label="Backward Direction"
                     control={
                         <Switch
+                            size="small"
                             checked={pipe.direction === "backward"}
                             onChange={(e) => onUpdatePipe(pipe.id, { direction: e.target.checked ? "backward" : "forward" })}
                         />
@@ -124,7 +119,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navi
                 />
                 <IOSListItem
                     label="Mass Flow Rate"
-                    value={`${pipe.massFlowRate ?? "-"} ${pipe.massFlowRateUnit ?? ""}`}
+                    value={`${typeof pipe.massFlowRate === 'number' ? pipe.massFlowRate.toFixed(3) : "-"} ${pipe.massFlowRateUnit ?? ""}`}
                     onClick={openMassFlowRatePage}
                     chevron
                     last
@@ -133,15 +128,19 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navi
 
             <IOSListGroup header="Physical">
                 <IOSListItem
-                    label="Pipe Diameter"
-                    value={`${pipe.diameter ?? "-"} ${pipe.diameterUnit ?? ""}`}
-                    onClick={openDiameterPage}
-                    chevron
-                />
-                <IOSListItem
                     label="Calculation Type"
                     value={pipe.pipeSectionType || "Pipeline"}
                     onClick={openCalculationTypePage}
+                    chevron
+                />
+                <IOSListItem
+                    label="Pipe Diameter"
+                    value={`${typeof pipe.diameter === 'number' ? pipe.diameter.toFixed(3) : "-"} ${pipe.diameterUnit ?? ""}`}
+                    onClick={() => navigator.push("Pipe Diameter", (net, nav) => {
+                        const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                        if (!currentPipe) return null;
+                        return <DiameterPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} navigator={nav} />;
+                    })}
                     chevron
                 />
                 <IOSListItem

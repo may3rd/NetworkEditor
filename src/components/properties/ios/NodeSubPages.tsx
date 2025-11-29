@@ -34,94 +34,275 @@ export const TemperaturePage = ({ node, onUpdateNode }: { node: NodeProps, onUpd
 );
 
 // --- Fluid ---
-export const NodeFluidPage = ({ node, onUpdateNode }: { node: NodeProps, onUpdateNode: (id: string, patch: NodePatch) => void }) => {
+import { Navigator } from "../../PropertiesPanel";
+import { IOSListItem } from "../../ios/IOSListItem";
+import { Check } from "@mui/icons-material";
+import { IOSTextField } from "../../ios/IOSTextField";
+
+// ... (PressurePage and TemperaturePage remain unchanged)
+
+// --- Fluid Sub-Pages ---
+
+const FluidNamePage = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
+    <Box sx={{ pt: 4 }}>
+        <IOSListGroup>
+            <IOSTextField
+                fullWidth
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                onClear={() => onChange("")}
+                placeholder="Fluid Name"
+                autoFocus
+            />
+        </IOSListGroup>
+    </Box>
+);
+
+import { useState, useEffect, useRef } from "react";
+
+const FluidPhasePage = ({ value, onChange }: { value: "liquid" | "gas", onChange: (v: "liquid" | "gas") => void }) => {
+    const [localValue, setLocalValue] = useState(value);
+    const valueRef = useRef(value);
+    const onChangeRef = useRef(onChange);
+    const isDirty = useRef(false);
+
+    useEffect(() => {
+        onChangeRef.current = onChange;
+    }, [onChange]);
+
+    useEffect(() => {
+        return () => {
+            if (isDirty.current) {
+                onChangeRef.current(valueRef.current);
+            }
+        };
+    }, []);
+
+    const handleSelect = (v: "liquid" | "gas") => {
+        setLocalValue(v);
+        valueRef.current = v;
+        isDirty.current = true;
+    };
+
+    return (
+        <Box sx={{ pt: 4 }}>
+            <IOSListGroup>
+                <IOSListItem
+                    label="Liquid"
+                    value={localValue === "liquid" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                    onClick={() => handleSelect("liquid")}
+                />
+                <IOSListItem
+                    label="Gas"
+                    value={localValue === "gas" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                    onClick={() => handleSelect("gas")}
+                    last
+                />
+            </IOSListGroup>
+        </Box>
+    );
+};
+
+// --- Helper for Number Input ---
+const NumberInputPage = ({
+    value,
+    onChange,
+    placeholder,
+    autoFocus
+}: {
+    value: number | undefined,
+    onChange: (val: number) => void,
+    placeholder: string,
+    autoFocus?: boolean
+}) => {
+    const [localValue, setLocalValue] = useState(value?.toString() ?? "");
+
+    useEffect(() => {
+        if (value !== undefined && Number(localValue) !== value) {
+            setLocalValue(value.toString());
+        }
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newVal = e.target.value;
+        setLocalValue(newVal);
+
+        const num = parseFloat(newVal);
+        if (!isNaN(num) && newVal.trim() !== "") {
+            onChange(num);
+        }
+    };
+
+    return (
+        <Box sx={{ pt: 4 }}>
+            <IOSListGroup>
+                <IOSTextField
+                    fullWidth
+                    value={localValue}
+                    onChange={handleChange}
+                    placeholder={placeholder}
+                    autoFocus={autoFocus}
+                    type="number"
+                />
+            </IOSListGroup>
+        </Box>
+    );
+};
+
+// --- Fluid ---
+
+export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodeProps, onUpdateNode: (id: string, patch: NodePatch) => void, navigator: Navigator }) => {
     const fluid = node.fluid || { id: "fluid", phase: "liquid" };
+
+    const openNamePage = () => {
+        navigator.push("Fluid Name", (net, nav) => {
+            const currentNode = net.nodes.find(n => n.id === node.id);
+            if (!currentNode) return null;
+            const currentFluid = currentNode.fluid || { id: "fluid", phase: "liquid" };
+            return (
+                <FluidNamePage
+                    value={currentFluid.id}
+                    onChange={(v) => onUpdateNode(node.id, { fluid: { ...currentFluid, id: v } })}
+                />
+            );
+        });
+    };
+
+    const openPhasePage = () => {
+        navigator.push("Phase", (net, nav) => {
+            const currentNode = net.nodes.find(n => n.id === node.id);
+            if (!currentNode) return null;
+            const currentFluid = currentNode.fluid || { id: "fluid", phase: "liquid" };
+            return (
+                <FluidPhasePage
+                    value={currentFluid.phase as "liquid" | "gas"}
+                    onChange={(v) => onUpdateNode(node.id, { fluid: { ...currentFluid, phase: v } })}
+                />
+            );
+        });
+    };
+
+    const openQuantityPage = (
+        label: string,
+        field: keyof typeof fluid,
+        unitField: keyof typeof fluid,
+        options: readonly string[],
+        family: any, // UnitFamily
+        min?: number
+    ) => {
+        navigator.push(label, (net, nav) => {
+            const currentNode = net.nodes.find(n => n.id === node.id);
+            if (!currentNode) return null;
+            const currentFluid = currentNode.fluid || { id: "fluid", phase: "liquid" };
+            return (
+                <IOSQuantityPage
+                    label={label}
+                    value={(currentFluid as any)[field] ?? ""}
+                    unit={(currentFluid as any)[unitField] ?? options[0]}
+                    units={options}
+                    unitFamily={family}
+                    onValueChange={(v) => onUpdateNode(node.id, { fluid: { ...currentFluid, [field]: v } })}
+                    onUnitChange={(u) => onUpdateNode(node.id, { fluid: { ...currentFluid, [unitField]: u } })}
+                    min={min}
+                    autoFocus
+                />
+            );
+        });
+    };
 
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header="Fluid Properties">
-                <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
-                    <TextField
-                        label="Fluid Name"
-                        fullWidth
-                        size="small"
-                        value={fluid.id}
-                        onChange={(e) => onUpdateNode(node.id, { fluid: { ...fluid, id: e.target.value } })}
-                        sx={glassInputSx}
-                    />
-                </Box>
-                <Box sx={{ px: 2, pb: 2, bgcolor: 'background.paper' }}>
-                    <FormControl component="fieldset" fullWidth sx={glassRadioSx}>
-                        <Typography variant="caption" sx={{ mb: 1, display: 'block' }}>Phase</Typography>
-                        <RadioGroup
-                            value={fluid.phase}
-                            onChange={(e) => onUpdateNode(node.id, { fluid: { ...fluid, phase: e.target.value as "liquid" | "gas" } })}
-                        >
-                            <FormControlLabel value="liquid" control={<Radio size="small" />} label="Liquid" />
-                            <FormControlLabel value="gas" control={<Radio size="small" />} label="Gas" />
-                        </RadioGroup>
-                    </FormControl>
-                </Box>
+            <IOSListGroup header="General">
+                <IOSListItem
+                    label="Name"
+                    value={fluid.id}
+                    onClick={openNamePage}
+                    chevron
+                />
+                <IOSListItem
+                    label="Phase"
+                    value={fluid.phase === "liquid" ? "Liquid" : "Gas"}
+                    onClick={openPhasePage}
+                    chevron
+                    last
+                />
             </IOSListGroup>
 
             {fluid.phase === "liquid" ? (
-                <>
-                    <IOSQuantityPage
+                <IOSListGroup header="Liquid Properties">
+                    <IOSListItem
                         label="Density"
-                        value={fluid.density ?? ""}
-                        unit={fluid.densityUnit ?? "kg/m3"}
-                        units={QUANTITY_UNIT_OPTIONS.density}
-                        unitFamily="density"
-                        onValueChange={(v) => onUpdateNode(node.id, { fluid: { ...fluid, density: v } })}
-                        onUnitChange={(u) => onUpdateNode(node.id, { fluid: { ...fluid, densityUnit: u } })}
-                        min={0}
+                        value={`${fluid.density ?? "-"} ${fluid.densityUnit ?? "kg/m3"}`}
+                        onClick={() => openQuantityPage("Density", "density", "densityUnit", QUANTITY_UNIT_OPTIONS.density, "density", 0)}
+                        chevron
                     />
-                    <IOSQuantityPage
+                    <IOSListItem
                         label="Viscosity"
-                        value={fluid.viscosity ?? ""}
-                        unit={fluid.viscosityUnit ?? "cP"}
-                        units={QUANTITY_UNIT_OPTIONS.viscosity}
-                        unitFamily="viscosity"
-                        onValueChange={(v) => onUpdateNode(node.id, { fluid: { ...fluid, viscosity: v } })}
-                        onUnitChange={(u) => onUpdateNode(node.id, { fluid: { ...fluid, viscosityUnit: u } })}
-                        min={0}
+                        value={`${fluid.viscosity ?? "-"} ${fluid.viscosityUnit ?? "cP"}`}
+                        onClick={() => openQuantityPage("Viscosity", "viscosity", "viscosityUnit", QUANTITY_UNIT_OPTIONS.viscosity, "viscosity", 0)}
+                        chevron
+                        last
                     />
-                </>
+                </IOSListGroup>
             ) : (
                 <IOSListGroup header="Gas Properties">
-                    <Box sx={{ p: 2, bgcolor: 'background.paper' }}>
-                        <TextField
-                            label="Molecular Weight"
-                            type="number"
-                            fullWidth
-                            size="small"
-                            value={fluid.molecularWeight ?? ""}
-                            onChange={(e) => onUpdateNode(node.id, { fluid: { ...fluid, molecularWeight: Number(e.target.value) } })}
-                            sx={glassInputSx}
-                        />
-                        <Box sx={{ mt: 2 }}>
-                            <TextField
-                                label="Z Factor"
-                                type="number"
-                                fullWidth
-                                size="small"
-                                value={fluid.zFactor ?? ""}
-                                onChange={(e) => onUpdateNode(node.id, { fluid: { ...fluid, zFactor: Number(e.target.value) } })}
-                                sx={glassInputSx}
-                            />
-                        </Box>
-                        <Box sx={{ mt: 2 }}>
-                            <TextField
-                                label="Specific Heat Ratio"
-                                type="number"
-                                fullWidth
-                                size="small"
-                                value={fluid.specificHeatRatio ?? ""}
-                                onChange={(e) => onUpdateNode(node.id, { fluid: { ...fluid, specificHeatRatio: Number(e.target.value) } })}
-                                sx={glassInputSx}
-                            />
-                        </Box>
-                    </Box>
+
+
+                    <IOSListItem
+                        label="Molecular Weight"
+                        value={fluid.molecularWeight?.toString() ?? "-"}
+                        onClick={() => navigator.push("Molecular Weight", (net, nav) => {
+                            const currentNode = net.nodes.find(n => n.id === node.id);
+                            if (!currentNode) return null;
+                            const currentFluid = currentNode.fluid || { id: "fluid", phase: "liquid" };
+                            return (
+                                <NumberInputPage
+                                    value={currentFluid.molecularWeight}
+                                    onChange={(val) => onUpdateNode(node.id, { fluid: { ...currentFluid, molecularWeight: val } })}
+                                    placeholder="Molecular Weight"
+                                    autoFocus
+                                />
+                            );
+                        })}
+                        chevron
+                    />
+                    <IOSListItem
+                        label="Z Factor"
+                        value={fluid.zFactor?.toString() ?? "-"}
+                        onClick={() => navigator.push("Z Factor", (net, nav) => {
+                            const currentNode = net.nodes.find(n => n.id === node.id);
+                            if (!currentNode) return null;
+                            const currentFluid = currentNode.fluid || { id: "fluid", phase: "liquid" };
+                            return (
+                                <NumberInputPage
+                                    value={currentFluid.zFactor}
+                                    onChange={(val) => onUpdateNode(node.id, { fluid: { ...currentFluid, zFactor: val } })}
+                                    placeholder="Z Factor"
+                                    autoFocus
+                                />
+                            );
+                        })}
+                        chevron
+                    />
+                    <IOSListItem
+                        label="Specific Heat Ratio"
+                        value={fluid.specificHeatRatio?.toString() ?? "-"}
+                        onClick={() => navigator.push("Specific Heat Ratio", (net, nav) => {
+                            const currentNode = net.nodes.find(n => n.id === node.id);
+                            if (!currentNode) return null;
+                            const currentFluid = currentNode.fluid || { id: "fluid", phase: "liquid" };
+                            return (
+                                <NumberInputPage
+                                    value={currentFluid.specificHeatRatio}
+                                    onChange={(val) => onUpdateNode(node.id, { fluid: { ...currentFluid, specificHeatRatio: val } })}
+                                    placeholder="Specific Heat Ratio"
+                                    autoFocus
+                                />
+                            );
+                        })}
+                        chevron
+                        last
+                    />
                 </IOSListGroup>
             )}
         </Box>
