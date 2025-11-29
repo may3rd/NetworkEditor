@@ -107,8 +107,8 @@ export const validateNodeConfiguration = (
     // Forward pipe connected to target handle AND Backward pipe connected to source handle
     if (incomingForward.length > 0 && incomingBackward.length > 0) {
         // Exception: If the forward pipe connected to target handle is a control valve
-        const hasControlValveException = incomingForward.some(
-            pipe => pipe.pipeSectionType === "control valve"
+        const hasControlValveException = [...incomingForward, ...incomingBackward].some(
+            pipe => ["control valve", "orifice"].includes(pipe.pipeSectionType || "")
         );
 
         if (hasControlValveException) {

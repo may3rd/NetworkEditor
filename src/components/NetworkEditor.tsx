@@ -301,9 +301,17 @@ export function NetworkEditor({
         asTarget.length === 0 || targetDirections.every(direction => direction === "backward");
       const anyTargetForward = targetDirections.some(direction => direction === "forward");
 
+      const incomingPipelineForward = asTarget.some(p => p.pipeSectionType === 'pipeline' && normalizeDirection(p) === 'forward');
+      const connectedToControlValve = [...asSource, ...asTarget].some(p => p.pipeSectionType === 'control valve');
+
+      const targetControlValve = asTarget.some(p => p.pipeSectionType === 'control valve');
+      const sourcePipelineBackward = asSource.some(p => p.pipeSectionType === 'pipeline' && normalizeDirection(p) === 'backward');
+
       let role: NodeFlowRole = "neutral";
       if (isIsolated) {
         role = "isolated";
+      } else if ((incomingPipelineForward && connectedToControlValve) || (targetControlValve && sourcePipelineBackward)) {
+        role = "sink";
       } else if (allSourceForward && allTargetBackward) {
         role = "source";
       } else if (allSourceBackward && allTargetForward) {
