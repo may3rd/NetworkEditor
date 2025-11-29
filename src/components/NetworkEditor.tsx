@@ -922,6 +922,11 @@ function EditorCanvas({
         return;
       }
 
+      // If in connecting mode, do not create new nodes on drop
+      if (isConnectingMode) {
+        return;
+      }
+
       const position = screenToFlowPosition({ x: clientX, y: clientY });
 
       if (snapToGrid) {
