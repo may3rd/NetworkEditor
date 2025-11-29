@@ -1,144 +1,118 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { NodeProperties } from "./properties/NodeProperties";
-import { PipeProperties } from "./properties/PipeProperties";
-import {
-  Box,
-  Typography,
-  Paper,
-  Stack,
-  IconButton,
-} from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
-import { NetworkState, NodePatch, PipePatch, SelectedElement } from "@/lib/types";
+import { useState, useEffect, ReactNode } from "react";
+import { Paper, Box, Typography } from "@mui/material";
+import { NetworkState, NodePatch, PipePatch } from "@/lib/types";
+import { IOSContainer } from "./ios/IOSContainer";
+import { IOSNavBar } from "./ios/IOSNavBar";
+import { IOSPipeProperties } from "./properties/IOSPipeProperties";
+import { IOSNodeProperties } from "./properties/IOSNodeProperties";
 
 type Props = {
   network: NetworkState;
-  selected: SelectedElement;
+  selectedElement: { type: "node" | "pipe"; id: string } | null;
   onUpdateNode: (id: string, patch: NodePatch) => void;
   onUpdatePipe: (id: string, patch: PipePatch) => void;
-  onReset: () => void;
-  onClose?: () => void;
+  onClose: () => void;
+};
+
+export type Navigator = {
+  push: (title: string, component: (network: NetworkState, navigator: Navigator) => ReactNode, backLabel?: string) => void;
+  pop: () => void;
 };
 
 export function PropertiesPanel({
   network,
-  selected,
-  onReset,
+  selectedElement,
   onUpdateNode,
   onUpdatePipe,
   onClose,
 }: Props) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [stack, setStack] = useState<{
+    id: string;
+    title: string;
+    backLabel?: string;
+    render: (network: NetworkState, navigator: Navigator) => ReactNode;
+  }[]>([]);
 
-  const handleScroll = () => {
-    if (scrollContainerRef.current) {
-      setIsScrolled(scrollContainerRef.current.scrollTop > 10);
-    }
+  const push = (title: string, render: (network: NetworkState, navigator: Navigator) => ReactNode, backLabel?: string) => {
+    setStack(prev => [...prev, { id: title, title, render, backLabel }]);
   };
 
-  const node =
-    selected?.type === "node"
-      ? network.nodes.find((n) => n.id === selected.id)
-      : undefined;
-  const pipe =
-    selected?.type === "pipe"
-      ? network.pipes.find((p) => p.id === selected.id)
-      : undefined;
+  const pop = () => {
+    setStack(prev => prev.slice(0, -1));
+  };
+
+  const navigator: Navigator = { push, pop };
+
+  // Reset stack on selection change
+  useEffect(() => {
+    if (!selectedElement) {
+      setStack([]);
+      return;
+    }
+
+    const rootRender = (net: NetworkState, nav: Navigator) => {
+      if (selectedElement.type === "node") {
+        const node = net.nodes.find((n) => n.id === selectedElement.id);
+        if (!node) return null;
+        return <IOSNodeProperties node={node} network={net} onUpdateNode={onUpdateNode} navigator={nav} />;
+      } else {
+        const pipe = net.pipes.find((p) => p.id === selectedElement.id);
+        if (!pipe) return null;
+        const startNode = net.nodes.find((n) => n.id === pipe.startNodeId);
+        const endNode = net.nodes.find((n) => n.id === pipe.endNodeId);
+        return <IOSPipeProperties pipe={pipe} startNode={startNode} endNode={endNode} onUpdatePipe={onUpdatePipe} navigator={nav} />;
+      }
+    };
+
+    setStack([{
+      id: 'root',
+      title: selectedElement.type === 'node' ? 'Node Properties' : 'Pipe Properties',
+      render: rootRender
+    }]);
+
+  }, [selectedElement?.id, selectedElement?.type, onUpdateNode, onUpdatePipe]);
+
+  if (!selectedElement || stack.length === 0) {
+    return null;
+  }
+
+  const activePage = stack[stack.length - 1];
+  const activeComponent = activePage.render(network, navigator);
 
   return (
     <Paper
       elevation={0}
-      ref={scrollContainerRef}
-      onScroll={handleScroll}
       sx={{
-        width: "100%",
+        width: 340,
         height: "100%",
-        overflowY: "auto",
-        borderTopLeftRadius: 12,
-        borderBottomLeftRadius: 12,
-        borderTopRightRadius: 0,
-        borderBottomRightRadius: 0,
-        borderLeft: "1px solid",
-        borderTop: "1px solid",
-        borderBottom: "1px solid",
-        borderRight: "none",
-        borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-        p: 0, // Remove padding from Paper to allow sticky header to sit flush
         display: "flex",
         flexDirection: "column",
-        backdropFilter: "blur(20px) saturate(180%)",
-        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : '#f5f5f5',
-        boxShadow: (theme) => theme.palette.mode === 'dark'
-          ? '0 8px 32px 0 rgba(0, 0, 0, 0.37)'
-          : '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+        borderLeft: "1px solid",
+        borderColor: "divider",
+        borderRadius: "24px",
+        zIndex: 1100, // Above canvas
       }}
     >
-      <Box sx={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        bgcolor: "transparent", // Let the parent glass show through, or apply its own if sticky needs it
-        backdropFilter: "blur(20px) saturate(180%)", // Re-apply blur for sticky content behind it
-        backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(30, 41, 59, 0.6)' : '#f5f5f5',
-        borderBottom: isScrolled ? "1px solid" : "none",
-        borderColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-        px: 2,
-        py: 2,
-        transition: "all 0.2s",
-        ...(isScrolled && {
-          py: 1,
-          boxShadow: 1,
-        })
-      }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-          <Box>
-            {node || pipe ? (
-              <Stack direction="row" alignItems="baseline" spacing={1}>
-                <Typography variant="h6" fontWeight="bold" sx={{ fontSize: isScrolled ? "1rem" : "1.25rem", transition: "font-size 0.2s" }}>
-                  {node ? "Node" : "Pipe"} Properties
-                </Typography>
-                {isScrolled && pipe && (
-                  <Typography variant="body2" color="text.secondary">
-                    - {pipe.pipeSectionType === "control valve" ? "Control Valve" : pipe.pipeSectionType === "orifice" ? "Orifice" : "Pipeline"}
-                  </Typography>
-                )}
-              </Stack>
-            ) : (
-              <Box>
-                <Typography variant="h6" fontWeight="bold">No Node or Pipe Selected</Typography>
-                {!isScrolled && <Typography>Select a node or pipe to view or edit its values.</Typography>}
-              </Box>
-            )}
-          </Box>
-          {onClose && (
-            <IconButton size="small" onClick={onClose} sx={{ ml: 1 }}>
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          )}
-        </Stack>
-      </Box>
-
-      <Box sx={{ px: 2, pb: 2, pt: 1, display: "flex", flexDirection: "column", gap: 1 }}>
-
-        {node && (
-          <NodeProperties
-            node={node}
-            network={network}
-            onUpdateNode={onUpdateNode}
-          />
-        )}
-
-        {pipe && (
-          <PipeProperties
-            pipe={pipe}
-            network={network}
-            onUpdatePipe={onUpdatePipe}
-          />
-        )}
-      </Box>
+      <IOSContainer>
+        <IOSNavBar
+          title={activePage.title}
+          onBack={stack.length > 1 ? pop : undefined}
+          backLabel={stack.length > 1 ? stack[stack.length - 2].title : undefined}
+          rightAction={
+            stack.length === 1 ? (
+              <Typography
+                onClick={onClose}
+                sx={{ color: "primary.main", cursor: "pointer", fontSize: "17px" }}
+              >
+                Done
+              </Typography>
+            ) : undefined
+          }
+        />
+        {activeComponent}
+      </IOSContainer>
     </Paper>
   );
 }

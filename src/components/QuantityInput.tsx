@@ -38,6 +38,7 @@ type QuantityInputProps = {
   readOnly?: boolean;
   alwaysShowColor?: boolean;
   error?: boolean;
+  autoFocus?: boolean;
 };
 
 export function QuantityInput({
@@ -60,6 +61,7 @@ export function QuantityInput({
   readOnly,
   alwaysShowColor,
   error,
+  autoFocus,
 }: QuantityInputProps) {
   const displayLabel = unit ? `${label} (${unit})` : label;
   const formatValue = useMemo(
@@ -133,6 +135,7 @@ export function QuantityInput({
       label={label}
       value={inputValue}
       error={isError}
+      autoFocus={autoFocus}
       sx={{
         ...sx,
         "& .MuiOutlinedInput-root": {
@@ -147,6 +150,9 @@ export function QuantityInput({
           },
           "&.Mui-focused fieldset": {
             borderColor: (theme) => theme.palette.primary.main,
+          },
+          "& input": {
+            fontSize: "14px",
           },
         },
         ...(alwaysShowColor && color ? {

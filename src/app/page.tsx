@@ -434,16 +434,16 @@ export default function Home() {
             sx={{
               position: "absolute",
               top: 0,
-              right: 0,
+              right: "0px",
               bottom: 0,
-              width: "320px",
+              width: "340px",
               zIndex: 10,
               backgroundColor: "transparent",
             }}
           >
             <PropertiesPanel
               network={network}
-              selected={selection}
+              selectedElement={selection}
               onUpdateNode={(id, patch: NodePatch) =>
                 setNetwork(current => {
                   let updatedNode: NodeProps | undefined;
@@ -515,7 +515,7 @@ export default function Home() {
                   }),
                 }))
               }
-              onReset={handleReset}
+
               onClose={() => handleSelect(null, null)}
             />
           </Paper>
