@@ -109,6 +109,8 @@ type NetworkEditorProps = {
   onToggleAnimation?: () => void;
   onToggleConnectingMode?: () => void;
   onSelectionChangeProp?: (selection: { nodes: string[]; edges: string[] }) => void;
+  viewSettings: ViewSettings;
+  setViewSettings: (settings: ViewSettings) => void;
 };
 
 type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
@@ -157,62 +159,13 @@ export function NetworkEditor({
   onToggleAnimation,
   onToggleConnectingMode,
   onSelectionChangeProp,
+  viewSettings,
+  setViewSettings,
 }: NetworkEditorProps) {
   const theme = useTheme();
   const [viewSettingsDialogOpen, setViewSettingsDialogOpen] = useState(false);
-  const [viewSettings, setViewSettings] = useState<ViewSettings>(() => {
-    const defaults: ViewSettings = {
-      unitSystem: "metric",
-      node: {
-        name: true,
-        pressure: false,
-        temperature: false,
-        decimals: {
-          pressure: 2,
-          temperature: 2,
-        },
-      },
-      pipe: {
-        name: true,
-        length: true,
-        deltaP: false,
-        velocity: false,
-        dPPer100m: false,
-        massFlowRate: false,
-        decimals: {
-          length: 2,
-          deltaP: 2,
-          velocity: 2,
-          dPPer100m: 2,
-          massFlowRate: 2,
-        },
-      },
-    };
+  // viewSettings state is now passed as prop
 
-    if (!network.viewSettings) return defaults;
-
-    // Deep merge to ensure all properties exist
-    return {
-      ...defaults,
-      ...network.viewSettings,
-      node: {
-        ...defaults.node,
-        ...network.viewSettings.node,
-        decimals: {
-          ...defaults.node.decimals,
-          ...network.viewSettings.node?.decimals,
-        },
-      },
-      pipe: {
-        ...defaults.pipe,
-        ...network.viewSettings.pipe,
-        decimals: {
-          ...defaults.pipe.decimals,
-          ...network.viewSettings.pipe?.decimals,
-        },
-      },
-    };
-  });
 
   const getPressureUnit = (system: ViewSettings["unitSystem"]) => {
     switch (system) {
@@ -229,13 +182,16 @@ export function NetworkEditor({
   // Sync external showPressures prop with viewSettings (backward compatibility)
   useEffect(() => {
     if (externalShowPressures !== undefined) {
-      setViewSettings(prev => ({
-        ...prev,
-        node: { ...prev.node, pressure: externalShowPressures },
-        pipe: { ...prev.pipe, deltaP: externalShowPressures }
-      }));
+      setViewSettings({
+        ...viewSettings,
+        node: {
+          ...viewSettings.node,
+          pressure: externalShowPressures,
+        },
+        pipe: { ...viewSettings.pipe, deltaP: externalShowPressures }
+      });
     }
-  }, [externalShowPressures]);
+  }, [externalShowPressures, viewSettings, setViewSettings]); // Added viewSettings and setViewSettings to dependency array
 
   // Sync internal changes back to external prop if provided
   useEffect(() => {

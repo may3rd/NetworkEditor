@@ -1,9 +1,10 @@
 import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { glassInputSx, glassSelectSx, glassRadioSx } from "@/lib/glassStyles";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
-import { PipeProps, PipePatch } from "@/lib/types";
+import { PipeProps, ViewSettings, PipePatch } from "@/lib/types";
 import { IOSListGroup } from "../../ios/IOSListGroup";
 import { IOSListItem } from "../../ios/IOSListItem";
+import { IOSContainer } from "../../ios/IOSContainer";
 import { IOSQuantityPage } from "./IOSQuantityPage";
 
 import { IOSTextField } from "../../ios/IOSTextField";
@@ -109,18 +110,22 @@ const NumberInputPage = ({
     value,
     onChange,
     placeholder,
-    autoFocus
+    autoFocus,
+    min
 }: {
     value: number | undefined,
-    onChange: (val: number) => void,
+    onChange: (val: number | undefined) => void,
     placeholder: string,
-    autoFocus?: boolean
+    autoFocus?: boolean,
+    min?: number
 }) => {
     const [localValue, setLocalValue] = useState(value?.toString() ?? "");
 
     useEffect(() => {
         if (value !== undefined && Number(localValue) !== value) {
             setLocalValue(value.toString());
+        } else if (value === undefined && localValue !== "") {
+            setLocalValue("");
         }
     }, [value]);
 
@@ -128,8 +133,16 @@ const NumberInputPage = ({
         const newVal = e.target.value;
         setLocalValue(newVal);
 
+        if (newVal.trim() === "") {
+            onChange(undefined);
+            return;
+        }
+
         const num = parseFloat(newVal);
-        if (!isNaN(num) && newVal.trim() !== "") {
+        if (!isNaN(num)) {
+            if (min !== undefined && num < min) {
+                return;
+            }
             onChange(num);
         }
     };
@@ -518,9 +531,25 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
                             last
                         />
                     </IOSListGroup>
-                    <Typography variant="caption" sx={{ px: 2, pt: 1, display: "block", color: "text.secondary" }}>
+                    <Typography variant="caption" sx={{ px: 2, pt: 1, pb: 2, display: "block", color: "text.secondary" }}>
                         Pipe Diameter: {typeof pipe.diameter === 'number' ? pipe.diameter.toFixed(3) : "-"} {pipe.diameterUnit ?? "mm"}
                     </Typography>
+
+                    <IOSListGroup header="Dimensions">
+                        <IOSListItem
+                            label="Inlet Diameter"
+                            value={`${typeof pipe.inletDiameter === 'number' ? pipe.inletDiameter.toFixed(3) : "-"} ${pipe.inletDiameterUnit ?? "mm"}`}
+                            onClick={() => openDiameterQuantityPage("Inlet Diameter", "inletDiameter", "inletDiameterUnit")}
+                            chevron
+                        />
+                        <IOSListItem
+                            label="Outlet Diameter"
+                            value={`${typeof pipe.outletDiameter === 'number' ? pipe.outletDiameter.toFixed(3) : "-"} ${pipe.outletDiameterUnit ?? "mm"}`}
+                            onClick={() => openDiameterQuantityPage("Outlet Diameter", "outletDiameter", "outletDiameterUnit")}
+                            chevron
+                            last
+                        />
+                    </IOSListGroup>
                 </>
             )}
         </Box>
@@ -538,7 +567,7 @@ export const CalculationTypePage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, o
                     label={type.charAt(0).toUpperCase() + type.slice(1)}
                     onClick={() => onUpdatePipe(pipe.id, { pipeSectionType: type as any })}
                     last={type === "orifice"}
-                    value={pipe.pipeSectionType === type ? "✓" : ""}
+                    value={pipe.pipeSectionType === type ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
                 />
             ))}
         </IOSListGroup>
@@ -573,3 +602,459 @@ export const ElevationPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdat
         autoFocus
     />
 );
+
+// --- Control Valve & Orifice ---
+
+const ControlValveInputModePage = ({ value, onChange }: { value: "cv" | "pressure_drop", onChange: (v: "cv" | "pressure_drop") => void }) => (
+    <Box sx={{ pt: 4 }}>
+        <IOSListGroup>
+            <IOSListItem
+                label="CV"
+                value={value === "cv" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onChange("cv")}
+            />
+            <IOSListItem
+                label="Pressure Drop"
+                value={value === "pressure_drop" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onChange("pressure_drop")}
+                last
+            />
+        </IOSListGroup>
+    </Box>
+);
+
+const OrificeInputModePage = ({ value, onChange }: { value: "beta_ratio" | "pressure_drop", onChange: (v: "beta_ratio" | "pressure_drop") => void }) => (
+    <Box sx={{ pt: 4 }}>
+        <IOSListGroup>
+            <IOSListItem
+                label="Beta Ratio"
+                value={value === "beta_ratio" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onChange("beta_ratio")}
+            />
+            <IOSListItem
+                label="Pressure Drop"
+                value={value === "pressure_drop" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onChange("pressure_drop")}
+                last
+            />
+        </IOSListGroup>
+    </Box>
+);
+
+export const ControlValvePage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
+    const cvData = pipe.controlValve || { id: "cv", inputMode: "cv" };
+    const inputMode = cvData.inputMode || "cv";
+
+    const openInputModePage = () => {
+        navigator.push("Input Mode", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            return (
+                <ControlValveInputModePage
+                    value={currentCV.inputMode || "cv"}
+                    onChange={(v) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, inputMode: v } })}
+                />
+            );
+        });
+    };
+
+    const openCVPage = () => {
+        navigator.push("CV Value", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            return (
+                <NumberInputPage
+                    value={currentCV.cv}
+                    onChange={(v) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, cv: v } })}
+                    placeholder="CV Value"
+                    autoFocus
+                    min={0}
+                />
+            );
+        });
+    };
+
+    const openPressureDropPage = () => {
+        navigator.push("Pressure Drop", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            return (
+                <IOSQuantityPage
+                    label="Pressure Drop"
+                    value={currentCV.pressureDrop ?? ""}
+                    unit={currentCV.pressureDropUnit ?? "kPa"}
+                    units={["Pa", "kPa", "bar", "psi"]}
+                    unitFamily="pressure"
+                    onValueChange={(v) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, pressureDrop: v } })}
+                    onUnitChange={(u) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, pressureDropUnit: u } })}
+                    min={0}
+                    autoFocus
+                />
+            );
+        });
+    };
+
+    return (
+        <>
+            <IOSListItem
+                label="Input Mode"
+                value={inputMode === "cv" ? "CV" : "Pressure Drop"}
+                onClick={openInputModePage}
+                chevron
+            />
+            {inputMode === "cv" ? (
+                <IOSListItem
+                    label="CV"
+                    value={cvData.cv?.toString() ?? "-"}
+                    onClick={openCVPage}
+                    chevron
+                />
+            ) : (
+                <IOSListItem
+                    label="Pressure Drop"
+                    value={`${cvData.pressureDrop ?? "-"} ${cvData.pressureDropUnit ?? "kPa"}`}
+                    onClick={openPressureDropPage}
+                    chevron
+                />
+            )}
+            <IOSListItem
+                label="Calculated dP"
+                value={pipe.pressureDropCalculationResults?.controlValvePressureDrop ? `${(pipe.pressureDropCalculationResults.controlValvePressureDrop / 1000).toFixed(2)} kPa` : "-"}
+                last
+            />
+        </>
+    );
+};
+
+export const OrificePage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
+    const orificeData = pipe.orifice || { id: "orifice", inputMode: "beta_ratio" };
+    const inputMode = orificeData.inputMode || "beta_ratio";
+
+    const openInputModePage = () => {
+        navigator.push("Input Mode", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            const currentOrifice = currentPipe.orifice || { id: "orifice", inputMode: "beta_ratio" };
+            return (
+                <OrificeInputModePage
+                    value={currentOrifice.inputMode || "beta_ratio"}
+                    onChange={(v) => onUpdatePipe(pipe.id, { orifice: { ...currentOrifice, inputMode: v } })}
+                />
+            );
+        });
+    };
+
+    const openBetaRatioPage = () => {
+        navigator.push("Beta Ratio", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            const currentOrifice = currentPipe.orifice || { id: "orifice", inputMode: "beta_ratio" };
+            return (
+                <NumberInputPage
+                    value={currentOrifice.betaRatio}
+                    onChange={(v) => onUpdatePipe(pipe.id, { orifice: { ...currentOrifice, betaRatio: v } })}
+                    placeholder="Beta Ratio"
+                    autoFocus
+                    min={0}
+                />
+            );
+        });
+    };
+
+    const openPressureDropPage = () => {
+        navigator.push("Pressure Drop", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            const currentOrifice = currentPipe.orifice || { id: "orifice", inputMode: "beta_ratio" };
+            return (
+                <IOSQuantityPage
+                    label="Pressure Drop"
+                    value={currentOrifice.pressureDrop ?? ""}
+                    unit={currentOrifice.pressureDropUnit ?? "kPa"}
+                    units={["Pa", "kPa", "bar", "psi"]}
+                    unitFamily="pressure"
+                    onValueChange={(v) => onUpdatePipe(pipe.id, { orifice: { ...currentOrifice, pressureDrop: v } })}
+                    onUnitChange={(u) => onUpdatePipe(pipe.id, { orifice: { ...currentOrifice, pressureDropUnit: u } })}
+                    min={0}
+                    autoFocus
+                />
+            );
+        });
+    };
+
+    return (
+        <>
+            <IOSListItem
+                label="Input Mode"
+                value={inputMode === "beta_ratio" ? "Beta Ratio" : "Pressure Drop"}
+                onClick={openInputModePage}
+                chevron
+            />
+            {inputMode === "beta_ratio" ? (
+                <IOSListItem
+                    label="Beta Ratio"
+                    value={orificeData.betaRatio?.toString() ?? "-"}
+                    onClick={openBetaRatioPage}
+                    chevron
+                />
+            ) : (
+                <IOSListItem
+                    label="Pressure Drop"
+                    value={`${orificeData.pressureDrop ?? "-"} ${orificeData.pressureDropUnit ?? "kPa"}`}
+                    onClick={openPressureDropPage}
+                    chevron
+                />
+            )}
+            <IOSListItem
+                label="Calculated dP"
+                value={pipe.pressureDropCalculationResults?.orificePressureDrop ? `${(pipe.pressureDropCalculationResults.orificePressureDrop / 1000).toFixed(2)} kPa` : "-"}
+                last
+            />
+        </>
+    );
+};
+
+export const UserSpecifiedPressureLossPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void }) => (
+    <IOSQuantityPage
+        label="User Specified Drop"
+        value={pipe.userSpecifiedPressureLoss ?? ""}
+        unit={pipe.userSpecifiedPressureLossUnit ?? "Pa"}
+        units={["Pa", "kPa", "bar", "psi"]}
+        unitFamily="pressure"
+        onValueChange={(v) => onUpdatePipe(pipe.id, { userSpecifiedPressureLoss: v })}
+        onUnitChange={(u) => onUpdatePipe(pipe.id, { userSpecifiedPressureLossUnit: u })}
+        min={0}
+        autoFocus
+    />
+);
+
+// --- Direction ---
+
+export const DirectionPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void }) => (
+    <Box sx={{ pt: 2 }}>
+        <IOSListGroup>
+            <IOSListItem
+                label="Forward"
+                value={(!pipe.direction || pipe.direction === "forward") ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onUpdatePipe(pipe.id, { direction: "forward" })}
+            />
+            <IOSListItem
+                label="Backward"
+                value={pipe.direction === "backward" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onUpdatePipe(pipe.id, { direction: "backward" })}
+                last
+            />
+        </IOSListGroup>
+    </Box>
+);
+
+// --- Pipe Fittings ---
+
+import { PIPE_FITTING_OPTIONS } from "../../PipeDimension";
+import { FittingType } from "@/lib/types";
+import { Add } from "@mui/icons-material";
+import { IconButton } from "@mui/material";
+
+export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
+    const fittings = pipe.fittings || [];
+
+    const updateFitting = (type: string, count: number) => {
+        const existingIndex = fittings.findIndex(f => f.type === type);
+        let newFittings = [...fittings];
+
+        if (existingIndex >= 0) {
+            if (count > 0) {
+                newFittings[existingIndex] = { ...newFittings[existingIndex], count };
+            } else {
+                newFittings.splice(existingIndex, 1);
+            }
+        } else if (count > 0) {
+            newFittings.push({ type, count, k_each: 0, k_total: 0 }); // k_each/total will be calculated elsewhere
+        }
+
+        onUpdatePipe(pipe.id, { fittings: newFittings });
+    };
+
+    const getCount = (type: string) => fittings.find(f => f.type === type)?.count || 0;
+
+    const openSafetyFactorPage = () => {
+        navigator.push("Fitting Safety Factor", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            return (
+                <IOSQuantityPage
+                    label="Fitting Safety Factor (%)"
+                    value={currentPipe.pipingFittingSafetyFactor ?? ""}
+                    unit="%"
+                    units={["%"]}
+                    unitFamily="dimensionless"
+                    onValueChange={(v) => onUpdatePipe(pipe.id, { pipingFittingSafetyFactor: v })}
+                    onUnitChange={() => { }}
+                    min={0}
+                    autoFocus
+                />
+            );
+        });
+    };
+
+    const openUserKPage = () => {
+        navigator.push("User K Value", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            return (
+                <NumberInputPage
+                    value={currentPipe.userK}
+                    onChange={(v) => onUpdatePipe(pipe.id, { userK: v })}
+                    placeholder="User K Value"
+                    autoFocus
+                    min={0}
+                />
+            );
+        });
+    };
+
+    return (
+        <Box sx={{ pt: 2 }}>
+            <IOSListGroup header="General">
+                <IOSListItem
+                    label="Fitting Safety Factor"
+                    value={`${pipe.pipingFittingSafetyFactor ?? 0}%`}
+                    onClick={openSafetyFactorPage}
+                    chevron
+                />
+                <IOSListItem
+                    label="User K Value"
+                    value={pipe.userK?.toString() ?? "0.0"}
+                    onClick={openUserKPage}
+                    chevron
+                    last
+                />
+            </IOSListGroup>
+
+            <IOSListGroup header="Fittings">
+                {PIPE_FITTING_OPTIONS.map((option, index) => {
+                    const count = getCount(option.value);
+                    const isToggle = option.value === "pipe_entrance_normal" || option.value === "pipe_entrance_raise" || option.value === "pipe_exit";
+                    const isSwage = option.value === "inlet_swage" || option.value === "outlet_swage";
+
+                    if (isSwage && count === 0) {
+                        return null;
+                    }
+
+                    return (
+                        <IOSListItem
+                            key={option.value}
+                            label={option.label}
+                            control={isToggle ? (
+                                <Switch
+                                    size="small"
+                                    checked={count > 0}
+                                    onChange={(e) => updateFitting(option.value, e.target.checked ? 1 : 0)}
+                                />
+                            ) : undefined}
+                            value={isSwage ? (() => {
+                                const pipeDia = pipe.diameter || 0;
+                                if (option.value === "inlet_swage") {
+                                    const inletDia = pipe.inletDiameter || pipeDia;
+                                    return inletDia < pipeDia ? "Expand" : "Reduce";
+                                } else {
+                                    const outletDia = pipe.outletDiameter || pipeDia;
+                                    return outletDia < pipeDia ? "Reduce" : "Expand";
+                                }
+                            })() : (!isToggle ? count.toString() : undefined)}
+                            onClick={(!isToggle && !isSwage) ? () => navigator.push(option.label, (net, nav) => {
+                                const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                                if (!currentPipe) return null;
+                                const currentCount = currentPipe.fittings?.find(f => f.type === option.value)?.count || 0;
+                                return (
+                                    <NumberInputPage
+                                        value={currentCount}
+                                        onChange={(v) => updateFitting(option.value, v ?? 0)}
+                                        placeholder={`Count for ${option.label}`}
+                                        autoFocus
+                                        min={0}
+                                    />
+                                );
+                            }) : undefined}
+                            chevron={!isToggle && !isSwage}
+                            last={index === PIPE_FITTING_OPTIONS.length - 1}
+                        />
+                    );
+                })}
+            </IOSListGroup>
+        </Box>
+    );
+};
+
+// --- Summary ---
+
+
+export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewSettings: ViewSettings }) {
+    const results = pipe.pressureDropCalculationResults;
+    const velocity = pipe.resultSummary?.outletState?.velocity;
+
+    const formatPressure = (value: number | undefined) => {
+        if (value === undefined) return "-";
+
+        const unitSystem = viewSettings.unitSystem;
+        let unit = "kPag";
+        let convertedValue = value;
+
+        switch (unitSystem) {
+            case "imperial":
+                unit = "psig";
+                // 1 kPa = 0.145038 psi
+                convertedValue = value * 0.145038;
+                break;
+            case "fieldSI":
+                unit = "barg";
+                // 1 kPa = 0.01 bar
+                convertedValue = value * 0.01;
+                break;
+            case "metric_kgcm2":
+                unit = "kg/cm²g";
+                // 1 kPa = 0.0101972 kg/cm²
+                convertedValue = value * 0.0101972;
+                break;
+            case "metric":
+            default:
+                unit = "kPag";
+                convertedValue = value;
+                break;
+        }
+
+        return `${convertedValue.toFixed(2)} ${unit}`;
+    };
+
+    return (
+        <Box sx={{ pt: 2 }}>
+            <IOSListGroup header="K-Value">
+                <IOSListItem label="Pipe" value={results?.pipeLengthK?.toFixed(3) ?? "-"} />
+                <IOSListItem label="Fittings" value={results?.fittingK?.toFixed(3) ?? "-"} />
+                <IOSListItem label="Total" value={results?.totalK?.toFixed(3) ?? "-"} last />
+            </IOSListGroup>
+
+            <IOSListGroup header="Characteristic Summary">
+                <IOSListItem label="Reynolds Number" value={results?.reynoldsNumber?.toFixed(0) ?? "-"} />
+                <IOSListItem label="Friction Factor" value={results?.frictionalFactor?.toFixed(4) ?? "-"} />
+                <IOSListItem label="Velocity" value={velocity ? `${velocity.toFixed(2)} m/s` : "-"} last />
+            </IOSListGroup>
+
+            <IOSListGroup header="Pressure Loss Summary">
+                <IOSListItem label="Pipe & Fitting" value={formatPressure(results?.pipeAndFittingPressureDrop)} />
+                <IOSListItem label="Elevation Change" value={formatPressure(results?.elevationPressureDrop)} />
+                <IOSListItem label="User supplied K" value="-" />
+                <IOSListItem label="Control Valve drop" value={formatPressure(results?.controlValvePressureDrop)} />
+                <IOSListItem label="Orifice drop" value={formatPressure(results?.orificePressureDrop)} />
+                <IOSListItem
+                    label="User Specified Drop"
+                    value={pipe.userSpecifiedPressureLoss ? `${pipe.userSpecifiedPressureLoss} ${pipe.userSpecifiedPressureLossUnit ?? "Pa"}` : "-"}
+                />
+                <IOSListItem label="Total Pressure Drop" value={formatPressure(results?.totalSegmentPressureDrop)} last />
+            </IOSListGroup>
+        </Box>
+    );
+}

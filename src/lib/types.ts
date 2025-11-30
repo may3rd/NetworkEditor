@@ -176,6 +176,7 @@ export type ControlValve = {
   valve_diameter?: number,
   calculation_note?: string,
   adjustable?: boolean,
+  inputMode?: "cv" | "pressure_drop",
 }
 
 export type Orifice = {
@@ -186,6 +187,7 @@ export type Orifice = {
   pressureDrop?: number,
   pressureDropUnit?: string,
   dischargeCoefficient?: number,
+  inputMode?: "beta_ratio" | "pressure_drop",
 }
 
 export type FittingType = {

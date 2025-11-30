@@ -21,10 +21,13 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
             onClick={onClick}
             sx={{
                 pl: 2,
-                pr: 2,
+                pr: chevron ? 1 : 0.5,
                 cursor: onClick ? "pointer" : "default",
                 "&:active": onClick ? {
                     backgroundColor: isDark ? "#3a3a3c" : "#e5e5ea",
+                } : undefined,
+                "&:hover": onClick ? {
+                    backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.08)",
                 } : undefined,
                 transition: "background-color 0.2s",
                 alignItems: "center",
@@ -58,11 +61,24 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
                 </Typography>
 
                 <Stack direction="row" alignItems="center" spacing={1}>
-                    {value && (
+                    {chevron && (
                         typeof value === 'string' || typeof value === 'number' ? (
                             <Typography sx={{ fontSize: "14px", color: isDark ? "#8e8e93" : "#8e8e93" }}>
                                 {value}
                             </Typography>
+                        ) : (
+                            <Box sx={{ display: 'flex', alignItems: 'center', height: '20px' }}>
+                                {value}
+                            </Box>
+                        )
+                    )}
+                    {!chevron && value && (
+                        typeof value === 'string' || typeof value === 'number' ? (
+                            <Box sx={{ display: 'flex', alignItems: 'center', height: '20px', pr: 2 }}>
+                                <Typography sx={{ fontSize: "14px", color: isDark ? "#8e8e93" : "#8e8e93" }}>
+                                    {value}
+                                </Typography>
+                            </Box>
                         ) : (
                             <Box sx={{ display: 'flex', alignItems: 'center', height: '20px' }}>
                                 {value}

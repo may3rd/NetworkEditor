@@ -32,12 +32,13 @@ const FITTING_TYPE_OPTIONS = ["SCRD", "LR", "SR"] as const;
 type Props = {
     pipe: PipeProps;
     pipeFluidPhase: string;
+    isGasPipe: boolean;
     startNode?: NodeProps;
     endNode?: NodeProps;
     onUpdatePipe: (id: string, patch: PipePatch) => void;
 };
 
-export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, onUpdatePipe }: Props) {
+export function PipePhysicalSection({ pipe, pipeFluidPhase, isGasPipe, startNode, endNode, onUpdatePipe }: Props) {
     const pipeFittings = pipe.fittings ?? [];
     const defaultFittingOption = PIPE_FITTING_OPTIONS[0]?.value ?? "elbow_45";
 
@@ -183,6 +184,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                         onValueChange={(newValue) => onUpdatePipe(pipe.id, { length: newValue })}
                         onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { lengthUnit: newUnit })}
                         min={0}
+                        decimalPlaces={3}
                     />
                 </Box>
                 <Tooltip title="Solve for Length (adjusts length to match pressure difference)">
@@ -192,7 +194,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                 </Tooltip>
             </Stack>
 
-            {pipeFluidPhase === "liquid" && (
+            {!isGasPipe && (
                 <QuantityInput
                     label="Elevation Change"
                     value={pipe.elevation ?? ""}
@@ -213,6 +215,7 @@ export function PipePhysicalSection({ pipe, pipeFluidPhase, startNode, endNode, 
                             ? "Elevation change cannot exceed pipe length"
                             : undefined
                     }
+                    decimalPlaces={3}
                 />
             )}
 

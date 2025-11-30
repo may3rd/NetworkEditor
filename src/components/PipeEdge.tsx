@@ -203,7 +203,7 @@ export default function PipeEdge({
                                     return [
                                         ...commonRows,
                                         { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
-                                        { label: "Length", value: `${pipe.length ?? 0} ${pipe.lengthUnit ?? "m"}` },
+                                        { label: "Length", value: `${(pipe.length ?? 0).toFixed(3)} ${pipe.lengthUnit ?? "m"}` },
                                         { label: "Velocity", value: pipe.resultSummary?.outletState?.velocity ? `${convertUnit(pipe.resultSummary.outletState.velocity, "m/s", "m/s").toFixed(2)} m/s` : "N/A" },
                                         { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.totalSegmentPressureDrop ? `${(pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
                                     ];

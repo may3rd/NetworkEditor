@@ -1,8 +1,9 @@
-import { PipeProps, PipePatch, NodeProps, NetworkState } from "@/lib/types";
+import { PipeProps, NodeProps, PipePatch, ViewSettings, NetworkState } from "@/lib/types";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, Switch } from "@mui/material";
+import { Box, Switch, IconButton } from "@mui/material";
+import { Add, Check } from "@mui/icons-material";
 import {
     NamePage,
     DescriptionPage,
@@ -11,7 +12,13 @@ import {
     DiameterPage,
     CalculationTypePage,
     LengthPage,
-    ElevationPage
+    ElevationPage,
+    DirectionPage,
+    PipeFittingsPage,
+    UserSpecifiedPressureLossPage,
+    PipeSummaryPage,
+    ControlValvePage,
+    OrificePage
 } from "./ios/PipeSubPages";
 
 type Props = {
@@ -20,9 +27,13 @@ type Props = {
     endNode?: NodeProps;
     onUpdatePipe: (id: string, patch: PipePatch) => void;
     navigator: Navigator;
+    viewSettings: ViewSettings;
 };
 
-export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navigator }: Props) {
+export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
+    navigator,
+    viewSettings,
+}: Props) {
 
     const openNamePage = () => {
         navigator.push("Name", (network: NetworkState, nav: Navigator) => {
@@ -108,14 +119,14 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navi
 
             <IOSListGroup header="Flow">
                 <IOSListItem
-                    label="Backward Direction"
-                    control={
-                        <Switch
-                            size="small"
-                            checked={pipe.direction === "backward"}
-                            onChange={(e) => onUpdatePipe(pipe.id, { direction: e.target.checked ? "backward" : "forward" })}
-                        />
-                    }
+                    label="Direction"
+                    value={pipe.direction === "backward" ? "Backward" : "Forward"}
+                    onClick={() => navigator.push("Direction", (net, nav) => {
+                        const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                        if (!currentPipe) return null;
+                        return <DirectionPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} />;
+                    })}
+                    chevron
                 />
                 <IOSListItem
                     label="Mass Flow Rate"
@@ -143,21 +154,73 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, navi
                     })}
                     chevron
                 />
+
+                {pipe.pipeSectionType === "control valve" ? (
+                    <ControlValvePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} />
+                ) : pipe.pipeSectionType === "orifice" ? (
+                    <OrificePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} />
+                ) : (
+                    <>
+                        <IOSListItem
+                            label="Length"
+                            value={`${pipe.length ?? "-"} ${pipe.lengthUnit ?? ""}`}
+                            onClick={openLengthPage}
+                            chevron
+                        />
+                        {pipe.fluid?.phase !== "gas" && (
+                            <IOSListItem
+                                label="Elevation"
+                                value={`${pipe.elevation ?? "-"} ${pipe.elevationUnit ?? ""}`}
+                                onClick={openElevationPage}
+                                chevron
+                            />
+                        )}
+                        <IOSListItem
+                            label="Pipe Fittings"
+                            value={(pipe.fittings?.some(f => f.count > 0) || (pipe.userK && pipe.userK !== 0)) ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                            onClick={() => navigator.push("Pipe Fittings", (net, nav) => {
+                                const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                                if (!currentPipe) return null;
+                                return <PipeFittingsPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} navigator={nav} />;
+                            }, "Back", (
+                                <IconButton size="small" sx={{
+                                    width: "30px",
+                                    height: "30px",
+                                    borderRadius: "50%",
+                                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "#ffffff",
+                                    color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
+                                    "&:hover": {
+                                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "#ffffff",
+                                    },
+                                }}>
+                                    <Add sx={{ fontSize: "20px" }} />
+                                </IconButton>
+                            ))}
+                            chevron
+                        />
+                        <IOSListItem
+                            label="User Specified Drop"
+                            value={pipe.userSpecifiedPressureLoss ? `${pipe.userSpecifiedPressureLoss} ${pipe.userSpecifiedPressureLossUnit ?? "Pa"}` : "-"}
+                            onClick={() => navigator.push("User Specified Drop", (net, nav) => {
+                                const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                                if (!currentPipe) return null;
+                                return <UserSpecifiedPressureLossPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} />;
+                            })}
+                            chevron
+                            last
+                        />
+                    </>
+                )}
+            </IOSListGroup>
+
+            <IOSListGroup>
                 <IOSListItem
-                    label="Length"
-                    value={`${pipe.length ?? "-"} ${pipe.lengthUnit ?? ""}`}
-                    onClick={openLengthPage}
-                    chevron
-                />
-                <IOSListItem
-                    label="Elevation"
-                    value={`${pipe.elevation ?? "-"} ${pipe.elevationUnit ?? ""}`}
-                    onClick={openElevationPage}
-                    chevron
-                />
-                <IOSListItem
-                    label="Pipe Fittings"
-                    value=""
+                    label="Summary"
+                    onClick={() => navigator.push("Summary", (net, nav) => {
+                        const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                        if (!currentPipe) return null;
+                        return <PipeSummaryPage pipe={currentPipe} viewSettings={viewSettings} />;
+                    })}
                     chevron
                     last
                 />

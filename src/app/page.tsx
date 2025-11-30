@@ -16,6 +16,7 @@ import {
   SelectedElement,
   NodeProps,
   PipeProps,
+  ViewSettings,
 } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 // import { convertUnit } from "@/lib/unitConversion";
@@ -43,6 +44,54 @@ export default function Home() {
   const [isExporting, setIsExporting] = useState(false);
   const [isAnimationEnabled, setIsAnimationEnabled] = useState(false);
   const [isConnectingMode, setIsConnectingMode] = useState(false);
+
+  const [viewSettings, setViewSettings] = useState<ViewSettings>(() => {
+    const defaults: ViewSettings = {
+      unitSystem: "metric",
+      node: {
+        name: true,
+        pressure: false,
+        temperature: false,
+        decimals: {
+          pressure: 2,
+          temperature: 2,
+        },
+      },
+      pipe: {
+        name: true,
+        length: true,
+        deltaP: false,
+        velocity: false,
+        dPPer100m: false,
+        massFlowRate: false,
+        decimals: {
+          length: 2,
+          deltaP: 2,
+          velocity: 2,
+          dPPer100m: 2,
+          massFlowRate: 2,
+        },
+      },
+    };
+
+    // We can't access network.viewSettings here easily because network is also state.
+    // But we can initialize with defaults and let useEffect sync if needed, 
+    // or just rely on the fact that we'll pass it down.
+    // Actually, let's just use defaults here. If network has settings, we should probably load them when network loads.
+    return defaults;
+  });
+
+  // Sync viewSettings from network when network changes (e.g. load)
+  useEffect(() => {
+    if (network.viewSettings) {
+      setViewSettings(prev => ({
+        ...prev,
+        ...network.viewSettings,
+        node: { ...prev.node, ...network.viewSettings!.node },
+        pipe: { ...prev.pipe, ...network.viewSettings!.pipe }
+      }));
+    }
+  }, [network.viewSettings]);
 
   // ──────────────────────────────────────────────────────────────
   // Multi-step Undo/Redo – fixed logic
@@ -425,6 +474,8 @@ export default function Home() {
             isConnectingMode={isConnectingMode}
             onToggleConnectingMode={() => setIsConnectingMode(!isConnectingMode)}
             onSelectionChangeProp={handleSelectionChange}
+            viewSettings={viewSettings}
+            setViewSettings={setViewSettings}
           />
         </Box>
 
@@ -571,6 +622,7 @@ export default function Home() {
               }
 
               onClose={() => handleSelect(null, null)}
+              viewSettings={viewSettings}
             />
           </Paper>
         </Slide>

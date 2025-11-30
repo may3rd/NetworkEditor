@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ReactNode } from "react";
 import { Paper, Box, Typography } from "@mui/material";
-import { NetworkState, NodePatch, PipePatch } from "@/lib/types";
+import { NetworkState, NodePatch, PipePatch, ViewSettings } from "@/lib/types";
 import { IOSContainer } from "./ios/IOSContainer";
 import { IOSNavBar } from "./ios/IOSNavBar";
 import { IOSPipeProperties } from "./properties/IOSPipeProperties";
@@ -14,10 +14,11 @@ type Props = {
   onUpdateNode: (id: string, patch: NodePatch) => void;
   onUpdatePipe: (id: string, patch: PipePatch) => void;
   onClose: () => void;
+  viewSettings: ViewSettings;
 };
 
 export type Navigator = {
-  push: (title: string, component: (network: NetworkState, navigator: Navigator) => ReactNode, backLabel?: string) => void;
+  push: (title: string, component: (network: NetworkState, navigator: Navigator) => ReactNode, backLabel?: string, rightAction?: ReactNode) => void;
   pop: () => void;
 };
 
@@ -27,16 +28,18 @@ export function PropertiesPanel({
   onUpdateNode,
   onUpdatePipe,
   onClose,
+  viewSettings,
 }: Props) {
   const [stack, setStack] = useState<{
     id: string;
     title: string;
     backLabel?: string;
+    rightAction?: ReactNode;
     render: (network: NetworkState, navigator: Navigator) => ReactNode;
   }[]>([]);
 
-  const push = (title: string, render: (network: NetworkState, navigator: Navigator) => ReactNode, backLabel?: string) => {
-    setStack(prev => [...prev, { id: title, title, render, backLabel }]);
+  const push = (title: string, render: (network: NetworkState, navigator: Navigator) => ReactNode, backLabel?: string, rightAction?: ReactNode) => {
+    setStack(prev => [...prev, { id: title, title, render, backLabel, rightAction }]);
   };
 
   const pop = () => {
@@ -62,7 +65,7 @@ export function PropertiesPanel({
         if (!pipe) return null;
         const startNode = net.nodes.find((n) => n.id === pipe.startNodeId);
         const endNode = net.nodes.find((n) => n.id === pipe.endNodeId);
-        return <IOSPipeProperties pipe={pipe} startNode={startNode} endNode={endNode} onUpdatePipe={onUpdatePipe} navigator={nav} />;
+        return <IOSPipeProperties pipe={pipe} startNode={startNode} endNode={endNode} onUpdatePipe={onUpdatePipe} navigator={nav} viewSettings={viewSettings} />;
       }
     };
 
@@ -100,7 +103,8 @@ export function PropertiesPanel({
           title={activePage.title}
           onBack={stack.length > 1 ? pop : undefined}
           onClose={stack.length === 1 ? onClose : undefined}
-          backLabel={stack.length > 1 ? stack[stack.length - 2].title : undefined}
+          backLabel={activePage.backLabel}
+          rightAction={activePage.rightAction}
         />
         {activeComponent}
       </IOSContainer>
