@@ -222,8 +222,7 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                     unit={(currentFluid as any)[unitField] ?? options[0]}
                     units={options}
                     unitFamily={family}
-                    onValueChange={(v) => onUpdatePipe(pipe.id, { fluid: { ...currentFluid, [field]: v } })}
-                    onUnitChange={(u) => onUpdatePipe(pipe.id, { fluid: { ...currentFluid, [unitField]: u } })}
+                    onChange={(v, u) => onUpdatePipe(pipe.id, { fluid: { ...currentFluid, [field]: v, [unitField]: u } })}
                     min={min}
                     autoFocus
                 />
@@ -284,7 +283,21 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                 </IOSListGroup>
             ) : (
                 <IOSListGroup header="Gas Properties">
-
+                    <IOSListItem
+                        label="Flow Model"
+                        value={pipe.gasFlowModel === "isothermal" ? "Isothermal" : "Adiabatic"}
+                        onClick={() => navigator.push("Flow Model", (net, nav) => {
+                            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                            if (!currentPipe) return null;
+                            return (
+                                <GasFlowModelPage
+                                    value={currentPipe.gasFlowModel ?? "adiabatic"}
+                                    onChange={(v) => onUpdatePipe(pipe.id, { gasFlowModel: v })}
+                                />
+                            );
+                        })}
+                        chevron
+                    />
 
                     <IOSListItem
                         label="Molecular Weight"
@@ -339,6 +352,12 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                             );
                         })}
                         chevron
+                    />
+                    <IOSListItem
+                        label="Viscosity"
+                        value={`${fluid.viscosity ?? "-"} ${fluid.viscosityUnit ?? "cP"}`}
+                        onClick={() => openQuantityPage("Viscosity", "viscosity", "viscosityUnit", QUANTITY_UNIT_OPTIONS.viscosity, "viscosity", 0)}
+                        chevron
                         last
                     />
                 </IOSListGroup>
@@ -353,6 +372,55 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                 />
             </IOSListGroup>
         </Box>
+    );
+};
+
+// --- Mass Flow Rate ---
+
+// --- Gas Flow Model ---
+
+export const GasFlowModelPage = ({ value, onChange }: { value: "adiabatic" | "isothermal", onChange: (v: "adiabatic" | "isothermal") => void }) => (
+    <Box sx={{ pt: 4 }}>
+        <IOSListGroup>
+            <IOSListItem
+                label="Adiabatic"
+                value={value === "adiabatic" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onChange("adiabatic")}
+            />
+            <IOSListItem
+                label="Isothermal"
+                value={value === "isothermal" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
+                onClick={() => onChange("isothermal")}
+                last
+            />
+        </IOSListGroup>
+    </Box>
+);
+
+export const GasFlowModelSelectionPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
+    const openModelPage = () => {
+        navigator.push("Flow Model", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            return (
+                <GasFlowModelPage
+                    value={currentPipe.gasFlowModel ?? "adiabatic"}
+                    onChange={(v) => onUpdatePipe(pipe.id, { gasFlowModel: v })}
+                />
+            );
+        });
+    };
+
+    return (
+        <IOSListGroup header="Gas Flow Model">
+            <IOSListItem
+                label="Model"
+                value={pipe.gasFlowModel === "isothermal" ? "Isothermal" : "Adiabatic"}
+                onClick={openModelPage}
+                chevron
+                last
+            />
+        </IOSListGroup>
     );
 };
 
@@ -612,6 +680,20 @@ export const CalculationTypePage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, o
 );
 
 // --- Length & Elevation ---
+
+export const RoughnessPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void }) => (
+    <IOSQuantityPage
+        label="Roughness"
+        value={pipe.roughness ?? ""}
+        unit={pipe.roughnessUnit ?? "mm"}
+        units={QUANTITY_UNIT_OPTIONS.lengthSmall}
+        unitFamily="lengthSmall"
+        onValueChange={(v) => onUpdatePipe(pipe.id, { roughness: v })}
+        onUnitChange={(u) => onUpdatePipe(pipe.id, { roughnessUnit: u })}
+        min={0}
+        autoFocus
+    />
+);
 
 export const LengthPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void }) => (
     <IOSQuantityPage

@@ -2,7 +2,7 @@ import { PipeProps, NodeProps, PipePatch, ViewSettings, NetworkState } from "@/l
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, Switch, IconButton } from "@mui/material";
+import { Box, Switch, IconButton, Typography } from "@mui/material";
 import { Add, Check } from "@mui/icons-material";
 import {
     NamePage,
@@ -11,6 +11,7 @@ import {
     MassFlowRatePage,
     DiameterPage,
     CalculationTypePage,
+    RoughnessPage,
     LengthPage,
     ElevationPage,
     DirectionPage,
@@ -19,7 +20,8 @@ import {
     PipeSummaryPage,
     ControlValvePage,
     OrificePage,
-    NumberInputPage
+    NumberInputPage,
+    GasFlowModelPage
 } from "./ios/PipeSubPages";
 
 type Props = {
@@ -78,6 +80,14 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
         });
     };
 
+    const openRoughnessPage = () => {
+        navigator.push("Roughness", (network: NetworkState, nav: Navigator) => {
+            const currentPipe = network.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            return <RoughnessPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} />;
+        });
+    };
+
     const openLengthPage = () => {
         navigator.push("Length", (network: NetworkState, nav: Navigator) => {
             const currentPipe = network.pipes.find(p => p.id === pipe.id);
@@ -129,6 +139,23 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                     })}
                     chevron
                 />
+                {pipe.fluid?.phase === "gas" && (
+                    <IOSListItem
+                        label="Flow Model"
+                        value={pipe.gasFlowModel === "isothermal" ? "Isothermal" : "Adiabatic"}
+                        onClick={() => navigator.push("Flow Model", (net, nav) => {
+                            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                            if (!currentPipe) return null;
+                            return (
+                                <GasFlowModelPage
+                                    value={currentPipe.gasFlowModel ?? "adiabatic"}
+                                    onChange={(v) => onUpdatePipe(pipe.id, { gasFlowModel: v })}
+                                />
+                            );
+                        })}
+                        chevron
+                    />
+                )}
                 <IOSListItem
                     label="Mass Flow Rate"
                     value={`${typeof pipe.massFlowRate === 'number' ? pipe.massFlowRate.toFixed(3) : "-"} ${pipe.massFlowRateUnit ?? ""}`}
@@ -137,6 +164,15 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                     last
                 />
             </IOSListGroup>
+            <Box sx={{ px: 2, pt: 1, pb: 2 }}>
+                <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+                    Volume Flow Rate: {
+                        (typeof pipe.massFlowRate === 'number' && typeof pipe.fluid?.density === 'number' && pipe.fluid.density > 0)
+                            ? `${(pipe.massFlowRate / pipe.fluid.density).toFixed(3)} m³/h`
+                            : "-"
+                    }
+                </Typography>
+            </Box>
 
             <IOSListGroup header="Physical">
                 <IOSListItem
@@ -180,6 +216,12 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                     <OrificePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} viewSettings={viewSettings} />
                 ) : (
                     <>
+                        <IOSListItem
+                            label="Roughness"
+                            value={`${pipe.roughness ?? "-"} ${pipe.roughnessUnit ?? ""}`}
+                            onClick={openRoughnessPage}
+                            chevron
+                        />
                         <IOSListItem
                             label="Length"
                             value={`${pipe.length ?? "-"} ${pipe.lengthUnit ?? ""}`}

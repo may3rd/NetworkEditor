@@ -238,6 +238,10 @@ const convert = configureMeasurements({
   volumeFlowRate: {
     systems: {
       metric: {
+        "m3/s": {
+          name: { singular: "Cubic meter per second", plural: "Cubic meters per second" },
+          to_anchor: 3600,
+        },
         "m3/h": {
           name: { singular: "Cubic meter per hour", plural: "Cubic meters per hour" },
           to_anchor: 1,

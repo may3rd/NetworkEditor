@@ -74,26 +74,34 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator }: Pr
         const connectedPipe = network.pipes.find(p => p.endNodeId === node.id) ||
             network.pipes.find(p => p.startNodeId === node.id);
 
-        if (!connectedPipe || !connectedPipe.resultSummary) return;
-
-        const state = connectedPipe.endNodeId === node.id
-            ? connectedPipe.resultSummary.outletState
-            : connectedPipe.resultSummary.inletState;
-
-        if (!state) return;
+        if (!connectedPipe) return;
 
         const updates: NodePatch = {};
 
-        if (state.pressure !== undefined) {
-            const targetUnit = node.pressureUnit || "kPa";
-            updates.pressure = convertUnit(state.pressure, "Pa", targetUnit);
-            updates.pressureUnit = targetUnit;
+        // 1. Update Pressure/Temperature from Simulation Results (if available)
+        if (connectedPipe.resultSummary) {
+            const state = connectedPipe.endNodeId === node.id
+                ? connectedPipe.resultSummary.outletState
+                : connectedPipe.resultSummary.inletState;
+
+            if (state) {
+                if (state.pressure !== undefined) {
+                    const targetUnit = node.pressureUnit || "kPa";
+                    updates.pressure = convertUnit(state.pressure, "Pa", targetUnit);
+                    updates.pressureUnit = targetUnit;
+                }
+
+                if (state.temprature !== undefined) {
+                    const targetUnit = node.temperatureUnit || "C";
+                    updates.temperature = convertUnit(state.temprature, "K", targetUnit);
+                    updates.temperatureUnit = targetUnit;
+                }
+            }
         }
 
-        if (state.temprature !== undefined) {
-            const targetUnit = node.temperatureUnit || "C";
-            updates.temperature = convertUnit(state.temprature, "K", targetUnit);
-            updates.temperatureUnit = targetUnit;
+        // 2. Copy Fluid if Node has none
+        if (!node.fluid && connectedPipe.fluid) {
+            updates.fluid = { ...connectedPipe.fluid };
         }
 
         if (Object.keys(updates).length > 0) {

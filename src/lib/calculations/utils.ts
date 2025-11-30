@@ -251,7 +251,7 @@ export function buildHydraulicContext(pipe: PipeProps): HydraulicContext | null 
     }
 
     const phase = (fluid.phase ?? "liquid").toLowerCase();
-    const viscosity = convertScalar(fluid.viscosity, fluid.viscosityUnit, "Pa.s");
+    const viscosity = convertScalar(fluid.viscosity, fluid.viscosityUnit ?? "cP", "Pa.s");
     const massFlow = resolveMassFlow(pipe);
     const pipeDiameter = resolveDiameter(pipe);
     if (!isPositive(viscosity) || !isPositive(massFlow) || !isPositive(pipeDiameter)) {

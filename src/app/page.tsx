@@ -19,6 +19,7 @@ import {
   ViewSettings,
 } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
+import { parseExcelNetwork } from "@/utils/excelImport";
 // import { convertUnit } from "@/lib/unitConversion";
 
 const createNetworkWithDerivedValues = () =>
@@ -430,6 +431,37 @@ export default function Home() {
     [setNetwork, setSelection, setSelectedId, setSelectedType, setHistory, setHistoryIndex]
   );
 
+  const excelInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleImportExcelClick = useCallback(() => {
+    excelInputRef.current?.click();
+  }, []);
+
+  const handleExcelFileChange = useCallback(async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const newState = await parseExcelNetwork(file);
+      if (newState) {
+        const nextNetwork = applyFittingLosses(newState);
+        setNetwork(nextNetwork);
+        setSelection(null);
+        setSelectedId(null);
+        setSelectedType(null);
+        setHistory([nextNetwork]);
+        setHistoryIndex(0);
+      }
+    } catch (error) {
+      console.error("Failed to import Excel file", error);
+      alert("Failed to import Excel file. Please check the console for details.");
+    } finally {
+      if (excelInputRef.current) {
+        excelInputRef.current.value = "";
+      }
+    }
+  }, []);
+
   return (
     <Stack sx={{ bgcolor: "background.default", height: "100vh", gap: 3, p: 4 }}>
       <input
@@ -439,11 +471,19 @@ export default function Home() {
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
+      <input
+        ref={excelInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        style={{ display: "none" }}
+        onChange={handleExcelFileChange}
+      />
       <Header
         onReset={handleReset}
         onExportPng={handleExportPng}
         onLoadNetwork={handleLoadNetworkClick}
         onSaveNetwork={handleSaveNetwork}
+        onImportExcel={handleImportExcelClick}
       />
 
       <Box sx={{ position: "relative", flex: 1, width: "100%", overflow: "hidden", borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
@@ -554,50 +594,45 @@ export default function Home() {
               }
               onUpdatePipe={(id, patch) =>
                 setNetwork(current => {
-                  // First, find the pipe and the updated fluid if applicable
                   const targetPipe = current.pipes.find(p => p.id === id);
-                  const pipePatch = typeof patch === "function" && targetPipe ? patch(targetPipe) : patch as Partial<PipeProps>;
+                  if (!targetPipe) return current;
 
-                  // Check if fluid is being updated
-                  const isFluidUpdate = 'fluid' in pipePatch;
-                  // Check if direction is being updated
-                  const isDirectionUpdate = 'direction' in pipePatch;
-
+                  const resolvedPatch = typeof patch === "function" ? patch(targetPipe) : patch;
+                  const finalPipePatch: Partial<PipeProps> = { ...resolvedPatch };
                   let nextNodes = current.nodes;
 
-                  if (isFluidUpdate && targetPipe && pipePatch.fluid) {
-                    // Use the NEW direction if it's also being updated, otherwise use existing
-                    const direction = pipePatch.direction ?? targetPipe.direction ?? "forward";
-                    const boundaryNodeId = direction === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
+                  const isDirectionChange = finalPipePatch.direction && finalPipePatch.direction !== targetPipe.direction;
+                  const isFluidChange = !!finalPipePatch.fluid;
 
-                    nextNodes = nextNodes.map(node => {
-                      if (node.id === boundaryNodeId) {
-                        return {
-                          ...node,
-                          fluid: { ...pipePatch.fluid! }
-                        };
-                      }
-                      return node;
-                    });
-                  }
+                  if (isDirectionChange) {
+                    const newDirection = finalPipePatch.direction!;
+                    const newInletNodeId = newDirection === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
+                    const newInletNode = current.nodes.find(n => n.id === newInletNodeId);
 
-                  if (isDirectionUpdate && targetPipe && pipePatch.direction) {
-                    const newDirection = pipePatch.direction;
-                    const boundaryNodeId = newDirection === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
-                    // Use the NEW fluid if it's also being updated, otherwise use existing
-                    const fluidToSync = pipePatch.fluid || targetPipe.fluid;
+                    if (newInletNode) {
+                      // 1. Pull Pressure & Temperature from New Inlet Node
+                      finalPipePatch.boundaryPressure = newInletNode.pressure;
+                      finalPipePatch.boundaryPressureUnit = newInletNode.pressureUnit;
+                      finalPipePatch.boundaryTemperature = newInletNode.temperature;
+                      finalPipePatch.boundaryTemperatureUnit = newInletNode.temperatureUnit;
 
-                    if (fluidToSync) {
-                      nextNodes = nextNodes.map(node => {
-                        if (node.id === boundaryNodeId) {
-                          return {
-                            ...node,
-                            fluid: { ...fluidToSync }
-                          };
+                      // 2. Handle Fluid
+                      if (newInletNode.fluid) {
+                        // Case A: Node has fluid -> Pipe adopts it (Pull)
+                        finalPipePatch.fluid = { ...newInletNode.fluid };
+                      } else {
+                        // Case B: Node empty -> Node adopts Pipe's fluid (Push)
+                        const fluidToPush = finalPipePatch.fluid || targetPipe.fluid;
+                        if (fluidToPush) {
+                          nextNodes = nextNodes.map(n => n.id === newInletNodeId ? { ...n, fluid: { ...fluidToPush } } : n);
                         }
-                        return node;
-                      });
+                      }
                     }
+                  } else if (isFluidChange) {
+                    // Explicit fluid change without direction change -> Push to current inlet node
+                    const direction = targetPipe.direction ?? "forward";
+                    const inletNodeId = direction === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
+                    nextNodes = nextNodes.map(n => n.id === inletNodeId ? { ...n, fluid: { ...finalPipePatch.fluid! } } : n);
                   }
 
                   return {
@@ -605,14 +640,7 @@ export default function Home() {
                     nodes: nextNodes,
                     pipes: current.pipes.map(pipe => {
                       if (pipe.id !== id) return pipe;
-                      // We already calculated pipePatch above, but let's re-apply it safely
-                      // Note: We need to be careful about the patch function being called twice if it has side effects, 
-                      // but here it's likely pure. To be safe, let's use the already calculated pipePatch.
-                      // However, the original code structure handles the map cleanly. 
-                      // Let's stick to the map structure but use the logic we just added.
-
-                      const updatedPipe = { ...pipe, ...pipePatch };
-
+                      const updatedPipe = { ...pipe, ...finalPipePatch };
                       return recalculatePipeFittingLosses(updatedPipe);
                     }),
                   };

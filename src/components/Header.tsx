@@ -8,6 +8,7 @@ type Props = {
   onExportPng: () => void;
   onLoadNetwork: () => void;
   onSaveNetwork: () => void;
+  onImportExcel: () => void;
 };
 
 export function Header({
@@ -15,6 +16,7 @@ export function Header({
   onExportPng,
   onLoadNetwork,
   onSaveNetwork,
+  onImportExcel,
 }: Props) {
   return (
     <Paper
@@ -45,6 +47,11 @@ export function Header({
             <Tooltip title="Load example network">
               <Button onClick={onReset} color="warning">
                 Example
+              </Button>
+            </Tooltip>
+            <Tooltip title="Import network from Excel">
+              <Button onClick={onImportExcel} color="success">
+                Import Excel
               </Button>
             </Tooltip>
           </ButtonGroup>

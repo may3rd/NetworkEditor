@@ -11,8 +11,9 @@ type Props = {
     value: number | string;
     unit: string;
     units: readonly string[];
-    onValueChange: (value: number | undefined) => void;
+    onValueChange?: (value: number | undefined) => void;
     onUnitChange?: (unit: string) => void;
+    onChange?: (value: number | undefined, unit: string) => void;
     unitFamily?: UnitFamily;
     min?: number;
     placeholder?: string;
@@ -26,6 +27,7 @@ export function IOSQuantityPage({
     units,
     onValueChange,
     onUnitChange,
+    onChange,
     unitFamily,
     min,
     placeholder,
@@ -43,11 +45,13 @@ export function IOSQuantityPage({
     // Refs for callbacks to ensure fresh access in cleanup
     const onValueChangeRef = useRef(onValueChange);
     const onUnitChangeRef = useRef(onUnitChange);
+    const onChangeRef = useRef(onChange);
 
     useEffect(() => {
         onValueChangeRef.current = onValueChange;
         onUnitChangeRef.current = onUnitChange;
-    }, [onValueChange, onUnitChange]);
+        onChangeRef.current = onChange;
+    }, [onValueChange, onUnitChange, onChange]);
 
     // Format value for display
     const formatValue = useMemo(() => (val: number | string | undefined) => {
@@ -59,9 +63,7 @@ export function IOSQuantityPage({
         return val;
     }, []);
 
-    // Sync input value with prop value only on mount (or if we wanted to support external updates, but here we want local control)
-    // Actually, if we defer updates, we shouldn't sync from props after mount unless we want to overwrite user work.
-    // Let's sync only on mount.
+    // Sync input value with prop value only on mount
     useEffect(() => {
         setInputValue(formatValue(value));
         if (typeof value === 'number') {
@@ -75,9 +77,16 @@ export function IOSQuantityPage({
     useEffect(() => {
         return () => {
             if (isDirty.current) {
-                onValueChangeRef.current(valueRef.current);
-                if (onUnitChangeRef.current && unitRef.current !== unit) {
-                    onUnitChangeRef.current(unitRef.current);
+                if (onChangeRef.current) {
+                    onChangeRef.current(valueRef.current, unitRef.current);
+                } else {
+                    // Fallback to separate callbacks if onChange is not provided
+                    if (onValueChangeRef.current) {
+                        onValueChangeRef.current(valueRef.current);
+                    }
+                    if (onUnitChangeRef.current && unitRef.current !== unit) {
+                        onUnitChangeRef.current(unitRef.current);
+                    }
                 }
             }
         };

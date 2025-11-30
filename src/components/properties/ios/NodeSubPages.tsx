@@ -4,6 +4,11 @@ import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
 import { IOSQuantityPage } from "./IOSQuantityPage";
 import { NodeProps, NodePatch } from "@/lib/types";
 import { IOSListGroup } from "../../ios/IOSListGroup";
+import { Navigator } from "../../PropertiesPanel";
+import { IOSListItem } from "../../ios/IOSListItem";
+import { Check } from "@mui/icons-material";
+import { IOSTextField } from "../../ios/IOSTextField";
+import { useState, useEffect, useRef } from "react";
 
 // --- Pressure ---
 export const PressurePage = ({ node, onUpdateNode }: { node: NodeProps, onUpdateNode: (id: string, patch: NodePatch) => void }) => (
@@ -13,8 +18,7 @@ export const PressurePage = ({ node, onUpdateNode }: { node: NodeProps, onUpdate
         unit={node.pressureUnit ?? "kPag"}
         units={QUANTITY_UNIT_OPTIONS.pressure}
         unitFamily="pressure"
-        onValueChange={(v) => onUpdateNode(node.id, { pressure: v })}
-        onUnitChange={(u) => onUpdateNode(node.id, { pressureUnit: u })}
+        onChange={(v, u) => onUpdateNode(node.id, { pressure: v, pressureUnit: u })}
         autoFocus
     />
 );
@@ -27,19 +31,10 @@ export const TemperaturePage = ({ node, onUpdateNode }: { node: NodeProps, onUpd
         unit={node.temperatureUnit ?? "C"}
         units={QUANTITY_UNIT_OPTIONS.temperature}
         unitFamily="temperature"
-        onValueChange={(v) => onUpdateNode(node.id, { temperature: v })}
-        onUnitChange={(u) => onUpdateNode(node.id, { temperatureUnit: u })}
+        onChange={(v, u) => onUpdateNode(node.id, { temperature: v, temperatureUnit: u })}
         autoFocus
     />
 );
-
-// --- Fluid ---
-import { Navigator } from "../../PropertiesPanel";
-import { IOSListItem } from "../../ios/IOSListItem";
-import { Check } from "@mui/icons-material";
-import { IOSTextField } from "../../ios/IOSTextField";
-
-// ... (PressurePage and TemperaturePage remain unchanged)
 
 // --- Fluid Sub-Pages ---
 
@@ -57,8 +52,6 @@ const FluidNamePage = ({ value, onChange }: { value: string, onChange: (v: strin
         </IOSListGroup>
     </Box>
 );
-
-import { useState, useEffect, useRef } from "react";
 
 const FluidPhasePage = ({ value, onChange }: { value: "liquid" | "gas", onChange: (v: "liquid" | "gas") => void }) => {
     const [localValue, setLocalValue] = useState(value);
@@ -148,8 +141,6 @@ const NumberInputPage = ({
         </Box>
     );
 };
-
-
 
 // --- Node Selection for Copying Fluid ---
 
@@ -262,8 +253,7 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                     unit={(currentFluid as any)[unitField] ?? options[0]}
                     units={options}
                     unitFamily={family}
-                    onValueChange={(v) => onUpdateNode(node.id, { fluid: { ...currentFluid, [field]: v } })}
-                    onUnitChange={(u) => onUpdateNode(node.id, { fluid: { ...currentFluid, [unitField]: u } })}
+                    onChange={(v, u) => onUpdateNode(node.id, { fluid: { ...currentFluid, [field]: v, [unitField]: u } })}
                     min={min}
                     autoFocus
                 />
@@ -324,8 +314,6 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                 </IOSListGroup>
             ) : (
                 <IOSListGroup header="Gas Properties">
-
-
                     <IOSListItem
                         label="Molecular Weight"
                         value={fluid.molecularWeight?.toString() ?? "-"}
@@ -378,6 +366,12 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                                 />
                             );
                         })}
+                        chevron
+                    />
+                    <IOSListItem
+                        label="Viscosity"
+                        value={`${fluid.viscosity ?? "-"} ${fluid.viscosityUnit ?? "cP"}`}
+                        onClick={() => openQuantityPage("Viscosity", "viscosity", "viscosityUnit", QUANTITY_UNIT_OPTIONS.viscosity, "viscosity", 0)}
                         chevron
                         last
                     />
