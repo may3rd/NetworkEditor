@@ -101,27 +101,59 @@ export function calculateOrificePressureDrop(
     const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
     const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
 
-    const orificeResult = calculateSharpEdgedPlateOrificePressureDrop({
-        beta: betaRatio,
-        reynolds,
-        density: context.density,
-        velocity,
-    });
+    const mode = orifice.inputMode || "beta_ratio";
+    let calculatedBetaRatio: number | undefined;
+    let pressureDrop: number | undefined;
 
-    if (!orificeResult) {
+    if (mode === "beta_ratio") {
+        const orificeResult = calculateSharpEdgedPlateOrificePressureDrop({
+            beta: betaRatio,
+            reynolds,
+            density: context.density,
+            velocity,
+        });
+
+        if (orificeResult) {
+            pressureDrop = orificeResult.pressureDrop;
+            calculatedBetaRatio = betaRatio;
+        }
+    } else if (mode === "pressure_drop") {
+        const specifiedPressureDropPa = convertScalar(
+            orifice.pressureDrop,
+            orifice.pressureDropUnit ?? "kPa",
+            "Pa"
+        );
+
+        if (isPositive(specifiedPressureDropPa)) {
+            pressureDrop = specifiedPressureDropPa;
+            calculatedBetaRatio = solveBetaRatio({
+                targetPressureDrop: specifiedPressureDropPa,
+                reynolds,
+                density: context.density,
+                velocity,
+            });
+        }
+    }
+
+    if (pressureDrop === undefined) {
         return { results: undefined, updatedOrifice: orifice };
     }
 
-    const pressureDrop = orificeResult.pressureDrop;
     const updatedOrifice: Orifice = { ...orifice };
-    const displayUnit = updatedOrifice.pressureDropUnit ?? "kPa";
-    const convertedPressureDrop = convertScalar(pressureDrop, "Pa", displayUnit);
-    if (convertedPressureDrop === undefined) {
-        updatedOrifice.pressureDrop = pressureDrop;
-        updatedOrifice.pressureDropUnit = "Pa";
-    } else {
-        updatedOrifice.pressureDrop = convertedPressureDrop;
-        updatedOrifice.pressureDropUnit = displayUnit;
+
+    // Update calculated fields in the object if needed (optional, but good for consistency)
+    if (mode === "pressure_drop" && calculatedBetaRatio !== undefined) {
+        updatedOrifice.betaRatio = calculatedBetaRatio;
+    } else if (mode === "beta_ratio" && pressureDrop !== undefined) {
+        const displayUnit = updatedOrifice.pressureDropUnit ?? "kPa";
+        const convertedPressureDrop = convertScalar(pressureDrop, "Pa", displayUnit);
+        if (convertedPressureDrop === undefined) {
+            updatedOrifice.pressureDrop = pressureDrop;
+            updatedOrifice.pressureDropUnit = "Pa";
+        } else {
+            updatedOrifice.pressureDrop = convertedPressureDrop;
+            updatedOrifice.pressureDropUnit = displayUnit;
+        }
     }
 
     const results: PressureDropCalculationResults = {
@@ -137,6 +169,7 @@ export function calculateOrificePressureDrop(
         elevationPressureDrop: 0,
         controlValvePressureDrop: 0,
         orificePressureDrop: pressureDrop,
+        orificeBetaRatio: calculatedBetaRatio,
         userSpecifiedPressureDrop: 0,
         totalSegmentPressureDrop: pressureDrop,
         normalizedPressureDrop: 0,
@@ -144,4 +177,56 @@ export function calculateOrificePressureDrop(
     };
 
     return { results, updatedOrifice };
+}
+
+type SolveBetaRatioArgs = {
+    targetPressureDrop: number;
+    reynolds: number;
+    density: number;
+    velocity: number;
+};
+
+function solveBetaRatio({
+    targetPressureDrop,
+    reynolds,
+    density,
+    velocity,
+}: SolveBetaRatioArgs): number | undefined {
+    // Binary search for Beta between 0.01 and 0.99
+    let lower = 0.01;
+    let upper = 0.99;
+    let bestBeta = undefined;
+
+    for (let i = 0; i < 50; i++) {
+        const mid = (lower + upper) / 2;
+        const result = calculateSharpEdgedPlateOrificePressureDrop({
+            beta: mid,
+            reynolds,
+            density,
+            velocity,
+        });
+
+        if (!result) {
+            // Should not happen in valid range
+            return undefined;
+        }
+
+        const diff = result.pressureDrop - targetPressureDrop;
+
+        if (Math.abs(diff) < 1e-4 * targetPressureDrop) {
+            bestBeta = mid;
+            break;
+        }
+
+        // Pressure drop increases as Beta decreases (smaller hole -> more resistance)
+        // So if calculated dP > target dP, we need a larger Beta (less resistance)
+        if (result.pressureDrop > targetPressureDrop) {
+            lower = mid;
+        } else {
+            upper = mid;
+        }
+        bestBeta = mid;
+    }
+
+    return bestBeta;
 }

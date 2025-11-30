@@ -156,9 +156,9 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                 />
 
                 {pipe.pipeSectionType === "control valve" ? (
-                    <ControlValvePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} />
+                    <ControlValvePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} viewSettings={viewSettings} />
                 ) : pipe.pipeSectionType === "orifice" ? (
-                    <OrificePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} />
+                    <OrificePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} viewSettings={viewSettings} />
                 ) : (
                     <>
                         <IOSListItem

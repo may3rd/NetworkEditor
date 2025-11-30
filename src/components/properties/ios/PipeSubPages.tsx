@@ -1,13 +1,18 @@
-import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio } from "@mui/material";
+import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio, IconButton } from "@mui/material";
 import { glassInputSx, glassSelectSx, glassRadioSx } from "@/lib/glassStyles";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
-import { PipeProps, ViewSettings, PipePatch } from "@/lib/types";
+import { getScheduleEntries, nearest_pipe_diameter, PIPE_FITTING_OPTIONS } from "../../PipeDimension";
+import { PipeProps, PipePatch, FittingType, ViewSettings } from "@/lib/types";
 import { IOSListGroup } from "../../ios/IOSListGroup";
 import { IOSListItem } from "../../ios/IOSListItem";
 import { IOSContainer } from "../../ios/IOSContainer";
-import { IOSQuantityPage } from "./IOSQuantityPage";
-
 import { IOSTextField } from "../../ios/IOSTextField";
+import { IOSQuantityPage } from "./IOSQuantityPage";
+import { Check, ArrowForwardIos, Add, Remove } from "@mui/icons-material";
+import { Navigator } from "../../PropertiesPanel";
+import { convertUnit } from "@/lib/unitConversion";
+
+import { useState, useEffect, useRef } from "react";
 
 // --- Name & Description ---
 
@@ -41,10 +46,6 @@ export const DescriptionPage = ({ value, onChange }: { value: string, onChange: 
 
 // --- Fluid ---
 
-// --- Fluid ---
-import { Navigator } from "../../PropertiesPanel";
-import { Check } from "@mui/icons-material";
-
 const FluidNamePage = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
     <Box sx={{ pt: 4 }}>
         <IOSListGroup>
@@ -59,8 +60,6 @@ const FluidNamePage = ({ value, onChange }: { value: string, onChange: (v: strin
         </IOSListGroup>
     </Box>
 );
-
-import { useState, useEffect, useRef } from "react";
 
 const FluidPhasePage = ({ value, onChange }: { value: "liquid" | "gas", onChange: (v: "liquid" | "gas") => void }) => {
     const [localValue, setLocalValue] = useState(value);
@@ -380,7 +379,7 @@ const SchedulePage = ({ value, onChange }: { value: string, onChange: (v: any) =
     </Box>
 );
 
-import { getScheduleEntries, nearest_pipe_diameter } from "../../PipeDimension";
+
 
 const NPDSelectionPage = ({ schedule, value, onChange }: { schedule: string, value: number | undefined, onChange: (v: number) => void }) => {
     const entries = getScheduleEntries(schedule as any) || [];
@@ -641,7 +640,7 @@ const OrificeInputModePage = ({ value, onChange }: { value: "beta_ratio" | "pres
     </Box>
 );
 
-export const ControlValvePage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
+export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator, viewSettings: ViewSettings }) => {
     const cvData = pipe.controlValve || { id: "cv", inputMode: "cv" };
     const inputMode = cvData.inputMode || "cv";
 
@@ -697,6 +696,20 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
         });
     };
 
+    // Helper to format pressure drop
+    const getFormattedPressureDrop = () => {
+        const dp = pipe.pressureDropCalculationResults?.controlValvePressureDrop;
+        if (dp === undefined) return "-";
+
+        // Default to kPa if no unit system preferred, or use logic similar to formatPressure
+        let unit = "kPa";
+        if (viewSettings.unitSystem === "imperial") unit = "psi";
+        else if (viewSettings.unitSystem === "metric_kgcm2") unit = "kg/cm2";
+
+        const val = convertUnit(dp, "Pa", unit);
+        return `${val.toFixed(2)} ${unit}`;
+    };
+
     return (
         <>
             <IOSListItem
@@ -720,16 +733,24 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
                     chevron
                 />
             )}
-            <IOSListItem
-                label="Calculated dP"
-                value={pipe.pressureDropCalculationResults?.controlValvePressureDrop ? `${(pipe.pressureDropCalculationResults.controlValvePressureDrop / 1000).toFixed(2)} kPa` : "-"}
-                last
-            />
+            {inputMode === "cv" ? (
+                <IOSListItem
+                    label="Calculated dP"
+                    value={getFormattedPressureDrop()}
+                    last
+                />
+            ) : (
+                <IOSListItem
+                    label="Calculated CV"
+                    value={pipe.pressureDropCalculationResults?.controlValveCV?.toFixed(2) ?? "-"}
+                    last
+                />
+            )}
         </>
     );
 };
 
-export const OrificePage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
+export const OrificePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator, viewSettings: ViewSettings }) => {
     const orificeData = pipe.orifice || { id: "orifice", inputMode: "beta_ratio" };
     const inputMode = orificeData.inputMode || "beta_ratio";
 
@@ -785,6 +806,20 @@ export const OrificePage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps
         });
     };
 
+    // Helper to format pressure drop
+    const getFormattedPressureDrop = () => {
+        const dp = pipe.pressureDropCalculationResults?.orificePressureDrop;
+        if (dp === undefined) return "-";
+
+        // Default to kPa if no unit system preferred, or use logic similar to formatPressure
+        let unit = "kPa";
+        if (viewSettings.unitSystem === "imperial") unit = "psi";
+        else if (viewSettings.unitSystem === "metric_kgcm2") unit = "kg/cm2";
+
+        const val = convertUnit(dp, "Pa", unit);
+        return `${val.toFixed(2)} ${unit}`;
+    };
+
     return (
         <>
             <IOSListItem
@@ -808,11 +843,19 @@ export const OrificePage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps
                     chevron
                 />
             )}
-            <IOSListItem
-                label="Calculated dP"
-                value={pipe.pressureDropCalculationResults?.orificePressureDrop ? `${(pipe.pressureDropCalculationResults.orificePressureDrop / 1000).toFixed(2)} kPa` : "-"}
-                last
-            />
+            {inputMode === "beta_ratio" ? (
+                <IOSListItem
+                    label="Calculated dP"
+                    value={getFormattedPressureDrop()}
+                    last
+                />
+            ) : (
+                <IOSListItem
+                    label="Calculated Beta Ratio"
+                    value={pipe.pressureDropCalculationResults?.orificeBetaRatio?.toFixed(4) ?? "-"}
+                    last
+                />
+            )}
         </>
     );
 };
@@ -853,10 +896,7 @@ export const DirectionPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdat
 
 // --- Pipe Fittings ---
 
-import { PIPE_FITTING_OPTIONS } from "../../PipeDimension";
-import { FittingType } from "@/lib/types";
-import { Add } from "@mui/icons-material";
-import { IconButton } from "@mui/material";
+
 
 export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
     const fittings = pipe.fittings || [];
@@ -1000,33 +1040,55 @@ export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewS
         if (value === undefined) return "-";
 
         const unitSystem = viewSettings.unitSystem;
-        let unit = "kPag";
-        let convertedValue = value;
+        let unit = "kPa";
+        let targetUnit = "kPa";
 
         switch (unitSystem) {
             case "imperial":
-                unit = "psig";
-                // 1 kPa = 0.145038 psi
-                convertedValue = value * 0.145038;
+                unit = "psi";
+                targetUnit = "psi";
                 break;
             case "fieldSI":
-                unit = "barg";
-                // 1 kPa = 0.01 bar
-                convertedValue = value * 0.01;
+                unit = "bar";
+                targetUnit = "bar";
                 break;
             case "metric_kgcm2":
-                unit = "kg/cm²g";
-                // 1 kPa = 0.0101972 kg/cm²
-                convertedValue = value * 0.0101972;
+                unit = "kg/cm²";
+                targetUnit = "kg/cm2";
                 break;
             case "metric":
             default:
-                unit = "kPag";
-                convertedValue = value;
+                unit = "kPa";
+                targetUnit = "kPa";
                 break;
         }
 
+        // Input value is always in Pascals (Pa)
+        const convertedValue = convertUnit(value, "Pa", targetUnit);
         return `${convertedValue.toFixed(2)} ${unit}`;
+    };
+
+    const formatVelocity = (value: number | undefined) => {
+        if (value === undefined) return "-";
+
+        const unitSystem = viewSettings.unitSystem;
+        let unit = "m/s";
+        let convertedValue = value;
+
+        if (unitSystem === "imperial") {
+            unit = "ft/s";
+            convertedValue = convertUnit(value, "m/s", "ft/s");
+        }
+
+        return `${convertedValue.toFixed(2)} ${unit}`;
+    };
+
+    const formatUserSpecifiedDrop = () => {
+        if (!pipe.userSpecifiedPressureLoss) return "-";
+
+        const sourceUnit = pipe.userSpecifiedPressureLossUnit ?? "Pa";
+        const valueInPa = convertUnit(pipe.userSpecifiedPressureLoss, sourceUnit, "Pa");
+        return formatPressure(valueInPa);
     };
 
     return (
@@ -1039,21 +1101,22 @@ export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewS
 
             <IOSListGroup header="Characteristic Summary">
                 <IOSListItem label="Reynolds Number" value={results?.reynoldsNumber?.toFixed(0) ?? "-"} />
+                <IOSListItem label="Flow Scheme" value={results?.flowScheme ?? "-"} />
                 <IOSListItem label="Friction Factor" value={results?.frictionalFactor?.toFixed(4) ?? "-"} />
-                <IOSListItem label="Velocity" value={velocity ? `${velocity.toFixed(2)} m/s` : "-"} last />
+                <IOSListItem label="Velocity" value={formatVelocity(velocity) ?? "-"} last />
             </IOSListGroup>
 
             <IOSListGroup header="Pressure Loss Summary">
-                <IOSListItem label="Pipe & Fitting" value={formatPressure(results?.pipeAndFittingPressureDrop)} />
-                <IOSListItem label="Elevation Change" value={formatPressure(results?.elevationPressureDrop)} />
+                <IOSListItem label="Pipe & Fitting" value={formatPressure(results?.pipeAndFittingPressureDrop) ?? "-"} />
+                <IOSListItem label="Elevation Change" value={formatPressure(results?.elevationPressureDrop) ?? "-"} />
                 <IOSListItem label="User supplied K" value="-" />
-                <IOSListItem label="Control Valve drop" value={formatPressure(results?.controlValvePressureDrop)} />
-                <IOSListItem label="Orifice drop" value={formatPressure(results?.orificePressureDrop)} />
+                <IOSListItem label="Control Valve drop" value={formatPressure(results?.controlValvePressureDrop) ?? "-"} />
+                <IOSListItem label="Orifice drop" value={formatPressure(results?.orificePressureDrop) ?? "-"} />
                 <IOSListItem
                     label="User Specified Drop"
-                    value={pipe.userSpecifiedPressureLoss ? `${pipe.userSpecifiedPressureLoss} ${pipe.userSpecifiedPressureLossUnit ?? "Pa"}` : "-"}
+                    value={formatUserSpecifiedDrop()}
                 />
-                <IOSListItem label="Total Pressure Drop" value={formatPressure(results?.totalSegmentPressureDrop)} last />
+                <IOSListItem label="Total Pressure Drop" value={formatPressure(results?.totalSegmentPressureDrop) ?? "-"} last />
             </IOSListGroup>
         </Box>
     );

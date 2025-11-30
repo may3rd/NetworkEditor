@@ -612,9 +612,7 @@ export default function Home() {
                       // Let's stick to the map structure but use the logic we just added.
 
                       const updatedPipe = { ...pipe, ...pipePatch };
-                      if ('controlValve' in pipePatch && Object.keys(pipePatch).length === 1) {
-                        return updatedPipe;
-                      }
+
                       return recalculatePipeFittingLosses(updatedPipe);
                     }),
                   };

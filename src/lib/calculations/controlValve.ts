@@ -173,7 +173,7 @@ function calculateLiquidControlValveContribution(
     const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
     const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
 
-    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor);
+    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor, calculatedCv);
     return { results, updatedControlValve };
 }
 
@@ -292,7 +292,7 @@ function calculateGasControlValveContribution(
     const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
     const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
 
-    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor);
+    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor, updatedControlValve.cv);
     return { results, updatedControlValve };
 }
 
@@ -300,7 +300,8 @@ function buildControlValveResults(
     pressureDrop?: number,
     reynoldsNumber: number = 0,
     flowScheme: "laminar" | "transition" | "turbulent" = "laminar",
-    frictionalFactor: number = 0
+    frictionalFactor: number = 0,
+    calculatedCv?: number
 ): PressureDropCalculationResults {
     return {
         pipeLengthK: 0,
@@ -314,6 +315,7 @@ function buildControlValveResults(
         pipeAndFittingPressureDrop: 0,
         elevationPressureDrop: 0,
         controlValvePressureDrop: pressureDrop,
+        controlValveCV: calculatedCv,
         orificePressureDrop: 0,
         userSpecifiedPressureDrop: 0,
         totalSegmentPressureDrop: pressureDrop,
