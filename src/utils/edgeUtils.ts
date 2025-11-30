@@ -49,34 +49,24 @@ export const getPipeEdge = ({
     labelLines.push(line1);
   }
 
-  // Line 2: Length / Dimensions
+  // Line 2: Mass Flow Rate
+  if (viewSettings.pipe.massFlowRate) {
+    const massFlowRateDecimals = viewSettings.pipe.decimals?.massFlowRate ?? 2;
+    const massFlow = pipe.massFlowRate;
+    const massFlowUnit = pipe.massFlowRateUnit || "kg/h";
+
+    if (typeof massFlow === "number") {
+      labelLines.push(`m: ${massFlow.toFixed(massFlowRateDecimals)} ${massFlowUnit}`);
+    }
+  }
+
+  // Line 3: Length / Dimensions
   if (viewSettings.pipe.length && pipe.pipeSectionType !== "control valve" && pipe.pipeSectionType !== "orifice") {
     const lengthUnit = viewSettings.unitSystem === "imperial" ? "ft" : "m";
     const lengthVal = typeof pipe.length === "number" ? pipe.length : Number(pipe.length ?? 0);
-    // Assuming pipe.length is stored in meters (if not specified otherwise, but usually it is)
-    // If pipe.lengthUnit is stored, we should convert from that.
-    // For now assuming storage is 'm' or we use existing unit if we can't convert?
-    // Actually, let's assume storage is 'm' for simplicity or use the stored unit.
     const convertedLength = convertUnit(lengthVal, pipe.lengthUnit || "m", lengthUnit);
 
-    labelLines.push(`${convertedLength.toFixed(lengthDecimals)} ${lengthUnit}`);
-  }
-
-  // Line 3: Pressure Drop
-  if (
-    viewSettings.pipe.deltaP &&
-    pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined
-  ) {
-    // totalSegmentPressureDrop is likely in Pa (based on previous code /1000 to kPa)
-    const deltaPPa = pipe.pressureDropCalculationResults.totalSegmentPressureDrop;
-
-    let deltaPUnit = "kPa";
-    if (viewSettings.unitSystem === "imperial") deltaPUnit = "psi";
-    else if (viewSettings.unitSystem === "metric_kgcm2") deltaPUnit = "kg/cm2";
-    else if (viewSettings.unitSystem === "fieldSI") deltaPUnit = "barg";
-
-    const deltaP = convertUnit(deltaPPa, "Pa", deltaPUnit);
-    labelLines.push(`ΔP: ${deltaP.toFixed(deltaPDecimals)} ${deltaPUnit}`);
+    labelLines.push(`L: ${convertedLength.toFixed(lengthDecimals)} ${lengthUnit}`);
   }
 
   // Line 4: Velocity
@@ -91,12 +81,28 @@ export const getPipeEdge = ({
     labelLines.push(`v: ${velocity.toFixed(velocityDecimals)} ${velocityUnit}`);
   }
 
-  // Line 5: dP/100m
+  // Line 5: Pressure Drop
+  if (
+    viewSettings.pipe.deltaP &&
+    pipe.pressureDropCalculationResults?.totalSegmentPressureDrop !== undefined
+  ) {
+    const deltaPPa = pipe.pressureDropCalculationResults.totalSegmentPressureDrop;
+
+    let deltaPUnit = "kPa";
+    if (viewSettings.unitSystem === "imperial") deltaPUnit = "psi";
+    else if (viewSettings.unitSystem === "metric_kgcm2") deltaPUnit = "kg/cm2";
+    else if (viewSettings.unitSystem === "fieldSI") deltaPUnit = "bar";
+
+    const deltaP = convertUnit(deltaPPa, "Pa", deltaPUnit);
+    labelLines.push(`ΔP: ${deltaP.toFixed(deltaPDecimals)} ${deltaPUnit}`);
+  }
+
+  // Line 6: Unit Pressure Loss (dP/100m)
   if (
     viewSettings.pipe.dPPer100m &&
-    pipe.pressureDropCalculationResults?.normalizedPressureDrop !== undefined
+    pipe.pressureDropCalculationResults?.normalizedPressureDrop !== undefined &&
+    pipe.pipeSectionType === "pipeline"
   ) {
-    // normalizedPressureDrop is likely Pa/m
     const dPGradientPaM = pipe.pressureDropCalculationResults.normalizedPressureDrop;
 
     let gradientUnit = "kPa/100m";
@@ -105,26 +111,7 @@ export const getPipeEdge = ({
     else if (viewSettings.unitSystem === "fieldSI") gradientUnit = "bar/100m";
 
     const dPGradient = convertUnit(dPGradientPaM, "Pa/m", gradientUnit);
-    labelLines.push(`dP: ${dPGradient.toFixed(dPPer100mDecimals)} ${gradientUnit}`);
-  }
-
-  // Line 6: Mass Flow Rate
-  if (viewSettings.pipe.massFlowRate) {
-    const massFlowRateDecimals = viewSettings.pipe.decimals?.massFlowRate ?? 2;
-    // Use designMassFlowRate if available (calculated), otherwise input massFlowRate
-    // Actually, for steady state, usually we display the flow going through.
-    // pipe.massFlowRate is the input.
-    // Let's use pipe.massFlowRate for now as it's the primary property.
-    // If we want the calculated one (e.g. if it differs due to some reason), we might check resultSummary.
-    // But resultSummary usually has state (P, T, v), not necessarily mass flow if it's constant.
-    // However, `pipe.massFlowRate` is what we have.
-
-    const massFlow = pipe.massFlowRate;
-    const massFlowUnit = pipe.massFlowRateUnit || "kg/h";
-
-    if (typeof massFlow === "number") {
-      labelLines.push(`m: ${massFlow.toFixed(massFlowRateDecimals)} ${massFlowUnit}`);
-    }
+    labelLines.push(`Unit Loss: ${dPGradient.toFixed(dPPer100mDecimals)} ${gradientUnit}`);
   }
 
   const labelTextColor = forceLightMode

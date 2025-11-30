@@ -105,7 +105,7 @@ const FluidPhasePage = ({ value, onChange }: { value: "liquid" | "gas", onChange
 };
 
 // --- Helper for Number Input ---
-const NumberInputPage = ({
+export const NumberInputPage = ({
     value,
     onChange,
     placeholder,
@@ -499,6 +499,7 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
                         onClick={() => openDiameterQuantityPage("Pipe Diameter", "diameter", "diameterUnit")}
                         chevron
                     />
+
                     <IOSListItem
                         label="Inlet Diameter"
                         value={`${typeof pipe.inletDiameter === 'number' ? pipe.inletDiameter.toFixed(3) : "-"} ${pipe.inletDiameterUnit ?? "mm"}`}
@@ -541,6 +542,7 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
                             onClick={() => openDiameterQuantityPage("Inlet Diameter", "inletDiameter", "inletDiameterUnit")}
                             chevron
                         />
+
                         <IOSListItem
                             label="Outlet Diameter"
                             value={`${typeof pipe.outletDiameter === 'number' ? pipe.outletDiameter.toFixed(3) : "-"} ${pipe.outletDiameterUnit ?? "mm"}`}
@@ -642,6 +644,7 @@ const OrificeInputModePage = ({ value, onChange }: { value: "beta_ratio" | "pres
 
 export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator, viewSettings: ViewSettings }) => {
     const cvData = pipe.controlValve || { id: "cv", inputMode: "cv" };
+    const isGas = pipe.fluid?.phase === "gas";
     const inputMode = cvData.inputMode || "cv";
 
     const openInputModePage = () => {
@@ -666,8 +669,25 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
             return (
                 <NumberInputPage
                     value={currentCV.cv}
-                    onChange={(v) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, cv: v } })}
+                    onChange={(v) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, cv: v, cg: undefined } })}
                     placeholder="CV Value"
+                    autoFocus
+                    min={0}
+                />
+            );
+        });
+    };
+
+    const openCgPage = () => {
+        navigator.push("Cg Value", (net, nav) => {
+            const currentPipe = net.pipes.find(p => p.id === pipe.id);
+            if (!currentPipe) return null;
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            return (
+                <NumberInputPage
+                    value={currentCV.cg}
+                    onChange={(v) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, cg: v, cv: undefined } })}
+                    placeholder="Cg Value"
                     autoFocus
                     min={0}
                 />
@@ -705,6 +725,7 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
         let unit = "kPa";
         if (viewSettings.unitSystem === "imperial") unit = "psi";
         else if (viewSettings.unitSystem === "metric_kgcm2") unit = "kg/cm2";
+        else if (viewSettings.unitSystem === "fieldSI") unit = "bar";
 
         const val = convertUnit(dp, "Pa", unit);
         return `${val.toFixed(2)} ${unit}`;
@@ -714,17 +735,26 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
         <>
             <IOSListItem
                 label="Input Mode"
-                value={inputMode === "cv" ? "CV" : "Pressure Drop"}
+                value={inputMode === "cv" ? (isGas ? "Cg" : "CV") : "Pressure Drop"}
                 onClick={openInputModePage}
                 chevron
             />
             {inputMode === "cv" ? (
-                <IOSListItem
-                    label="CV"
-                    value={cvData.cv?.toString() ?? "-"}
-                    onClick={openCVPage}
-                    chevron
-                />
+                isGas ? (
+                    <IOSListItem
+                        label="Cg"
+                        value={cvData.cg?.toString() ?? "-"}
+                        onClick={openCgPage}
+                        chevron
+                    />
+                ) : (
+                    <IOSListItem
+                        label="CV"
+                        value={cvData.cv?.toString() ?? "-"}
+                        onClick={openCVPage}
+                        chevron
+                    />
+                )
             ) : (
                 <IOSListItem
                     label="Pressure Drop"
@@ -740,11 +770,19 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
                     last
                 />
             ) : (
-                <IOSListItem
-                    label="Calculated CV"
-                    value={pipe.pressureDropCalculationResults?.controlValveCV?.toFixed(2) ?? "-"}
-                    last
-                />
+                isGas ? (
+                    <IOSListItem
+                        label="Calculated Cg"
+                        value={pipe.pressureDropCalculationResults?.controlValveCg?.toFixed(2) ?? "-"}
+                        last
+                    />
+                ) : (
+                    <IOSListItem
+                        label="Calculated CV"
+                        value={pipe.pressureDropCalculationResults?.controlValveCV?.toFixed(2) ?? "-"}
+                        last
+                    />
+                )
             )}
         </>
     );

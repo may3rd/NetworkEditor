@@ -124,7 +124,10 @@ function calculateLiquidControlValveContribution(
     const updatedControlValve = { ...controlValve };
 
     const canCalculate = isPositive(volumetricFlowM3h) && isPositive(specificGravity);
-    const mode = controlValve.calculation_note ?? "dp_to_cv";
+    // Map inputMode to calculation direction
+    // inputMode "cv" means user inputs CV/Cg -> calculate dP (cv_to_dp)
+    // inputMode "pressure_drop" means user inputs dP -> calculate CV/Cg (dp_to_cv)
+    const mode = controlValve.inputMode === "pressure_drop" ? "dp_to_cv" : "cv_to_dp";
 
     if (mode === "dp_to_cv" && canCalculate && controlValve.pressureDrop !== undefined && controlValve.pressureDrop > 0) {
         // Calculate Cv from pressure drop using liquid formula (Cv = 11.56 * Q_m3h * sqrt(SG / ΔP_kPa))
@@ -173,7 +176,7 @@ function calculateLiquidControlValveContribution(
     const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
     const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
 
-    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor, calculatedCv);
+    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor, calculatedCv, undefined);
     return { results, updatedControlValve };
 }
 
@@ -217,7 +220,8 @@ function calculateGasControlValveContribution(
     const maxDropPa = Math.max(inletPressurePa - MIN_VALVE_PRESSURE_PA, MIN_VALVE_PRESSURE_PA);
 
     let pressureDrop: number | undefined;
-    const mode = controlValve.calculation_note ?? "dp_to_cv";
+    // Map inputMode to calculation direction
+    const mode = controlValve.inputMode === "pressure_drop" ? "dp_to_cv" : "cv_to_dp";
 
     if (mode === "dp_to_cv" && isPositive(specifiedPressureDropPa)) {
         const boundedDrop = Math.min(specifiedPressureDropPa, maxDropPa);
@@ -292,7 +296,7 @@ function calculateGasControlValveContribution(
     const relRough = relativeRoughness(context.roughness, context.pipeDiameter);
     const frictionFactor = darcyFrictionFactor({ reynolds, relativeRoughness: relRough });
 
-    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor, updatedControlValve.cv);
+    const results = buildControlValveResults(pressureDrop, reynolds, flowScheme, frictionFactor, updatedControlValve.cv, updatedControlValve.cg);
     return { results, updatedControlValve };
 }
 
@@ -301,7 +305,8 @@ function buildControlValveResults(
     reynoldsNumber: number = 0,
     flowScheme: "laminar" | "transition" | "turbulent" = "laminar",
     frictionalFactor: number = 0,
-    calculatedCv?: number
+    calculatedCv?: number,
+    calculatedCg?: number
 ): PressureDropCalculationResults {
     return {
         pipeLengthK: 0,
@@ -316,6 +321,7 @@ function buildControlValveResults(
         elevationPressureDrop: 0,
         controlValvePressureDrop: pressureDrop,
         controlValveCV: calculatedCv,
+        controlValveCg: calculatedCg,
         orificePressureDrop: 0,
         userSpecifiedPressureDrop: 0,
         totalSegmentPressureDrop: pressureDrop,

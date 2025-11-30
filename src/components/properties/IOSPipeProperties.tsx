@@ -18,7 +18,8 @@ import {
     UserSpecifiedPressureLossPage,
     PipeSummaryPage,
     ControlValvePage,
-    OrificePage
+    OrificePage,
+    NumberInputPage
 } from "./ios/PipeSubPages";
 
 type Props = {
@@ -151,6 +152,24 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                         const currentPipe = net.pipes.find(p => p.id === pipe.id);
                         if (!currentPipe) return null;
                         return <DiameterPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} navigator={nav} />;
+                    })}
+                    chevron
+                />
+                <IOSListItem
+                    label="Erosional Constant"
+                    value={pipe.erosionalConstant?.toFixed(0) ?? "-"}
+                    onClick={() => navigator.push("Erosional Constant", (net, nav) => {
+                        const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                        if (!currentPipe) return null;
+                        return (
+                            <NumberInputPage
+                                value={currentPipe.erosionalConstant}
+                                onChange={(v) => onUpdatePipe(pipe.id, { erosionalConstant: v })}
+                                placeholder="Erosional Constant"
+                                autoFocus
+                                min={0}
+                            />
+                        );
                     })}
                     chevron
                 />

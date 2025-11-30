@@ -55,6 +55,7 @@ export type PressureDropCalculationResults = {
   elevationPressureDrop?: number,
   controlValvePressureDrop?: number,
   controlValveCV?: number,
+  controlValveCg?: number,
   orificePressureDrop?: number,
   orificeBetaRatio?: number,
   userSpecifiedPressureDrop?: number,
