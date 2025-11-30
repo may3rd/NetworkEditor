@@ -474,7 +474,7 @@ export default function Home() {
       <input
         ref={excelInputRef}
         type="file"
-        accept=".xlsx,.xls"
+        accept=".xlsx,.xls,.xlsm"
         style={{ display: "none" }}
         onChange={handleExcelFileChange}
       />
