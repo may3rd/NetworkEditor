@@ -1457,12 +1457,7 @@ function EditorCanvas({
             }
             onSelect(node.id, "node");
           }}
-          onNodeDragStart={(_, node) => {
-            if (node.type === 'background') return;
-            if (!node.selected) {
-              onSelect(node.id, "node");
-            }
-          }}
+
           onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
           onPaneClick={handlePaneClick}
           onPaneContextMenu={handlePaneContextMenu}
