@@ -149,6 +149,67 @@ const NumberInputPage = ({
     );
 };
 
+
+
+// --- Node Selection for Copying Fluid ---
+
+export const NodeSelectionPage = ({
+    nodes,
+    onSelect,
+    currentNodeId
+}: {
+    nodes: NodeProps[],
+    onSelect: (node: NodeProps) => void,
+    currentNodeId: string
+}) => {
+    const availableNodes = nodes.filter(n => n.id !== currentNodeId && n.fluid);
+
+    return (
+        <Box sx={{ pt: 2 }}>
+            <IOSListGroup header="Select Node to Copy From">
+                {availableNodes.length === 0 ? (
+                    <IOSListItem label="No other nodes with fluid data" />
+                ) : (
+                    availableNodes.map((n, index) => {
+                        const fluid = n.fluid!;
+                        const isLiquid = fluid.phase === "liquid";
+                        const secondaryText = isLiquid
+                            ? `ρ: ${fluid.density ?? "-"} ${fluid.densityUnit ?? "kg/m3"}, μ: ${fluid.viscosity ?? "-"} ${fluid.viscosityUnit ?? "cP"}`
+                            : `MW: ${fluid.molecularWeight ?? "-"}, Z: ${fluid.zFactor ?? "-"}, k: ${fluid.specificHeatRatio ?? "-"}, μ: ${fluid.viscosity ?? "-"} ${fluid.viscosityUnit ?? "cP"}`;
+
+                        return (
+                            <IOSListItem
+                                key={n.id}
+                                label={n.label || n.id}
+                                secondary={secondaryText}
+                                icon={
+                                    <Box sx={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: "50%",
+                                        backgroundColor: isLiquid ? "primary.main" : "#ff3b30", // Red for Gas
+                                        color: "white",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "14px",
+                                        fontWeight: "bold"
+                                    }}>
+                                        {isLiquid ? "L" : "G"}
+                                    </Box>
+                                }
+                                onClick={() => onSelect(n)}
+                                last={index === availableNodes.length - 1}
+                                chevron={false}
+                            />
+                        );
+                    })
+                )}
+            </IOSListGroup>
+        </Box>
+    );
+};
+
 // --- Fluid ---
 
 export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodeProps, onUpdateNode: (id: string, patch: NodePatch) => void, navigator: Navigator }) => {
@@ -205,6 +266,23 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                     onUnitChange={(u) => onUpdateNode(node.id, { fluid: { ...currentFluid, [unitField]: u } })}
                     min={min}
                     autoFocus
+                />
+            );
+        });
+    };
+
+    const openCopyFromNodePage = () => {
+        navigator.push("Copy Fluid from Node", (net, nav) => {
+            return (
+                <NodeSelectionPage
+                    nodes={net.nodes}
+                    currentNodeId={node.id}
+                    onSelect={(selectedNode) => {
+                        if (selectedNode.fluid) {
+                            onUpdateNode(node.id, { fluid: { ...selectedNode.fluid } });
+                            nav.pop();
+                        }
+                    }}
                 />
             );
         });
@@ -305,6 +383,15 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                     />
                 </IOSListGroup>
             )}
+
+            <IOSListGroup>
+                <IOSListItem
+                    label="Copy from Node"
+                    onClick={openCopyFromNodePage}
+                    textColor="primary.main"
+                    last
+                />
+            </IOSListGroup>
         </Box>
     );
 };

@@ -10,9 +10,11 @@ type Props = {
     chevron?: boolean;
     last?: boolean;
     icon?: ReactNode;
+    textColor?: string;
+    secondary?: ReactNode;
 };
 
-export function IOSListItem({ label, value, onClick, control, chevron, last, icon }: Props) {
+export function IOSListItem({ label, value, onClick, control, chevron, last, icon, textColor, secondary }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
@@ -30,6 +32,7 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
                     backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.08)",
                 } : undefined,
                 transition: "background-color 0.2s",
+                display: "flex",
                 alignItems: "center",
             }}
         >
@@ -56,9 +59,16 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
                     display: last ? "none" : "block",
                 },
             }}>
-                <Typography sx={{ fontSize: "14px", color: isDark ? "#ffffff" : "#000000" }}>
-                    {label}
-                </Typography>
+                <Box>
+                    <Typography sx={{ fontSize: "14px", color: textColor ? textColor : (isDark ? "#ffffff" : "#000000") }}>
+                        {label}
+                    </Typography>
+                    {secondary && (
+                        <Typography sx={{ fontSize: "12px", color: isDark ? "#8e8e93" : "#8e8e93" }}>
+                            {secondary}
+                        </Typography>
+                    )}
+                </Box>
 
                 <Stack direction="row" alignItems="center" spacing={1}>
                     {chevron && (

@@ -11,6 +11,7 @@ import { IOSQuantityPage } from "./IOSQuantityPage";
 import { Check, ArrowForwardIos, Add, Remove } from "@mui/icons-material";
 import { Navigator } from "../../PropertiesPanel";
 import { convertUnit } from "@/lib/unitConversion";
+import { NodeSelectionPage } from "./NodeSubPages";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -156,6 +157,15 @@ export const NumberInputPage = ({
                     placeholder={placeholder}
                     autoFocus={autoFocus}
                     type="number"
+                    sx={{
+                        "& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button": {
+                            WebkitAppearance: "none",
+                            margin: 0,
+                        },
+                        "& input[type=number]": {
+                            MozAppearance: "textfield",
+                        },
+                    }}
                 />
             </IOSListGroup>
         </Box>
@@ -216,6 +226,23 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                     onUnitChange={(u) => onUpdatePipe(pipe.id, { fluid: { ...currentFluid, [unitField]: u } })}
                     min={min}
                     autoFocus
+                />
+            );
+        });
+    };
+
+    const openCopyFromNodePage = () => {
+        navigator.push("Copy Fluid from Node", (net, nav) => {
+            return (
+                <NodeSelectionPage
+                    nodes={net.nodes}
+                    currentNodeId={""}
+                    onSelect={(selectedNode) => {
+                        if (selectedNode.fluid) {
+                            onUpdatePipe(pipe.id, { fluid: { ...selectedNode.fluid } });
+                            nav.pop();
+                        }
+                    }}
                 />
             );
         });
@@ -316,6 +343,15 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                     />
                 </IOSListGroup>
             )}
+
+            <IOSListGroup>
+                <IOSListItem
+                    label="Copy from Node"
+                    onClick={openCopyFromNodePage}
+                    textColor="primary.main"
+                    last
+                />
+            </IOSListGroup>
         </Box>
     );
 };
