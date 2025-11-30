@@ -1042,22 +1042,51 @@ export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
                                     const outletDia = pipe.outletDiameter || pipeDia;
                                     return outletDia < pipeDia ? "Reduce" : "Expand";
                                 }
-                            })() : (!isToggle ? count.toString() : undefined)}
-                            onClick={(!isToggle && !isSwage) ? () => navigator.push(option.label, (net, nav) => {
-                                const currentPipe = net.pipes.find(p => p.id === pipe.id);
-                                if (!currentPipe) return null;
-                                const currentCount = currentPipe.fittings?.find(f => f.type === option.value)?.count || 0;
-                                return (
-                                    <NumberInputPage
-                                        value={currentCount}
-                                        onChange={(v) => updateFitting(option.value, v ?? 0)}
-                                        placeholder={`Count for ${option.label}`}
-                                        autoFocus
-                                        min={0}
-                                    />
-                                );
-                            }) : undefined}
-                            chevron={!isToggle && !isSwage}
+                            })() : (!isToggle ? (
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateFitting(option.value, count + 1);
+                                        }}
+                                        sx={{
+                                            width: "28px",
+                                            height: "28px",
+                                            color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
+                                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                                            "&:hover": {
+                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                                            }
+                                        }}
+                                    >
+                                        <Add sx={{ fontSize: "16px" }} />
+                                    </IconButton>
+                                    <Typography sx={{ minWidth: "24px", textAlign: "center", fontSize: "14px" }}>
+                                        {count}
+                                    </Typography>
+                                    <IconButton
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            updateFitting(option.value, Math.max(0, count - 1));
+                                        }}
+                                        sx={{
+                                            width: "28px",
+                                            height: "28px",
+                                            color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
+                                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                                            "&:hover": {
+                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                                            }
+                                        }}
+                                    >
+                                        <Remove sx={{ fontSize: "16px" }} />
+                                    </IconButton>
+                                </Stack>
+                            ) : undefined)}
+                            onClick={(!isToggle && !isSwage) ? undefined : undefined}
+                            chevron={!isToggle && !isSwage ? false : (!isToggle && !isSwage)}
                             last={index === PIPE_FITTING_OPTIONS.length - 1}
                         />
                     );
