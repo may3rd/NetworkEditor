@@ -15,6 +15,7 @@ import { Check, ArrowForwardIos, Add, Remove } from "@mui/icons-material";
 import { Navigator } from "../../PropertiesPanel";
 import { convertUnit } from "@/lib/unitConversion";
 import { NodeSelectionPage } from "./NodeSubPages";
+import { recalculatePipeFittingLosses } from "@/lib/fittings";
 
 import { useState, useEffect, useRef } from "react";
 
@@ -719,7 +720,7 @@ export const RoughnessPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdat
 
 export const LengthPage = ({ pipe, onUpdatePipe, startNode, endNode }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, startNode?: NodeProps, endNode?: NodeProps }) => {
     const handleEstimate = () => {
-        if (!startNode || !endNode || !pipe.length || !pipe.pressureDropCalculationResults?.totalSegmentPressureDrop) return;
+        if (!startNode || !endNode || !pipe.diameter || !pipe.massFlowRate) return;
 
         const p1 = startNode.pressure;
         const p2 = endNode.pressure;
@@ -728,13 +729,34 @@ export const LengthPage = ({ pipe, onUpdatePipe, startNode, endNode }: { pipe: P
         const p1Pa = convertUnit(p1, startNode.pressureUnit || "Pa", "Pa");
         const p2Pa = convertUnit(p2, endNode.pressureUnit || "Pa", "Pa");
 
+        // Calculate target pressure drop (must be positive for flow)
+        // We assume flow is from higher to lower pressure for estimation
         const targetDeltaP = Math.abs(p1Pa - p2Pa);
-        const currentDeltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop;
 
-        if (currentDeltaP <= 0) return;
+        if (targetDeltaP <= 0) return;
 
-        const newLength = pipe.length * (targetDeltaP / currentDeltaP);
-        onUpdatePipe(pipe.id, { length: newLength });
+        // Create temp pipe with 1m length to find gradient
+        // This matches the logic in pressurePropagation.ts
+        let tempPipe: PipeProps = { ...pipe, length: 1, lengthUnit: "m" };
+
+        // Ensure we have necessary fluid properties from the start node if not on pipe
+        if (!tempPipe.fluid && startNode.fluid) {
+            tempPipe.fluid = { ...startNode.fluid };
+        }
+
+        // We need to ensure the temp pipe has the correct boundary conditions for calculation
+        // The recalculatePipeFittingLosses function uses the pipe's properties and fluid
+        // It doesn't take external node props, so we rely on what's in the pipe object.
+        // However, for density/viscosity, it uses the fluid object.
+
+        tempPipe = recalculatePipeFittingLosses(tempPipe);
+
+        const gradient = tempPipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
+
+        if (gradient && gradient > 0) {
+            const newLength = targetDeltaP / gradient;
+            onUpdatePipe(pipe.id, { length: newLength });
+        }
     };
 
     return (
@@ -753,7 +775,7 @@ export const LengthPage = ({ pipe, onUpdatePipe, startNode, endNode }: { pipe: P
                     variant="outlined"
                     fullWidth
                     onClick={handleEstimate}
-                    disabled={!startNode || !endNode || !pipe.pressureDropCalculationResults?.totalSegmentPressureDrop}
+                    disabled={!startNode || !endNode || !pipe.diameter || !pipe.massFlowRate || !pipe.roughness}
                     sx={{ borderRadius: "12px", textTransform: "none", fontSize: "14px" }}
                 >
                     Estimate Length from Pressure Drop

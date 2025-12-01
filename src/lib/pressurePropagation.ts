@@ -67,14 +67,45 @@ export const propagatePressure = (
             updatedPipe.boundaryTemperature = currentNode.temperature;
             updatedPipe.boundaryTemperatureUnit = currentNode.temperatureUnit;
 
-            // Recalculate pipe physics with new boundary conditions
+            const isForward = pipe.startNodeId === currentNodeId;
+            const targetNodeId = isForward ? pipe.endNodeId : pipe.startNodeId;
+            const targetNode = nodesMap.get(targetNodeId);
+
+            // Estimate length if missing and target pressure is known
+            if (targetNode && typeof targetNode.pressure === "number" && (!updatedPipe.length || updatedPipe.length <= 0)) {
+                const p1 = convertUnit(currentNode.pressure, currentNode.pressureUnit || "kPag", "Pa");
+                const p2 = convertUnit(targetNode.pressure, targetNode.pressureUnit || "kPag", "Pa");
+
+                // Pressure drop needed (must be positive for flow)
+                const targetDeltaP = p1 - p2;
+
+                if (targetDeltaP > 0) {
+                    // Create temp pipe with 1m length to find gradient
+                    let tempPipe: PipeProps = { ...updatedPipe, length: 1, lengthUnit: "m" };
+                    tempPipe = recalculatePipeFittingLosses(tempPipe);
+
+                    const gradient = tempPipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
+
+                    if (gradient && gradient > 0) {
+                        const estimatedLength = targetDeltaP / gradient;
+                        updatedPipe.length = estimatedLength;
+                        updatedPipe.lengthUnit = "m";
+                        warnings.push(`Pipe ${pipe.name}: Estimated length to be ${estimatedLength.toFixed(2)}m based on target pressure.`);
+                    }
+                }
+            }
+
+            // Recalculate pipe physics with new boundary conditions (and potentially new length)
             updatedPipe = recalculatePipeFittingLosses(updatedPipe);
 
             updatedPipesMap.set(updatedPipe.id, updatedPipe);
 
-            const isForward = pipe.startNodeId === currentNodeId;
-            const targetNodeId = isForward ? pipe.endNodeId : pipe.startNodeId;
-            const targetNode = nodesMap.get(targetNodeId);
+            // The following lines were already present in the original code after updatedPipesMap.set,
+            // and are needed here for subsequent logic.
+            // The user's instruction included them again, but they are not new additions.
+            // const isForward = pipe.startNodeId === currentNodeId;
+            // const targetNodeId = isForward ? pipe.endNodeId : pipe.startNodeId;
+            // const targetNode = nodesMap.get(targetNodeId);
 
             if (!targetNode) {
                 // console.log("Target node not found:", targetNodeId);

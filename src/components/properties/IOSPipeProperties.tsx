@@ -488,14 +488,14 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                         />
                         <IOSListItem
                             label="Length"
-                            value={`${pipe.length ?? "-"} ${pipe.lengthUnit ?? ""}`}
+                            value={`${pipe.length?.toFixed(3) ?? "-"} ${pipe.lengthUnit ?? ""}`}
                             onClick={openLengthPage}
                             chevron
                         />
                         {pipe.fluid?.phase !== "gas" && (
                             <IOSListItem
                                 label="Elevation"
-                                value={`${pipe.elevation ?? "-"} ${pipe.elevationUnit ?? ""}`}
+                                value={`${pipe.elevation?.toFixed(3) ?? "-"} ${pipe.elevationUnit ?? ""}`}
                                 onClick={openElevationPage}
                                 chevron
                             />

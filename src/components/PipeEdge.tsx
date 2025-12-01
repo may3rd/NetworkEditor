@@ -10,6 +10,7 @@ import { HoverCard } from "./HoverCard";
 import { PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { getPipeStatus } from "@/utils/velocityCriteria";
+import { WarningAmber } from "@mui/icons-material";
 
 export default function PipeEdge({
     id,
@@ -68,18 +69,6 @@ export default function PipeEdge({
     const direction = pipe?.direction || "forward";
 
     // Calculate animation duration based on velocity
-    // Base speed: 1m/s = 1s duration for a 20px dash cycle?
-    // Let's say we want the dashes to move at 'velocity' pixels per second?
-    // No, that would depend on zoom.
-    // Let's just map velocity magnitude to a reasonable duration range.
-    // Max speed (fastest animation) = 0.2s
-    // Min speed (slowest visible) = 5s
-    // Velocity range: 0.1 m/s to 20 m/s?
-
-    // Let's try: duration = 1 / velocity.
-    // If v=1, d=1s. If v=10, d=0.1s. If v=0.1, d=10s.
-    // Clamp duration to [0.2, 5].
-
     const absVelocity = Math.abs(velocity);
     const clampedVelocity = Math.max(0.1, Math.min(absVelocity, 20));
     const animationDuration = absVelocity > 0 ? 2 / clampedVelocity : 0;
@@ -94,6 +83,11 @@ export default function PipeEdge({
     } else if (status.velocityStatus.status === 'warning' || status.pressureDropStatus.status === 'warning') {
         animationColor = theme.palette.warning.main;
     }
+
+    const needsAttention = pipe && (
+        pipe.pressureDropCalculationResults?.totalSegmentPressureDrop === undefined ||
+        pipe.resultSummary?.outletState === undefined
+    );
 
     return (
         <>
@@ -164,17 +158,57 @@ export default function PipeEdge({
                             whiteSpace: "nowrap",
                             zIndex: isSelected ? 10 : 1,
                             boxShadow: isSelected ? "0 0 0 1px #f59e0b" : "none",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
                         }}
                         className="nodrag nopan"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         onMouseMove={handleMouseMove}
                     >
+                        {needsAttention && (
+                            <div style={{
+                                position: "absolute",
+                                top: -8,
+                                right: -8,
+                                background: theme.palette.background.paper,
+                                borderRadius: "50%",
+                                width: 16,
+                                height: 16,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
+                            }}>
+                                <WarningAmber color="warning" sx={{ fontSize: 14 }} />
+                            </div>
+                        )}
                         {labelLines.map((line, i) => (
                             <div key={i}>{line}</div>
                         ))}
                     </div>
                 )}
+
+                {/* Fallback warning if no labels are shown */}
+                {labelLines.length === 0 && needsAttention && (
+                    <div
+                        style={{
+                            position: "absolute",
+                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                            zIndex: 1,
+                            pointerEvents: "none",
+                            background: theme.palette.background.paper,
+                            borderRadius: "50%",
+                            padding: 2,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
+                        }}
+                        className="nodrag nopan"
+                    >
+                        <WarningAmber color="warning" sx={{ fontSize: 16 }} />
+                    </div>
+                )}
+
                 {isHovered && pipe && (
                     <div
                         style={{
