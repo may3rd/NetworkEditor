@@ -480,7 +480,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                     onClick={() => navigator.push("Result Summary", (net, nav) => {
                         const currentPipe = net.pipes.find(p => p.id === pipe.id);
                         if (!currentPipe) return null;
-                        return <PipeSummaryPage pipe={currentPipe} viewSettings={viewSettings} />;
+                        return <PipeSummaryPage pipe={currentPipe} viewSettings={viewSettings} navigator={navigator} />;
                     })}
                     chevron
                     last

@@ -9,6 +9,7 @@ const PIPE_COLUMNS = [7, 10, 13, 16, 19, 22, 25, 28];
 // Row mapping based on backend-repo/Book1.xlsx
 export const ROW_MAPPING = {
     name: 5,           // Row 6
+    description: 6,    // Row 7
     length: 37,        // Row 38
     diameter: 33,      // Row 34
     inletDiameter: 34, // Row 35
@@ -80,6 +81,9 @@ export const parseExcelNetwork = async (file: File): Promise<NetworkState | null
                             return; // Skip if no name (empty column config)
                         }
                         const name = String(nameVal);
+
+                        const description = getValue(ROW_MAPPING.description);
+                        const descriptionStr = description ? String(description) : "";
 
                         const length = Number(getValue(ROW_MAPPING.length))
                         // Diameter Logic
@@ -240,6 +244,7 @@ export const parseExcelNetwork = async (file: File): Promise<NetworkState | null
                         const pipe: PipeProps = {
                             id: uuidv4(),
                             name: name,
+                            description: descriptionStr,
                             startNodeId: startNodeId,
                             endNodeId: endNodeId,
                             boundaryPressure: pressure,

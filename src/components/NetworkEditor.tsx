@@ -1206,7 +1206,7 @@ function EditorCanvas({
         alignItems="center"
         spacing={2}
         sx={{
-          height: 48,
+          height: 64,
           width: "100%",
           flexShrink: 0,
           bgcolor: "background.paper",
@@ -1214,139 +1214,137 @@ function EditorCanvas({
           borderColor: "divider",
           px: 2,
           zIndex: 10,
+          pl: 1.5,
         }}
       >
         <Stack direction="row" spacing={2}>
-          <ButtonGroup variant="contained" size="small" aria-label="File tools">
+          <ButtonGroup variant="contained" aria-label="File tools">
             <Tooltip title="New">
               <span>
-                <IconButton size="small" onClick={onNew} disabled={!onNew}>
-                  <NoteAddIcon fontSize="small" />
+                <IconButton onClick={onNew} disabled={!onNew}>
+                  <NoteAddIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Load">
               <span>
-                <IconButton size="small" onClick={onLoad} disabled={!onLoad}>
-                  <LoadIcon fontSize="small" />
+                <IconButton onClick={onLoad} disabled={!onLoad}>
+                  <LoadIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Save">
               <span>
-                <IconButton size="small" onClick={onSave} disabled={!onSave}>
-                  <SaveIcon fontSize="small" />
+                <IconButton onClick={onSave} disabled={!onSave}>
+                  <SaveIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Export">
               <span>
-                <IconButton size="small" onClick={onExport} disabled={!onExport}>
-                  <ExportIcon fontSize="small" />
+                <IconButton onClick={onExport} disabled={!onExport}>
+                  <ExportIcon />
                 </IconButton>
               </span>
             </Tooltip>
             {onToggleSummary && (
               <Tooltip title="Summary Table">
-                <IconButton size="small" onClick={onToggleSummary}>
-                  <TableChartIcon fontSize="small" />
+                <IconButton onClick={onToggleSummary}>
+                  <TableChartIcon />
                 </IconButton>
               </Tooltip>
             )}
             <Tooltip title="Upload Background">
-              <IconButton size="small" onClick={() => backgroundInputRef.current?.click()}>
-                <WallpaperIcon fontSize="small" />
+              <IconButton onClick={() => backgroundInputRef.current?.click()}>
+                <WallpaperIcon />
               </IconButton>
             </Tooltip>
             {network.backgroundImage && (
               <Tooltip title="Background Settings">
-                <IconButton size="small" onClick={() => setShowBackgroundSettings(true)}>
-                  <SettingsIcon fontSize="small" />
+                <IconButton onClick={() => setShowBackgroundSettings(true)}>
+                  <SettingsIcon />
                 </IconButton>
               </Tooltip>
             )}
           </ButtonGroup>
 
-          <ButtonGroup variant="contained" size="small" aria-label="Edit tools">
+          <ButtonGroup variant="contained" aria-label="Edit tools">
             <Tooltip title="Add Node">
               <span>
-                <IconButton size="small" onClick={() => setIsAddingNode(true)}>
-                  <AddIcon fontSize="small" />
+                <IconButton onClick={() => setIsAddingNode(true)}>
+                  <AddIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Delete Selected">
               <span>
-                <IconButton size="small" onClick={onDelete} disabled={!selectedId}>
-                  <DeleteIcon fontSize="small" />
+                <IconButton onClick={onDelete} disabled={!selectedId}>
+                  <DeleteIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Undo">
               <span>
-                <IconButton size="small" onClick={onUndo} disabled={!canUndo}>
-                  <UndoIcon fontSize="small" />
+                <IconButton onClick={onUndo} disabled={!canUndo}>
+                  <UndoIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Redo">
               <span>
-                <IconButton size="small" onClick={onRedo} disabled={!canRedo}>
-                  <RedoIcon fontSize="small" />
+                <IconButton onClick={onRedo} disabled={!canRedo}>
+                  <RedoIcon />
                 </IconButton>
               </span>
             </Tooltip>
           </ButtonGroup>
 
-          <ButtonGroup variant="contained" size="small" aria-label="Rotation tools">
+          <ButtonGroup variant="contained" aria-label="Rotation tools">
             <Tooltip title="Rotate 90° CW">
               <span>
-                <IconButton size="small" onClick={handleRotateCW} disabled={!selectedId || selectedType !== "node"}>
-                  <RotateRightIcon fontSize="small" />
+                <IconButton onClick={handleRotateCW} disabled={!selectedId || selectedType !== "node"}>
+                  <RotateRightIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Rotate 90° CCW">
               <span>
-                <IconButton size="small" onClick={handleRotateCCW} disabled={!selectedId || selectedType !== "node"}>
-                  <RotateLeftIcon fontSize="small" />
+                <IconButton onClick={handleRotateCCW} disabled={!selectedId || selectedType !== "node"}>
+                  <RotateLeftIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Swap Left-Right">
               <span>
                 <IconButton
-                  size="small"
                   onClick={handleSwapLeftRight}
                   disabled={!selectedId || selectedType !== "node" || (network.nodes.find(n => n.id === selectedId)?.rotation ?? 0) % 180 !== 0}
                 >
-                  <SwapHorizIcon fontSize="small" />
+                  <SwapHorizIcon />
                 </IconButton>
               </span>
             </Tooltip>
             <Tooltip title="Swap Up-Down">
               <span>
                 <IconButton
-                  size="small"
                   onClick={handleSwapUpDown}
                   disabled={!selectedId || selectedType !== "node" || (network.nodes.find(n => n.id === selectedId)?.rotation ?? 0) % 180 !== 90}
                 >
-                  <SwapVertIcon fontSize="small" />
+                  <SwapVertIcon />
                 </IconButton>
               </span>
             </Tooltip>
           </ButtonGroup>
 
-          <ButtonGroup variant="contained" size="small" aria-label="View tools">
+          <ButtonGroup variant="contained" aria-label="View tools">
             <Tooltip title="Snap to Grid">
               <ToggleButton
                 value="snap"
                 selected={snapToGrid}
                 onChange={() => setSnapToGrid(!snapToGrid)}
-                size="small"
-                sx={{ border: 'none', padding: '5px' }}
+                sx={{ width: 40, height: 40, border: 'none' }}
               >
-                <GridIcon fontSize="small" />
+                <GridIcon />
               </ToggleButton>
             </Tooltip>
             <Tooltip title="Show Grid">
@@ -1354,10 +1352,9 @@ function EditorCanvas({
                 value="grid"
                 selected={showGrid}
                 onChange={() => setShowGrid(!showGrid)}
-                size="small"
-                sx={{ border: 'none', padding: '5px' }}
+                sx={{ width: 40, height: 40, border: 'none' }}
               >
-                <GridOnIcon fontSize="small" />
+                <GridOnIcon />
               </ToggleButton>
             </Tooltip>
             <Tooltip title="Pan Mode">
@@ -1365,10 +1362,9 @@ function EditorCanvas({
                 value="pan"
                 selected={panModeEnabled}
                 onChange={() => setPanModeEnabled(!panModeEnabled)}
-                size="small"
-                sx={{ border: 'none', padding: '5px' }}
+                sx={{ width: 40, height: 40, border: 'none' }}
               >
-                <PanToolIcon fontSize="small" />
+                <PanToolIcon />
               </ToggleButton>
             </Tooltip>
             {onToggleConnectingMode && (
@@ -1377,10 +1373,9 @@ function EditorCanvas({
                   value="connect"
                   selected={isConnectingMode}
                   onChange={onToggleConnectingMode}
-                  size="small"
-                  sx={{ border: 'none', padding: '5px' }}
+                  sx={{ width: 40, height: 40, border: 'none' }}
                 >
-                  <CableIcon fontSize="small" />
+                  <CableIcon />
                 </ToggleButton>
               </Tooltip>
             )}
@@ -1390,10 +1385,9 @@ function EditorCanvas({
                   value="animation"
                   selected={isAnimationEnabled}
                   onChange={onToggleAnimation}
-                  size="small"
-                  sx={{ border: 'none', padding: '5px' }}
+                  sx={{ width: 40, height: 40, border: 'none' }}
                 >
-                  <DirectionsRunIcon fontSize="small" />
+                  <DirectionsRunIcon />
                 </ToggleButton>
               </Tooltip>
             )}
@@ -1404,13 +1398,13 @@ function EditorCanvas({
               onSettingsChange={setViewSettings}
             />
             <Tooltip title="View Settings">
-              <IconButton size="small" onClick={() => setViewSettingsDialogOpen(true)}>
-                <SettingsIcon fontSize="small" />
+              <IconButton onClick={() => setViewSettingsDialogOpen(true)} sx={{ width: 40, height: 40 }}>
+                <SettingsIcon />
               </IconButton>
             </Tooltip>
             <Tooltip title="Toggle Dark Mode">
-              <IconButton size="small" onClick={toggleColorMode}>
-                <DarkModeIcon fontSize="small" />
+              <IconButton onClick={toggleColorMode} sx={{ width: 40, height: 40 }}>
+                <DarkModeIcon />
               </IconButton>
             </Tooltip>
           </ButtonGroup>
@@ -1423,8 +1417,8 @@ function EditorCanvas({
         </Box> */}
         {onToggleSnapshot && (
           <Tooltip title="Network Snapshot">
-            <IconButton size="small" onClick={onToggleSnapshot}>
-              <VisibilityIcon fontSize="small" />
+            <IconButton onClick={onToggleSnapshot}>
+              <VisibilityIcon />
             </IconButton>
           </Tooltip>
         )}

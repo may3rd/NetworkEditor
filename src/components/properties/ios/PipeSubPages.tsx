@@ -1,4 +1,4 @@
-import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio, IconButton, Button } from "@mui/material";
+import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { glassInputSx, glassSelectSx, glassRadioSx } from "@/lib/glassStyles";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
 import { getScheduleEntries, nearest_pipe_diameter, PIPE_FITTING_OPTIONS } from "../../PipeDimension";
@@ -7,7 +7,8 @@ import { IOSListGroup } from "../../ios/IOSListGroup";
 import { IOSListItem } from "../../ios/IOSListItem";
 import { IOSContainer } from "../../ios/IOSContainer";
 import { IOSTextField } from "../../ios/IOSTextField";
-import { IOSQuantityPage } from "./IOSQuantityPage";
+import { IOSQuantityPage } from './IOSQuantityPage';
+import { VelocityCriteriaPage } from './VelocityCriteriaPage';
 import { Check, ArrowForwardIos, Add, Remove } from "@mui/icons-material";
 import { Navigator } from "../../PropertiesPanel";
 import { convertUnit } from "@/lib/unitConversion";
@@ -1276,10 +1277,10 @@ export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
 
 // --- Summary ---
 
-
-export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewSettings: ViewSettings }) {
+export function PipeSummaryPage({ pipe, viewSettings, navigator }: { pipe: PipeProps, viewSettings: ViewSettings, navigator: Navigator }) {
     const results = pipe.pressureDropCalculationResults;
     const velocity = pipe.resultSummary?.outletState?.velocity;
+    const [openVelocityCriteria, setOpenVelocityCriteria] = useState(false);
 
     const formatPressure = (value: number | undefined) => {
         if (value === undefined) return "-";
@@ -1329,11 +1330,13 @@ export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewS
     };
 
     const formatUserSpecifiedDrop = () => {
-        if (!pipe.userSpecifiedPressureLoss) return "-";
-
-        const sourceUnit = pipe.userSpecifiedPressureLossUnit ?? "Pa";
-        const valueInPa = convertUnit(pipe.userSpecifiedPressureLoss, sourceUnit, "Pa");
-        return formatPressure(valueInPa);
+        if (pipe.pipeSectionType === "control valve" && pipe.controlValve?.inputMode === "pressure_drop") {
+            return formatPressure(pipe.controlValve.pressureDrop);
+        }
+        if (pipe.pipeSectionType === "orifice" && pipe.orifice?.inputMode === "pressure_drop") {
+            return formatPressure(pipe.orifice.pressureDrop);
+        }
+        return "-";
     };
 
     return (
@@ -1344,12 +1347,26 @@ export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewS
                 <IOSListItem label="Total" value={results?.totalK?.toFixed(3) ?? "-"} last />
             </IOSListGroup>
 
-            <IOSListGroup>
+            <IOSListGroup header="Results">
                 <IOSListItem label="Reynolds Number" value={results?.reynoldsNumber?.toFixed(0) ?? "-"} />
-                <IOSListItem label="Flow Scheme" value={results?.flowScheme ?? "-"} />
                 <IOSListItem label="Friction Factor" value={results?.frictionalFactor?.toFixed(4) ?? "-"} />
                 <IOSListItem label="Velocity" value={formatVelocity(velocity) ?? "-"} last />
             </IOSListGroup>
+            <Box sx={{ pl: 3, pb: 2, mt: -2 }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "primary.main",
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        fontSize: "12px",
+                        "&:hover": { textDecoration: "underline" }
+                    }}
+                    onClick={() => setOpenVelocityCriteria(true)}
+                >
+                    Velocity criteria...
+                </Typography>
+            </Box>
 
             <IOSListGroup>
                 <IOSListItem label="Pipe & Fitting" value={formatPressure(results?.pipeAndFittingPressureDrop) ?? "-"} />
@@ -1363,6 +1380,21 @@ export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewS
                 />
                 <IOSListItem label="Total Pressure Drop" value={formatPressure(results?.totalSegmentPressureDrop) ?? "-"} last />
             </IOSListGroup>
+
+            <Dialog
+                open={openVelocityCriteria}
+                onClose={() => setOpenVelocityCriteria(false)}
+                maxWidth="md"
+                fullWidth
+            >
+                <DialogTitle>Velocity Criteria</DialogTitle>
+                <DialogContent>
+                    <VelocityCriteriaPage />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setOpenVelocityCriteria(false)}>Close</Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 }
