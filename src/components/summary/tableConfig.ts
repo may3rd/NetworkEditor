@@ -1,0 +1,741 @@
+import { NetworkState, PipeProps } from "@/lib/types";
+import { convertUnit } from "@/lib/unitConversion";
+
+export type RowConfig<T> =
+    | { type: "section"; label: string }
+    | {
+        type: "data";
+        label: string;
+        unit?: string;
+        getValue: (item: T) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string; color?: string; helperText?: string; fontWeight?: string };
+        subLabel?: string;
+        decimals?: number
+    };
+
+const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+const formatNps = (val: number | undefined | null): string => {
+    if (val === undefined || val === null) return "";
+    const intPart = Math.floor(val);
+    const decimalPart = val - intPart;
+
+    if (decimalPart === 0) return `${intPart}"`;
+
+    const fractions: { [key: number]: string } = {
+        0.125: '1/8',
+        0.25: '1/4',
+        0.375: '3/8',
+        0.5: '1/2',
+        0.625: '5/8',
+        0.75: '3/4',
+        0.875: '7/8'
+    };
+
+    // Find closest match within small tolerance
+    let fractionStr = "";
+    for (const [dec, frac] of Object.entries(fractions)) {
+        if (Math.abs(decimalPart - parseFloat(dec)) < 0.001) {
+            fractionStr = frac;
+            break;
+        }
+    }
+
+    if (!fractionStr) {
+        return `${val}"`;
+    }
+
+    return intPart === 0 ? `${fractionStr}"` : `${intPart} ${fractionStr}"`;
+};
+
+const formatNumber = (val: string | number | undefined | null, decimals = 3) => {
+    if (val === undefined || val === null) return "";
+    if (typeof val === "string") return val;
+    if (!Number.isFinite(val)) return "";
+    return val.toFixed(decimals);
+};
+
+export const getPipeSummaryRows = (network: NetworkState, unitSystem: "metric" | "imperial" | "fieldSI" | "metric_kgcm2"): RowConfig<PipeProps>[] => {
+    const u = (metric: string, imperial: string, fieldSI?: string, metricKgCm2?: string) => {
+        if (unitSystem === "metric_kgcm2" && metricKgCm2) return metricKgCm2;
+        if (unitSystem === "fieldSI" && fieldSI) return fieldSI;
+        return unitSystem === "imperial" ? imperial : metric;
+    };
+
+    const getNodeLabel = (id: string) => {
+        return network.nodes.find((n) => n.id === id)?.label || id;
+    };
+
+    const getFittingCount = (pipe: PipeProps, type: string) => {
+        const fitting = pipe.fittings?.find((f) => f.type === type);
+        return fitting ? fitting.count : "";
+    };
+
+    const getFittingK = (pipe: PipeProps, type: string, decimals = 3) => {
+        const fitting = pipe.fittings?.find((f) => f.type === type);
+        return fitting ? formatNumber(fitting.k_each, decimals) : "";
+    };
+
+    return [
+        { type: "data", label: "Segment ID", getValue: (pipe) => pipe.name || "" },
+        { type: "data", label: "Description", getValue: (pipe) => pipe.description || "" },
+        { type: "data", label: "From", getValue: (pipe) => getNodeLabel(pipe.startNodeId) || "" },
+        { type: "data", label: "To", getValue: (pipe) => getNodeLabel(pipe.endNodeId) || "" },
+
+        { type: "section", label: "I. GENERAL DATA" },
+        { type: "data", label: "Fluid Phase", getValue: (pipe) => pipe.fluid?.phase ? capitalize(pipe.fluid.phase) : "" },
+        { type: "data", label: "Calculation Type", getValue: (pipe) => pipe.pipeSectionType ? capitalize(pipe.pipeSectionType) : "" },
+        { type: "data", label: "Flow Direction", getValue: (pipe) => pipe.direction ? capitalize(pipe.direction) : "" },
+        {
+            type: "data",
+            label: "Flow Type (Adiabatic or Isothermal)",
+            getValue: (pipe) => {
+                if (pipe.fluid?.phase !== "gas") return "N/A";
+                return pipe.gasFlowModel ? capitalize(pipe.gasFlowModel) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "Pressure",
+            unit: u("kPag", "psig", "barg", "kg/cm2g"),
+            getValue: (pipe) => {
+                const direction = pipe.direction ?? "forward";
+                const isForward = direction === "forward";
+                const val = isForward
+                    ? pipe.resultSummary?.inletState?.pressure
+                    : pipe.resultSummary?.outletState?.pressure;
+
+                const convertedVal = val ? convertUnit(val, "Pa", u("kPag", "psig", "barg", "kg/cm2g")) : "";
+
+                return {
+                    value: convertedVal,
+                    subLabel: isForward ? "at INLET" : "at OUTLET"
+                };
+            },
+        },
+
+        { type: "section", label: "II. FLUID DATA" },
+        {
+            type: "data",
+            label: "Design Flow Rate",
+            unit: u("kg/h", "lb/h"),
+            getValue: (pipe) => pipe.designMassFlowRate ? convertUnit(pipe.designMassFlowRate, pipe.designMassFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : pipe.massFlowRate ? convertUnit(pipe.massFlowRate, pipe.massFlowRateUnit || "kg/h", u("kg/h", "lb/h")) : ""
+        },
+        {
+            type: "data",
+            label: "Design Volumetric Flow Rate",
+            // Unit varies by phase, so we display it per-cell via subLabel
+            unit: undefined,
+            getValue: (pipe) => {
+                const massFlow = pipe.designMassFlowRate || pipe.massFlowRate;
+                const density = pipe.resultSummary?.inletState?.density;
+                const phase = pipe.fluid?.phase;
+
+                if (massFlow && density) {
+                    const volFlowM3H = massFlow / density;
+
+                    let targetUnit = "m3/h";
+                    if (phase === "gas") {
+                        targetUnit = unitSystem === "imperial" ? "SCFD" : "Nm3/h";
+                    } else {
+                        targetUnit = unitSystem === "imperial" ? "ft3/h" : "m3/h";
+                    }
+
+                    const val = convertUnit(volFlowM3H, "m3/h", targetUnit, "volumeFlowRate");
+                    return {
+                        value: val,
+                        subLabel: targetUnit,
+                        helperText: phase === "gas" ? "(at 1 atm, 25°C)" : undefined
+                    };
+                }
+                return "";
+            }
+        },
+        {
+            type: "data",
+            label: "Temperature",
+            unit: u("°C", "°F"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.temprature; // Note typo in types.ts 'temprature'
+                return val ? convertUnit(val, "K", u("C", "F")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "Density",
+            unit: u("kg/m3", "lb/ft3"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.density;
+                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : "";
+            }
+        },
+        { type: "data", label: "Molecular Weight", getValue: (pipe) => pipe.fluid?.molecularWeight },
+        { type: "data", label: "Compressibility Factor Z", getValue: (pipe) => pipe.fluid?.zFactor },
+        { type: "data", label: "Specific Heat Ratio k (Cp/Cv)", getValue: (pipe) => pipe.fluid?.specificHeatRatio },
+        {
+            type: "data",
+            label: "Viscosity",
+            unit: "cP",
+            getValue: (pipe) => pipe.fluid?.viscosity ? convertUnit(pipe.fluid.viscosity, pipe.fluid.viscosityUnit || "cP", "cP") : ""
+        },
+
+        { type: "section", label: "III. PIPE, FITTING & ELEVATION" },
+        {
+            type: "data", label: "Main Pipe DN", unit: u("in", "in"), getValue: (pipe) => {
+                if (pipe.diameterInputMode == "diameter") return "";
+                return pipe.diameterInputMode == "nps" ? formatNps(pipe.pipeNPD) : ""
+            }
+        },
+        { type: "data", label: "Pipe Schedule", getValue: (pipe) => pipe.diameterInputMode == "nps" ? pipe.pipeSchedule : "" },
+        {
+            type: "data",
+            label: "Main Pipe ID",
+            unit: u("mm", "in"),
+            getValue: (pipe) => pipe.diameter ? convertUnit(pipe.diameter, pipe.diameterUnit || "mm", u("mm", "in")) : ""
+        },
+        {
+            type: "data",
+            label: "Inlet Pipe DN",
+            unit: u("mm", "in"),
+            getValue: (pipe) => pipe.inletDiameter ? convertUnit(pipe.inletDiameter, pipe.inletDiameterUnit || pipe.diameterUnit || "mm", u("mm", "in")) : ""
+        },
+        {
+            type: "data",
+            label: "Outlet Pipe DN",
+            unit: u("mm", "in"),
+            getValue: (pipe) => pipe.outletDiameter ? convertUnit(pipe.outletDiameter, pipe.outletDiameterUnit || pipe.diameterUnit || "mm", u("mm", "in")) : ""
+        },
+        {
+            type: "data",
+            label: "Pipe Roughness",
+            unit: u("mm", "in"),
+            getValue: (pipe) => pipe.roughness ? convertUnit(pipe.roughness, pipe.roughnessUnit || "mm", u("mm", "in")) : ""
+        },
+        {
+            type: "data",
+            label: "Pipe Length",
+            unit: u("m", "ft"),
+            getValue: (pipe) => {
+                if (!pipe.pipeSectionType) return "";
+                const length = pipe.length ? convertUnit(pipe.length, pipe.lengthUnit || "m", u("m", "ft")) : ""
+                const sectionType = pipe.pipeSectionType || "pipeline";
+                if (sectionType == "pipeline") {
+                    return length;
+                } else {
+                    return "";
+                }
+            }
+        },
+        {
+            type: "data",
+            label: "Elevation Change (- for DOWN)",
+            unit: u("m", "ft"),
+            getValue: (pipe) => {
+                if (pipe.fluid?.phase === "gas") return "N/A";
+                if (!pipe.pipeSectionType) return "";
+                const elevation = pipe.elevation ? convertUnit(pipe.elevation, pipe.elevationUnit || "m", u("m", "ft")) : 0;
+                const sectionType = pipe.pipeSectionType || "pipeline";
+                if (sectionType == "pipeline") {
+                    return elevation;
+                } else {
+                    return 0;
+                }
+            }
+        },
+        { type: "data", label: "Erosional Constant C (API 14E)", getValue: (pipe) => pipe.erosionalConstant },
+
+        // Fittings
+        { type: "section", label: "Fitting Count" },
+        {
+            type: "data", label: "Elbow 45°", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "elbow_45") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "elbow_45") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Elbow 90°", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "elbow_90") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "elbow_90") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "U-Bend", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "u_bend") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "u_bend") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Stub-In Elbow", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "stub_in_elbow") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "stub_in_elbow") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Tee Elbow", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "tee_elbow") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "tee_elbow") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Tee Through", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "tee_through") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "tee_through") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Block Valve Full Line Size", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "block_valve_full_line_size") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "block_valve_full_line_size") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Block Valve Reduced Trim 0.9D", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "block_valve_reduced_trim_0.9d") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "block_valve_reduced_trim_0.9d") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Block Valve Reduced Trim 0.8D", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "block_valve_reduced_trim_0.8d") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "block_valve_reduced_trim_0.8d") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Globe Valve", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "globe_valve") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "globe_valve") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Diaphragm Valve", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "diaphragm_valve") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "diaphragm_valve") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Butterfly Valve", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "butterfly_valve") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "butterfly_valve") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Check Valve Swing", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "check_valve_swing") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "check_valve_swing") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Check Valve Lift", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "lift_check_valve") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "lift_check_valve") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Check Valve Tilting", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "tilting_check_valve") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "tilting_check_valve") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Pipe Entrance Normal", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "pipe_entrance_normal") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "pipe_entrance_normal") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Pipe Entrance Raise", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "pipe_entrance_raise") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "pipe_entrance_raise") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Pipe Exit", getValue: (pipe) => {
+                const count = getFittingCount(pipe, "pipe_exit") || 0;
+                if (count == 0) return "";
+                const K_each = getFittingK(pipe, "pipe_exit") || 0;
+                return count + " x " + K_each;
+            }
+        },
+        {
+            type: "data", label: "Input Swage", getValue: (pipe) => {
+                const diameter = pipe.diameter || 0;
+                const inletDiameter = pipe.inletDiameter;
+                if (inletDiameter == null) return ""
+                else {
+                    const K_each = getFittingK(pipe, "inlet_swage", 3);
+                    if (diameter > inletDiameter) return "reduce" + " x " + K_each;
+                    if (diameter < inletDiameter) return "expand" + " x " + K_each;
+                    return "none";
+                };
+            }
+        },
+        {
+            type: "data", label: "Output Swage", getValue: (pipe) => {
+                const diameter = pipe.diameter || 0;
+                const outletDiameter = pipe.outletDiameter;
+                if (outletDiameter == null) return ""
+                else {
+                    const K_each = getFittingK(pipe, "outlet_swage", 3);
+                    if (diameter > outletDiameter) return "reduce" + " x " + K_each;
+                    if (diameter < outletDiameter) return "expand" + " x " + K_each;
+                    return "none";
+                };
+            }
+        },
+
+        {
+            type: "data",
+            label: "Fitting K",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.pressureDropCalculationResults?.fittingK || 0;
+            }
+        },
+        {
+            type: "data",
+            label: "Pipe Length K",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.pressureDropCalculationResults?.pipeLengthK || 0;
+            }
+        },
+        {
+            type: "data",
+            label: "User Supply K",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.userK || 0;
+            }
+        },
+        {
+            type: "data",
+            label: "Total K",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                const fittingK = pipe.pressureDropCalculationResults?.fittingK || 0;
+                const pipeLengthK = pipe.pressureDropCalculationResults?.pipeLengthK || 0;
+                const userK = pipe.userK || 0;
+                return fittingK + pipeLengthK + userK;
+            }
+        },
+        {
+            type: "data",
+            label: "Pipe & Fitting Safety Factor",
+            unit: "%",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.pipingFittingSafetyFactor || 0;
+            }
+        },
+        {
+            type: "data",
+            label: "Total K (with safety factor)",
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice") return "";
+                return pipe.pressureDropCalculationResults?.totalK;
+            }
+        },
+
+        { type: "section", label: "IV. OPTIONAL CALCULATIONS" },
+        { type: "data", label: "Control Valve Cv", getValue: (pipe) => pipe.controlValve?.cv },
+        { type: "data", label: "Control Valve Cg", getValue: (pipe) => pipe.controlValve?.cg },
+        { type: "data", label: "Recovery Factor C1", getValue: (pipe) => pipe.controlValve?.C1 },
+        { type: "data", label: "Terminal Pressure Drop Ratio (xT)", getValue: (pipe) => pipe.controlValve?.xT },
+        { type: "data", label: "Thin Sharp Edged Orifice d/D Ratio (β)", getValue: (pipe) => pipe.orifice?.betaRatio },
+
+        { type: "section", label: "V. CHARACTERISTIC SUMMARY" },
+        { type: "data", label: "Reynolds Number", getValue: (pipe) => pipe.pressureDropCalculationResults?.reynoldsNumber },
+        { type: "data", label: "Flow Regime", getValue: (pipe) => capitalize(pipe.pressureDropCalculationResults?.flowScheme || "undefined") },
+        { type: "data", label: "Moody Friction Factor", getValue: (pipe) => pipe.pressureDropCalculationResults?.frictionalFactor, decimals: 5 },
+        // Velocity Head at Inlet (K=1) - calculate? 0.5 * rho * v^2 / 1000 for kPa?
+        {
+            type: "data",
+            label: "Flow Momentum (ρv²)",
+            unit: u("Pa", "psi"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.flowMomentum;
+                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "Critical Pressure",
+            unit: u("kPa(a)", "psia", "bar(a)", "kg/cm2(a)"),
+            getValue: (pipe) => {
+                const val = pipe.pressureDropCalculationResults?.gasFlowCriticalPressure;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : "N/A";
+            }
+        },
+
+        { type: "section", label: "VI. PRESSURE LOSSES SUMMARY" },
+        {
+            type: "data",
+            label: "Pipe & Fitting",
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
+            getValue: (pipe) => {
+                const val = pipe.pressureDropCalculationResults?.pipeAndFittingPressureDrop;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "Elevation Change",
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
+            getValue: (pipe) => {
+                if (pipe.fluid?.phase === "gas") return "N/A";
+                const val = pipe.pressureDropCalculationResults?.elevationPressureDrop;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : 0;
+            }
+        },
+        {
+            type: "data",
+            label: "Control Valve Pressure Drop",
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType !== "control valve") return "N/A";
+                const val = pipe.pressureDropCalculationResults?.controlValvePressureDrop;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : 0;
+            }
+        },
+        {
+            type: "data",
+            label: "Orifice Pressure Drop",
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
+            getValue: (pipe) => {
+                if (pipe.pipeSectionType !== "orifice") return "N/A";
+                const val = pipe.pressureDropCalculationResults?.orificePressureDrop;
+                return val ? convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")) : 0;
+            }
+        },
+        {
+            type: "data",
+            label: "User Supplied Fixed Loss",
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
+            getValue: (pipe) => {
+                const val = pipe.userSpecifiedPressureLoss;
+                if (!val) return 0;
+                if (unitSystem === "imperial") return convertUnit(val, "kPa", "psi");
+                if (unitSystem === "fieldSI") return convertUnit(val, "kPa", "bar");
+                if (unitSystem === "metric_kgcm2") return convertUnit(val, "kPa", "kg/cm2");
+                return val;
+            }
+        },
+        {
+            type: "data",
+            label: "Segment Total Loss",
+            unit: u("kPa", "psi", "bar", "kg/cm2"),
+            getValue: (pipe: PipeProps) => {
+                const val = pipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
+                if (typeof val !== 'number') return "";
+                const inputVal = pipe.resultSummary?.inletState?.pressure || 1e12;
+                if (val > inputVal) return { value: val, color: "error.main", fontWeight: "bold", helperText: "Total loss exceeds inlet pressure" };
+                return { value: convertUnit(val, "Pa", u("kPa", "psi", "bar", "kg/cm2")), color: "primary.main", fontWeight: "bold" };
+            }
+        },
+        {
+            type: "data",
+            label: "Unit Friction Loss",
+            unit: u("kPa/100m", "psi/100ft", "bar/100m", "kg/cm2/100m"),
+            getValue: (pipe) => {
+                const val = pipe.pressureDropCalculationResults?.normalizedPressureDrop; // Pa/m
+                return val ? convertUnit(val, "Pa/m", u("kPa/100m", "psi/100ft", "bar/100m", "kg/cm2/100m"), "pressureGradient") : "";
+            }
+        },
+
+        { type: "section", label: "VII. RESULT SUMMARY" },
+        // INLET
+        {
+            type: "data",
+            label: "INLET Pressure",
+            unit: u("kPag", "psig", "barg", "kg/cm2g"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.pressure;
+                if (typeof val !== 'number') return "";
+                if (val < 0.0) return { value: val, color: "error.main", fontWeight: "bold" };
+                return { value: convertUnit(val, "Pa", u("kPag", "psig", "barg", "kg/cm2g")), color: "primary.main", fontWeight: "bold" };
+            }
+        },
+        {
+            type: "data",
+            label: "INLET Temperature",
+            unit: u("°C", "°F"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.temprature;
+                return val ? convertUnit(val, "K", u("C", "F")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "INLET Density",
+            unit: u("kg/m3", "lb/ft3"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.density;
+                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "INLET Mach Number",
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.machNumber;
+                if (typeof val === 'number') {
+                    if (val > 1.0) return { value: val, color: "error.main", helperText: "Mach > 1.0" };
+                    if (val > 0.5) return { value: val, color: "warning.main", helperText: "Mach > 0.5" };
+                    return val;
+                }
+                return "N/A";
+            }
+        },
+        {
+            type: "data",
+            label: "INLET Velocity",
+            unit: u("m/s", "ft/s"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.velocity;
+                const erosional = pipe.resultSummary?.inletState?.erosionalVelocity;
+                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
+
+                if (val && erosional && val > erosional) {
+                    return {
+                        value: convertedVal,
+                        color: "error.main",
+                        helperText: "Velocity > Erosional Limit"
+                    };
+                }
+                return convertedVal;
+            }
+        },
+        {
+            type: "data",
+            label: "INLET Erosional Velocity",
+            unit: u("m/s", "ft/s"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.erosionalVelocity;
+                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "INLET Flow Momentum",
+            unit: u("Pa", "psi"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.inletState?.flowMomentum;
+                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : "";
+            }
+        },
+
+        // OUTLET
+        {
+            type: "data",
+            label: "OUTLET Pressure",
+            unit: u("kPag", "psig", "barg", "kg/cm2g"),
+            getValue: (pipe: PipeProps) => {
+                const val = pipe.resultSummary?.outletState?.pressure;
+                if (typeof val !== 'number') return "";
+                if (val < 0.0) return { value: val, color: "error.main", fontWeight: "bold", helperText: "Pressure cannot be negative [Pa]" };
+                return { value: convertUnit(val, "Pa", u("kPag", "psig", "barg", "kg/cm2g")), color: "primary.main", fontWeight: "bold" };
+            }
+        },
+        {
+            type: "data",
+            label: "OUTLET Temperature",
+            unit: u("°C", "°F"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.outletState?.temprature;
+                return val ? convertUnit(val, "K", u("C", "F")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "OUTLET Density",
+            unit: u("kg/m3", "lb/ft3"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.outletState?.density;
+                return val ? convertUnit(val, "kg/m3", u("kg/m3", "lb/ft3")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "OUTLET Mach Number",
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.outletState?.machNumber;
+                if (typeof val === 'number') {
+                    if (val > 1.0) return { value: val, color: "error.main", helperText: "Mach > 1.0" };
+                    if (val > 0.5) return { value: val, color: "warning.main", helperText: "Mach > 0.5" };
+                    return val;
+                }
+                return "N/A";
+            }
+        },
+        {
+            type: "data",
+            label: "OUTLET Velocity",
+            unit: u("m/s", "ft/s"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.outletState?.velocity;
+                const erosional = pipe.resultSummary?.outletState?.erosionalVelocity;
+                const convertedVal = val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
+
+                if (val && erosional && val > erosional) {
+                    return {
+                        value: convertedVal,
+                        color: "error.main",
+                        helperText: "Velocity > Erosional Limit"
+                    };
+                }
+                return convertedVal;
+            }
+        },
+        {
+            type: "data",
+            label: "OUTLET Erosional Velocity",
+            unit: u("m/s", "ft/s"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.outletState?.erosionalVelocity;
+                return val ? convertUnit(val, "m/s", u("m/s", "ft/s")) : "";
+            }
+        },
+        {
+            type: "data",
+            label: "OUTLET Flow Momentum",
+            unit: u("Pa", "psi"),
+            getValue: (pipe) => {
+                const val = pipe.resultSummary?.outletState?.flowMomentum;
+                return val ? convertUnit(val, "Pa", u("Pa", "psi")) : "";
+            }
+        },
+    ];
+};

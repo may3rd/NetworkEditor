@@ -3,9 +3,11 @@
 import { memo, useState, useRef, type CSSProperties } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { useTheme } from "@mui/material";
+import { ErrorOutline } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
 import { HoverCard } from "./HoverCard";
 import { NodeProps } from "@/lib/types";
+import { getNodeWarnings } from "@/utils/validationUtils";
 
 type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
 
@@ -24,6 +26,7 @@ type NodeData = {
   node?: NodeProps;
   isConnectingMode?: boolean;
   showHoverCard?: boolean;
+  pipes?: import("@/lib/types").PipeProps[];
 };
 
 const ROLE_COLORS_LIGHT: Record<NodeRole, string> = {
@@ -278,12 +281,29 @@ function PressureNode({ data }: { data: NodeData }) {
           subtitle="Node Properties"
           x={hoverPos.x}
           y={hoverPos.y}
-          rows={[
-            { label: "Pressure", value: typeof data.node.pressure === 'number' ? `${convertUnit(data.node.pressure, data.node.pressureUnit, data.displayPressureUnit || data.node.pressureUnit).toFixed(2)} ${data.displayPressureUnit || data.node.pressureUnit}` : "N/A" },
-            { label: "Temperature", value: typeof data.node.temperature === 'number' ? `${data.node.temperature.toFixed(2)} ${data.node.temperatureUnit}` : "N/A" },
-            { label: "Fluid", value: data.node.fluid?.id || "None" },
-            { label: "Phase", value: data.node.fluid?.phase || "N/A" },
-          ]}
+          rows={(() => {
+            const rows: Array<{ label: string; value: string | number | React.ReactNode }> = [
+              { label: "Pressure", value: typeof data.node.pressure === 'number' ? `${convertUnit(data.node.pressure, data.node.pressureUnit, data.displayPressureUnit || data.node.pressureUnit).toFixed(2)} ${data.displayPressureUnit || data.node.pressureUnit}` : "N/A" },
+              { label: "Temperature", value: typeof data.node.temperature === 'number' ? `${data.node.temperature.toFixed(2)} ${data.node.temperatureUnit}` : "N/A" },
+              { label: "Fluid", value: data.node.fluid?.id || "None" },
+              { label: "Phase", value: data.node.fluid?.phase || "N/A" },
+            ];
+
+            const warnings = getNodeWarnings(data.node, data.flowRole || "neutral", data.pipes || []);
+            if (warnings.length > 0) {
+              warnings.forEach(w => {
+                rows.push({
+                  label: "",
+                  value: (
+                    <span style={{ color: theme.palette.error.main, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <ErrorOutline sx={{ fontSize: 16 }} /> {w}
+                    </span>
+                  )
+                });
+              });
+            }
+            return rows;
+          })()}
         />
       )}
     </div>

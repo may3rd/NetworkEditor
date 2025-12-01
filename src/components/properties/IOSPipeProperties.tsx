@@ -2,6 +2,7 @@ import { PipeProps, NodeProps, PipePatch, ViewSettings, NetworkState, NodePatch 
 import { convertUnit } from "@/lib/unitConversion";
 import { computeErosionalVelocity } from "@/lib/calculations/utils";
 import { getPipeStatus } from "@/utils/velocityCriteria";
+import { getPipeWarnings } from "@/utils/validationUtils";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
@@ -286,6 +287,39 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     {pipe.fluid?.specificHeatRatio ? `, Specific Heat Ratio: ${pipe.fluid.specificHeatRatio}` : ""}
                     {pipe.fluid?.viscosity ? `, Viscosity: ${pipe.fluid.viscosity} ${pipe.fluid.viscosityUnit}` : ""}
                 </Typography>
+                {(() => {
+                    const warnings = getPipeWarnings(pipe);
+                    if (warnings.length > 0) {
+                        return (
+                            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                {warnings.map((w, i) => (
+                                    <Typography key={i} variant="caption" sx={{ color: "text.primary", fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{
+                                            width: 16,
+                                            height: 16,
+                                            borderRadius: "50%",
+                                            backgroundColor: "#fbbf24",
+                                            color: "#000",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "11px",
+                                            fontWeight: 800,
+                                            border: "1px solid",
+                                            borderColor: "text.primary",
+                                            boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                                            flexShrink: 0,
+                                        }}>
+                                            !
+                                        </Box>
+                                        {w}
+                                    </Typography>
+                                ))}
+                            </Box>
+                        );
+                    }
+                    return null;
+                })()}
             </Box>
 
             <IOSListGroup>

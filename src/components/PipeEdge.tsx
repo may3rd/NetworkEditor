@@ -5,11 +5,13 @@ import {
     type EdgeProps,
 } from "@xyflow/react";
 import { useTheme } from "@mui/material";
+import { ErrorOutline } from "@mui/icons-material";
 import { useState, useRef } from "react";
 import { HoverCard } from "./HoverCard";
 import { PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { getPipeStatus } from "@/utils/velocityCriteria";
+import { getPipeWarnings } from "@/utils/validationUtils";
 
 
 export default function PipeEdge({
@@ -86,7 +88,8 @@ export default function PipeEdge({
 
     const needsAttention = pipe && (
         pipe.pressureDropCalculationResults?.totalSegmentPressureDrop === undefined ||
-        pipe.resultSummary?.outletState === undefined
+        pipe.resultSummary?.outletState === undefined ||
+        (Math.abs(convertUnit(pipe.elevation || 0, pipe.elevationUnit || "m", "m")) > convertUnit(pipe.length || 0, pipe.lengthUnit || "m", "m"))
     );
 
     return (
@@ -241,21 +244,22 @@ export default function PipeEdge({
                                     { label: "Mass Flow", value: `${pipe.massFlowRate ?? 0} ${pipe.massFlowRateUnit ?? "kg/h"}` },
                                 ];
 
+                                let rows: Array<{ label: string; value: string | number | React.ReactNode }> = [];
                                 if (pipe.pipeSectionType === "control valve") {
-                                    return [
+                                    rows = [
                                         ...commonRows,
                                         { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
                                         { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.controlValvePressureDrop ? `${(pipe.pressureDropCalculationResults.controlValvePressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
                                     ];
                                 } else if (pipe.pipeSectionType === "orifice") {
-                                    return [
+                                    rows = [
                                         ...commonRows,
                                         { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
                                         { label: "Beta Ratio", value: pipe.orifice?.betaRatio ?? "N/A" },
                                         { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.orificePressureDrop ? `${(pipe.pressureDropCalculationResults.orificePressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
                                     ];
                                 } else {
-                                    return [
+                                    rows = [
                                         ...commonRows,
                                         { label: "Diameter", value: `${pipe.diameter ?? 0} ${pipe.diameterUnit ?? "mm"}` },
                                         { label: "Length", value: `${(pipe.length ?? 0).toFixed(3)} ${pipe.lengthUnit ?? "m"}` },
@@ -263,6 +267,22 @@ export default function PipeEdge({
                                         { label: "Pressure Drop", value: pipe.pressureDropCalculationResults?.totalSegmentPressureDrop ? `${(pipe.pressureDropCalculationResults.totalSegmentPressureDrop / 1000).toFixed(2)} kPa` : "N/A" },
                                     ];
                                 }
+
+                                const warnings = getPipeWarnings(pipe);
+                                if (warnings.length > 0) {
+                                    warnings.forEach(w => {
+                                        rows.push({
+                                            label: "",
+                                            value: (
+                                                <span style={{ color: theme.palette.error.main, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <ErrorOutline sx={{ fontSize: 16 }} /> {w}
+                                                </span>
+                                            )
+                                        });
+                                    });
+                                }
+
+                                return rows;
                             })()}
                         />
                     </div>

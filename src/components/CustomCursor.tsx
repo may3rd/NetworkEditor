@@ -5,9 +5,10 @@ import { Box, useTheme } from '@mui/material';
 type CustomCursorProps = {
     isAddingNode: boolean;
     nodeSize: number;
+    containerRef: React.RefObject<HTMLDivElement | null>;
 };
 
-export function CustomCursor({ isAddingNode, nodeSize }: CustomCursorProps) {
+export function CustomCursor({ isAddingNode, nodeSize, containerRef }: CustomCursorProps) {
     const theme = useTheme();
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const zoom = useStore((state: any) => state.transform[2]);
@@ -16,12 +17,18 @@ export function CustomCursor({ isAddingNode, nodeSize }: CustomCursorProps) {
         if (!isAddingNode) return;
 
         const handleMouseMove = (event: MouseEvent) => {
-            setPosition({ x: event.clientX, y: event.clientY });
+            if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                setPosition({
+                    x: event.clientX - rect.left,
+                    y: event.clientY - rect.top
+                });
+            }
         };
 
         window.addEventListener('mousemove', handleMouseMove);
         return () => window.removeEventListener('mousemove', handleMouseMove);
-    }, [isAddingNode]);
+    }, [isAddingNode, containerRef]);
 
     if (!isAddingNode) return null;
 
@@ -31,11 +38,11 @@ export function CustomCursor({ isAddingNode, nodeSize }: CustomCursorProps) {
     return (
         <Box
             sx={{
-                position: 'fixed',
+                position: 'absolute',
                 top: 0,
                 left: 0,
                 pointerEvents: 'none',
-                zIndex: 9999,
+                zIndex: 5,
                 transform: `translate(${position.x - radius}px, ${position.y - radius}px)`,
             }}
         >

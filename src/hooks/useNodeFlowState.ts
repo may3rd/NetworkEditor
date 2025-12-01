@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { NodeProps, PipeProps, NodeFlowRole, NodeFlowState } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { validateNodeConfiguration } from "@/utils/nodeUtils";
+import { getNodeWarnings } from "@/utils/validationUtils";
 
 export function useNodeFlowState(nodes: NodeProps[], pipes: PipeProps[]) {
     const nodeFlowStates = useMemo<Record<string, NodeFlowState>>(() => {
@@ -66,52 +67,13 @@ export function useNodeFlowState(nodes: NodeProps[], pipes: PipeProps[]) {
                 role = "middle";
             }
 
-            const missingPressure = typeof node.pressure !== "number";
-            const missingTemperature = typeof node.temperature !== "number";
-
-            const incomingSourcePipes = asSource.filter(pipe => normalizeDirection(pipe) === "backward");
-            const incomingTargetPipes = asTarget.filter(pipe => normalizeDirection(pipe) === "forward");
-
-            const incomingPressures: number[] = [];
-            incomingSourcePipes.forEach(pipe => {
-                const pressure = pipe.resultSummary?.inletState?.pressure;
-                if (typeof pressure === "number") {
-                    incomingPressures.push(pressure);
-                }
-            });
-            incomingTargetPipes.forEach(pipe => {
-                const pressure = pipe.resultSummary?.outletState?.pressure;
-                if (typeof pressure === "number") {
-                    incomingPressures.push(pressure);
-                }
-            });
-
-            let flowMismatch = false;
-            if ((role === "sink" || role === "middle") && !missingPressure && incomingPressures.length > 0) {
-                const nodePressurePa = convertUnit(
-                    node.pressure as number,
-                    node.pressureUnit ?? "kPag",
-                    "Pa",
-                );
-                if (typeof nodePressurePa === "number" && Number.isFinite(nodePressurePa)) {
-                    const hasMatch = incomingPressures.some(
-                        stagePressure => Math.abs(stagePressure - nodePressurePa) <= PRESSURE_TOLERANCE,
-                    );
-                    flowMismatch = !hasMatch;
-                }
-            }
-
             const validation = validateNodeConfiguration(node, pipes);
-            const needsAttention = missingPressure || missingTemperature || flowMismatch || !validation.isValid;
+            const warnings = getNodeWarnings(node, role, pipes);
+            const needsAttention = warnings.length > 0 || !validation.isValid;
 
             // Debug logging
             if (needsAttention) {
-                console.log(`Node ${node.label} (${node.id}) needs attention:`, {
-                    missingPressure,
-                    missingTemperature,
-                    flowMismatch,
-                    invalidConfig: !validation.isValid
-                });
+                console.log(`Node ${node.label} (${node.id}) needs attention:`, { warnings, invalidConfig: !validation.isValid });
             }
 
             if (!validation.isValid) {

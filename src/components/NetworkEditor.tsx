@@ -229,6 +229,7 @@ export function NetworkEditor({
         forceLightMode,
         displayPressureUnit,
         isConnectingMode,
+        pipes: network.pipes,
       });
     },
     [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit, isConnectingMode]
@@ -936,6 +937,7 @@ function EditorCanvas({
         onToggleSnapshot={onToggleSnapshot}
         setShowBackgroundSettings={setShowBackgroundSettings}
         setIsAddingNode={setIsAddingNode}
+        isAddingNode={isAddingNode}
         onDelete={onDelete}
         selectedId={selectedId}
         selectedType={selectedType}
@@ -1039,8 +1041,8 @@ function EditorCanvas({
             style={{ background: "background.paper", opacity: 0.7, width: 140, height: 90 }}
           />
           <Controls />
-          <CustomCursor isAddingNode={isAddingNode} nodeSize={NODE_SIZE} />
         </ReactFlow>
+        <CustomCursor isAddingNode={isAddingNode} nodeSize={NODE_SIZE} containerRef={reactFlowWrapperRef} />
         <style jsx global>{`
           .react-flow.design-mode .react-flow__node {
             cursor: default !important;

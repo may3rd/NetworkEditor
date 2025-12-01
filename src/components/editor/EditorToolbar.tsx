@@ -47,6 +47,7 @@ type EditorToolbarProps = {
     onToggleSnapshot?: () => void;
     setShowBackgroundSettings: (show: boolean) => void;
     setIsAddingNode: (isAdding: boolean) => void;
+    isAddingNode: boolean;
     onDelete?: () => void;
     selectedId: string | null;
     selectedType: "node" | "pipe" | null;
@@ -83,6 +84,7 @@ export function EditorToolbar({
     onToggleSnapshot,
     setShowBackgroundSettings,
     setIsAddingNode,
+    isAddingNode,
     onDelete,
     selectedId,
     selectedType,
@@ -218,13 +220,6 @@ export function EditorToolbar({
                     </ButtonGroup>
 
                     <ButtonGroup variant="contained" aria-label="Edit tools">
-                        <Tooltip title="Add Node">
-                            <span>
-                                <IconButton onClick={() => setIsAddingNode(true)}>
-                                    <AddIcon />
-                                </IconButton>
-                            </span>
-                        </Tooltip>
                         <Tooltip title="Delete Selected">
                             <span>
                                 <IconButton onClick={onDelete} disabled={!selectedId}>
@@ -310,10 +305,41 @@ export function EditorToolbar({
                             <ToggleButton
                                 value="pan"
                                 selected={panModeEnabled}
-                                onChange={() => setPanModeEnabled(!panModeEnabled)}
+                                onChange={() => {
+                                    if (panModeEnabled) {
+                                        setPanModeEnabled(false);
+                                    } else {
+                                        setPanModeEnabled(true);
+                                        if (isAddingNode) {
+                                            setIsAddingNode(false);
+                                        }
+                                    }
+                                }}
                                 sx={{ width: 40, height: 40, border: 'none' }}
                             >
                                 <PanToolIcon />
+                            </ToggleButton>
+                        </Tooltip>
+                        <Tooltip title="Add Node">
+                            <ToggleButton
+                                value="add"
+                                selected={isAddingNode}
+                                onChange={() => {
+                                    if (isAddingNode) {
+                                        setIsAddingNode(false);
+                                    } else {
+                                        setIsAddingNode(true);
+                                        if (isConnectingMode && onToggleConnectingMode) {
+                                            onToggleConnectingMode();
+                                        }
+                                        if (panModeEnabled) {
+                                            setPanModeEnabled(false);
+                                        }
+                                    }
+                                }}
+                                sx={{ width: 40, height: 40, border: 'none' }}
+                            >
+                                <AddIcon />
                             </ToggleButton>
                         </Tooltip>
                         {onToggleConnectingMode && (
@@ -321,7 +347,14 @@ export function EditorToolbar({
                                 <ToggleButton
                                     value="connect"
                                     selected={isConnectingMode}
-                                    onChange={onToggleConnectingMode}
+                                    onChange={() => {
+                                        if (onToggleConnectingMode) {
+                                            onToggleConnectingMode();
+                                            if (!isConnectingMode && isAddingNode) {
+                                                setIsAddingNode(false);
+                                            }
+                                        }
+                                    }}
                                     sx={{ width: 40, height: 40, border: 'none' }}
                                 >
                                     <CableIcon />

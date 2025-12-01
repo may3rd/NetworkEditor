@@ -15,10 +15,12 @@ import {
 import { glassInputSx } from "@/lib/glassStyles";
 import {
     AutoFixHigh as AutoFixHighIcon,
+    ErrorOutline,
 } from "@mui/icons-material";
 import { NetworkState, NodeProps, NodePatch, PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { validateNodeConfiguration } from "@/utils/nodeUtils";
+import { getNodeWarnings } from "@/utils/validationUtils";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
 import { propagatePressure } from "@/lib/pressurePropagation";
 import { PlayArrow as PlayArrowIcon } from "@mui/icons-material";
@@ -201,6 +203,39 @@ export function NodeProperties({ node, network, onUpdateNode, onNetworkChange }:
 
     return (
         <Stack spacing={2}>
+            {/* Summary Box */}
+            <Stack
+                spacing={1}
+                sx={{
+                    p: 2,
+                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#ffffff",
+                    borderRadius: "10px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                }}
+            >
+                <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    {node.label || "Unnamed Node"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                    Role: {isSourceNode ? "Source" : node.fluid ? "Middle/Sink" : "Isolated"}
+                </Typography>
+                {(() => {
+                    const warnings = getNodeWarnings(node, isSourceNode ? "source" : "neutral", network.pipes);
+                    if (warnings.length > 0) {
+                        return (
+                            <Stack spacing={0.5} mt={1}>
+                                {warnings.map((w, i) => (
+                                    <Typography key={i} variant="caption" sx={{ color: "error.main", fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                        <ErrorOutline sx={{ fontSize: 16 }} /> {w}
+                                    </Typography>
+                                ))}
+                            </Stack>
+                        );
+                    }
+                    return null;
+                })()}
+            </Stack>
+
             <Stack spacing={2}>
                 <TextField
                     label="Label"

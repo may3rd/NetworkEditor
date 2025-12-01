@@ -6,6 +6,7 @@ import { Box, TextField, Typography, useTheme } from "@mui/material";
 import { Sync, PlayArrow } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
 import { propagatePressure } from "@/lib/pressurePropagation";
+import { getNodeWarnings } from "@/utils/validationUtils";
 import { RefObject } from "react";
 
 type Props = {
@@ -215,6 +216,39 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                 <Typography variant="body1" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
                     {node.fluid?.id || "No Fluid Defined"}
                 </Typography>
+                {(() => {
+                    const warnings = getNodeWarnings(node, isSourceNode ? "source" : "neutral", network.pipes);
+                    if (warnings.length > 0) {
+                        return (
+                            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                {warnings.map((w, i) => (
+                                    <Typography key={i} variant="caption" sx={{ color: "text.primary", fontWeight: 500, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <Box sx={{
+                                            width: 16,
+                                            height: 16,
+                                            borderRadius: "50%",
+                                            backgroundColor: "#fbbf24",
+                                            color: "#000",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            fontSize: "11px",
+                                            fontWeight: 800,
+                                            border: "1px solid",
+                                            borderColor: "text.primary",
+                                            boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                                            flexShrink: 0,
+                                        }}>
+                                            !
+                                        </Box>
+                                        {w}
+                                    </Typography>
+                                ))}
+                            </Box>
+                        );
+                    }
+                    return null;
+                })()}
             </Box>
 
             <IOSListGroup>
