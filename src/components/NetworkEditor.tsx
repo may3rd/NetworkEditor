@@ -46,6 +46,9 @@ import {
   InsertDriveFileOutlined as NoteAddIcon,
 } from "@mui/icons-material";
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
+import { useNetworkHotkeys } from "@/hooks/useNetworkHotkeys";
+import { useNodeFlowState } from "@/hooks/useNodeFlowState";
+import { EditorToolbar } from "./editor/EditorToolbar";
 import {
   ReactFlow,
   Background,
@@ -163,7 +166,7 @@ export function NetworkEditor({
   setViewSettings,
 }: NetworkEditorProps) {
   const theme = useTheme();
-  const [viewSettingsDialogOpen, setViewSettingsDialogOpen] = useState(false);
+
   // viewSettings state is now passed as prop
 
 
@@ -214,125 +217,7 @@ export function NetworkEditor({
     }
   }, [viewSettings, externalSetShowPressures, onNetworkChange, network]);
 
-  const nodeFlowStates = useMemo<Record<string, NodeFlowState>>(() => {
-    const PRESSURE_TOLERANCE = 0.001;
-    const connectionMap = new Map<
-      string,
-      { asSource: PipeProps[]; asTarget: PipeProps[] }
-    >();
-
-    network.nodes.forEach(node => {
-      connectionMap.set(node.id, { asSource: [], asTarget: [] });
-    });
-
-    network.pipes.forEach(pipe => {
-      connectionMap.get(pipe.startNodeId)?.asSource.push(pipe);
-      connectionMap.get(pipe.endNodeId)?.asTarget.push(pipe);
-    });
-
-    const normalizeDirection = (pipe: PipeProps) =>
-      pipe.direction === "backward" ? "backward" : "forward";
-
-    const states: Record<string, NodeFlowState> = {};
-
-    network.nodes.forEach(node => {
-      const connectionEntry = connectionMap.get(node.id);
-      const asSource = connectionEntry?.asSource ?? [];
-      const asTarget = connectionEntry?.asTarget ?? [];
-      const totalConnections = asSource.length + asTarget.length;
-      const isIsolated = totalConnections === 0;
-
-      const sourceDirections = asSource.map(normalizeDirection);
-      const targetDirections = asTarget.map(normalizeDirection);
-
-      const allSourceForward =
-        asSource.length === 0 || sourceDirections.every(direction => direction === "forward");
-      const allSourceBackward =
-        asSource.length === 0 || sourceDirections.every(direction => direction === "backward");
-      const anySourceBackward = sourceDirections.some(direction => direction === "backward");
-
-      const allTargetForward =
-        asTarget.length === 0 || targetDirections.every(direction => direction === "forward");
-      const allTargetBackward =
-        asTarget.length === 0 || targetDirections.every(direction => direction === "backward");
-      const anyTargetForward = targetDirections.some(direction => direction === "forward");
-
-      const incomingPipelineForward = asTarget.some(p => p.pipeSectionType === 'pipeline' && normalizeDirection(p) === 'forward');
-      const connectedToControlValve = [...asSource, ...asTarget].some(p => p.pipeSectionType === 'control valve');
-
-      const targetControlValve = asTarget.some(p => p.pipeSectionType === 'control valve');
-      const sourcePipelineBackward = asSource.some(p => p.pipeSectionType === 'pipeline' && normalizeDirection(p) === 'backward');
-
-      let role: NodeFlowRole = "neutral";
-      if (isIsolated) {
-        role = "isolated";
-      } else if ((incomingPipelineForward && connectedToControlValve) || (targetControlValve && sourcePipelineBackward)) {
-        role = "sink";
-      } else if (allSourceForward && allTargetBackward) {
-        role = "source";
-      } else if (allSourceBackward && allTargetForward) {
-        role = "sink";
-      } else if (anySourceBackward || anyTargetForward) {
-        role = "middle";
-      }
-
-      const missingPressure = typeof node.pressure !== "number";
-      const missingTemperature = typeof node.temperature !== "number";
-
-      const incomingSourcePipes = asSource.filter(pipe => normalizeDirection(pipe) === "backward");
-      const incomingTargetPipes = asTarget.filter(pipe => normalizeDirection(pipe) === "forward");
-
-      const incomingPressures: number[] = [];
-      incomingSourcePipes.forEach(pipe => {
-        const pressure = pipe.resultSummary?.inletState?.pressure;
-        if (typeof pressure === "number") {
-          incomingPressures.push(pressure);
-        }
-      });
-      incomingTargetPipes.forEach(pipe => {
-        const pressure = pipe.resultSummary?.outletState?.pressure;
-        if (typeof pressure === "number") {
-          incomingPressures.push(pressure);
-        }
-      });
-
-      let flowMismatch = false;
-      if ((role === "sink" || role === "middle") && !missingPressure && incomingPressures.length > 0) {
-        const nodePressurePa = convertUnit(
-          node.pressure as number,
-          node.pressureUnit ?? "kPag",
-          "Pa",
-        );
-        if (typeof nodePressurePa === "number" && Number.isFinite(nodePressurePa)) {
-          const hasMatch = incomingPressures.some(
-            stagePressure => Math.abs(stagePressure - nodePressurePa) <= PRESSURE_TOLERANCE,
-          );
-          flowMismatch = !hasMatch;
-        }
-      }
-
-      const validation = validateNodeConfiguration(node, network.pipes);
-      const needsAttention = missingPressure || missingTemperature || flowMismatch || !validation.isValid;
-
-      // Debug logging
-      if (needsAttention) {
-        console.log(`Node ${node.label} (${node.id}) needs attention:`, {
-          missingPressure,
-          missingTemperature,
-          flowMismatch,
-          invalidConfig: !validation.isValid
-        });
-      }
-
-      if (!validation.isValid) {
-        role = "isolated";
-      }
-
-      states[node.id] = { role, needsAttention };
-    });
-
-    return states;
-  }, [network.nodes, network.pipes]);
+  const nodeFlowStates = useNodeFlowState(network.nodes, network.pipes);
 
   const mapNodeToReactFlow = useCallback(
     (node: NodeProps, isSelected: boolean): Node => {
@@ -560,72 +445,7 @@ export function NetworkEditor({
   );
 
   // ── Keyboard Delete (Backspace / Delete) ───────────────────────────────
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Backspace" && e.key !== "Delete") return;
-      if (e.repeat) return;
-      if (!selectedId || !selectedType) return;
-
-      // Do not delete while typing in an input field
-      const active = document.activeElement;
-      if (
-        active &&
-        (active.tagName === "INPUT" ||
-          active.tagName === "TEXTAREA" ||
-          (active as HTMLElement).isContentEditable)
-      ) {
-        return;
-      }
-
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Use setTimeout to allow the event loop to clear before blocking with confirm
-      // This prevents issues where the dialog closes immediately or flashes
-      setTimeout(() => {
-        if (window.confirm(`Delete this ${selectedType}?`)) {
-          onDelete?.();
-        }
-      }, 10);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedId, selectedType, onDelete]);
-  // ───────────────────────────────────────────────────────────────────────
-
-  // ── Keyboard Undo/Redo (Ctrl+Z / Ctrl+Y) ───────────────────────────────
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "y" || e.key === "Z" || e.key === "Y")) {
-        // Do not trigger if focus is on an input
-        const active = document.activeElement;
-        if (
-          active &&
-          (active.tagName === "INPUT" ||
-            active.tagName === "TEXTAREA" ||
-            (active as HTMLElement).isContentEditable)
-        ) {
-          return;
-        }
-
-        e.preventDefault();
-
-        if (e.key === "z" || e.key === "Z") {
-          if (e.shiftKey) {
-            if (canRedo) onRedo?.();
-          } else {
-            if (canUndo) onUndo?.();
-          }
-        } else if (e.key === "y" || e.key === "Y") {
-          if (canRedo) onRedo?.();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onUndo, onRedo, canUndo, canRedo]);
+  // Hotkey logic moved to useNetworkHotkeys hook
   // ───────────────────────────────────────────────────────────────────────
 
   const handleRotateCW = useCallback(() => {
@@ -752,8 +572,8 @@ function EditorCanvas({
   defaultEdgeOptions,
   handleNodesChange,
   handleConnect,
-  canUndo,
-  canRedo,
+  canUndo = false,
+  canRedo = false,
   onUndo,
   onRedo,
   historyIndex,
@@ -817,19 +637,33 @@ function EditorCanvas({
   const [isAddingNode, setIsAddingNode] = useState(false);
   const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
-  const [isSpacePanning, setIsSpacePanning] = useState(false);
+
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
   const connectingHandleType = useRef<HandleType | null>(null);
   const reactFlowWrapperRef = useRef<HTMLDivElement | null>(null);
-  const backgroundInputRef = useRef<HTMLInputElement | null>(null);
+
   const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
   const NODE_SIZE = 20;
-  const [viewSettingsDialogOpen, setViewSettingsDialogOpen] = useState(false);
+
 
 
   useCopyPaste(network, onNetworkChange, onPaste);
+
+  const { isSpacePanning } = useNetworkHotkeys({
+    onDelete,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo,
+    selectedId,
+    selectedType,
+    isAddingNode,
+    setIsAddingNode,
+    isConnectingMode,
+    onToggleConnectingMode,
+  });
 
   const onConnectStart = useCallback(
     (_: MouseEvent | TouchEvent, { nodeId, handleType }: OnConnectStartParams) => {
@@ -1036,34 +870,7 @@ function EditorCanvas({
     [isAddingNode],
   );
 
-  const handleUploadBackground = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !onNetworkChange) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        onNetworkChange({
-          ...network,
-          backgroundImage: result,
-          backgroundImageSize: { width: img.width, height: img.height },
-          backgroundImageOpacity: 1,
-          backgroundImagePosition: { x: 0, y: 0 },
-          backgroundImageLocked: true,
-        });
-        setShowBackgroundSettings(true);
-      };
-      img.src = result;
-    };
-    reader.readAsDataURL(file);
-
-    // Reset input
-    if (backgroundInputRef.current) {
-      backgroundInputRef.current.value = "";
-    }
-  }, [network, onNetworkChange]);
 
   useEffect(() => {
     if (isConnectingMode) {
@@ -1071,94 +878,7 @@ function EditorCanvas({
     }
   }, [isConnectingMode]);
 
-  useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-
-      if (isAddingNode) {
-        event.preventDefault();
-        setIsAddingNode(false);
-      } else if (isConnectingMode && onToggleConnectingMode) {
-        event.preventDefault();
-        onToggleConnectingMode();
-      }
-    };
-
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isAddingNode, isConnectingMode, onToggleConnectingMode]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== "Space" || event.repeat) {
-        return;
-      }
-
-      const active = document.activeElement as HTMLElement | null;
-      if (
-        active &&
-        (active.tagName === "INPUT" ||
-          active.tagName === "TEXTAREA" ||
-          active.tagName === "SELECT" ||
-          active.tagName === "BUTTON" ||
-          active.isContentEditable)
-      ) {
-        return;
-      }
-
-      event.preventDefault();
-      setIsSpacePanning(true);
-    };
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.code !== "Space") {
-        return;
-      }
-      setIsSpacePanning(false);
-      lastMousePos.current = null;
-    };
-
-    const handleWindowBlur = () => {
-      setIsSpacePanning(false);
-      lastMousePos.current = null;
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    window.addEventListener("blur", handleWindowBlur);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      window.removeEventListener("blur", handleWindowBlur);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isSpacePanning) return;
-
-    const handleMouseMove = (event: MouseEvent) => {
-      if (lastMousePos.current) {
-        const dx = event.clientX - lastMousePos.current.x;
-        const dy = event.clientY - lastMousePos.current.y;
-        const { x, y, zoom } = getViewport();
-        setViewport({ x: x + dx, y: y + dy, zoom });
-      }
-      lastMousePos.current = { x: event.clientX, y: event.clientY };
-    };
-
-    const handleMouseUp = () => {
-      lastMousePos.current = null;
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isSpacePanning, getViewport, setViewport]);
+  // Hotkey logic moved to useNetworkHotkeys hook
 
   const isPanMode = panModeEnabled || isSpacePanning;
 
@@ -1205,236 +925,41 @@ function EditorCanvas({
         borderColor: "divider",
       }}
     >
-      <input
-        type="file"
-        accept="image/*"
-        ref={backgroundInputRef}
-        style={{ display: "none" }}
-        onChange={handleUploadBackground}
+      <EditorToolbar
+        network={network}
+        onNetworkChange={onNetworkChange}
+        onNew={onNew}
+        onLoad={onLoad}
+        onSave={onSave}
+        onExport={onExport}
+        onToggleSummary={onToggleSummary}
+        onToggleSnapshot={onToggleSnapshot}
+        setShowBackgroundSettings={setShowBackgroundSettings}
+        setIsAddingNode={setIsAddingNode}
+        onDelete={onDelete}
+        selectedId={selectedId}
+        selectedType={selectedType}
+        onUndo={onUndo}
+        canUndo={canUndo}
+        onRedo={onRedo}
+        canRedo={canRedo}
+        handleRotateCW={handleRotateCW}
+        handleRotateCCW={handleRotateCCW}
+        handleSwapLeftRight={handleSwapLeftRight}
+        handleSwapUpDown={handleSwapUpDown}
+        snapToGrid={snapToGrid}
+        setSnapToGrid={setSnapToGrid}
+        showGrid={showGrid}
+        setShowGrid={setShowGrid}
+        panModeEnabled={panModeEnabled}
+        setPanModeEnabled={setPanModeEnabled}
+        isConnectingMode={isConnectingMode}
+        onToggleConnectingMode={onToggleConnectingMode}
+        isAnimationEnabled={isAnimationEnabled}
+        onToggleAnimation={onToggleAnimation}
+        viewSettings={viewSettings}
+        setViewSettings={setViewSettings}
       />
-      {/* Toolbar */}
-      <Stack
-        direction="row"
-        alignItems="center"
-        spacing={2}
-        sx={{
-          height: 64,
-          width: "100%",
-          flexShrink: 0,
-          bgcolor: "background.paper",
-          borderBottom: "1px solid",
-          borderColor: "divider",
-          px: 2,
-          zIndex: 10,
-          pl: 1.5,
-        }}
-      >
-        <Stack direction="row" spacing={2}>
-          <ButtonGroup variant="contained" aria-label="File tools">
-            <Tooltip title="New">
-              <span>
-                <IconButton onClick={onNew} disabled={!onNew}>
-                  <NoteAddIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Load">
-              <span>
-                <IconButton onClick={onLoad} disabled={!onLoad}>
-                  <LoadIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Save">
-              <span>
-                <IconButton onClick={onSave} disabled={!onSave}>
-                  <SaveIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Export">
-              <span>
-                <IconButton onClick={onExport} disabled={!onExport}>
-                  <ExportIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            {onToggleSummary && (
-              <Tooltip title="Summary Table">
-                <IconButton onClick={onToggleSummary}>
-                  <TableChartIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip title="Upload Background">
-              <IconButton onClick={() => backgroundInputRef.current?.click()}>
-                <WallpaperIcon />
-              </IconButton>
-            </Tooltip>
-            {network.backgroundImage && (
-              <Tooltip title="Background Settings">
-                <IconButton onClick={() => setShowBackgroundSettings(true)}>
-                  <SettingsIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-          </ButtonGroup>
-
-          <ButtonGroup variant="contained" aria-label="Edit tools">
-            <Tooltip title="Add Node">
-              <span>
-                <IconButton onClick={() => setIsAddingNode(true)}>
-                  <AddIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Delete Selected">
-              <span>
-                <IconButton onClick={onDelete} disabled={!selectedId}>
-                  <DeleteIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Undo">
-              <span>
-                <IconButton onClick={onUndo} disabled={!canUndo}>
-                  <UndoIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Redo">
-              <span>
-                <IconButton onClick={onRedo} disabled={!canRedo}>
-                  <RedoIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </ButtonGroup>
-
-          <ButtonGroup variant="contained" aria-label="Rotation tools">
-            <Tooltip title="Rotate 90° CW">
-              <span>
-                <IconButton onClick={handleRotateCW} disabled={!selectedId || selectedType !== "node"}>
-                  <RotateRightIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Rotate 90° CCW">
-              <span>
-                <IconButton onClick={handleRotateCCW} disabled={!selectedId || selectedType !== "node"}>
-                  <RotateLeftIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Swap Left-Right">
-              <span>
-                <IconButton
-                  onClick={handleSwapLeftRight}
-                  disabled={!selectedId || selectedType !== "node" || (network.nodes.find(n => n.id === selectedId)?.rotation ?? 0) % 180 !== 0}
-                >
-                  <SwapHorizIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Swap Up-Down">
-              <span>
-                <IconButton
-                  onClick={handleSwapUpDown}
-                  disabled={!selectedId || selectedType !== "node" || (network.nodes.find(n => n.id === selectedId)?.rotation ?? 0) % 180 !== 90}
-                >
-                  <SwapVertIcon />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </ButtonGroup>
-
-          <ButtonGroup variant="contained" aria-label="View tools">
-            <Tooltip title="Snap to Grid">
-              <ToggleButton
-                value="snap"
-                selected={snapToGrid}
-                onChange={() => setSnapToGrid(!snapToGrid)}
-                sx={{ width: 40, height: 40, border: 'none' }}
-              >
-                <GridIcon />
-              </ToggleButton>
-            </Tooltip>
-            <Tooltip title="Show Grid">
-              <ToggleButton
-                value="grid"
-                selected={showGrid}
-                onChange={() => setShowGrid(!showGrid)}
-                sx={{ width: 40, height: 40, border: 'none' }}
-              >
-                <GridOnIcon />
-              </ToggleButton>
-            </Tooltip>
-            <Tooltip title="Pan Mode">
-              <ToggleButton
-                value="pan"
-                selected={panModeEnabled}
-                onChange={() => setPanModeEnabled(!panModeEnabled)}
-                sx={{ width: 40, height: 40, border: 'none' }}
-              >
-                <PanToolIcon />
-              </ToggleButton>
-            </Tooltip>
-            {onToggleConnectingMode && (
-              <Tooltip title="Connecting Mode">
-                <ToggleButton
-                  value="connect"
-                  selected={isConnectingMode}
-                  onChange={onToggleConnectingMode}
-                  sx={{ width: 40, height: 40, border: 'none' }}
-                >
-                  <CableIcon />
-                </ToggleButton>
-              </Tooltip>
-            )}
-            {onToggleAnimation && (
-              <Tooltip title="Flow Animation">
-                <ToggleButton
-                  value="animation"
-                  selected={isAnimationEnabled}
-                  onChange={onToggleAnimation}
-                  sx={{ width: 40, height: 40, border: 'none' }}
-                >
-                  <DirectionsRunIcon />
-                </ToggleButton>
-              </Tooltip>
-            )}
-            <ViewSettingsDialog
-              open={viewSettingsDialogOpen}
-              onClose={() => setViewSettingsDialogOpen(false)}
-              settings={viewSettings}
-              onSettingsChange={setViewSettings}
-            />
-            <Tooltip title="View Settings">
-              <IconButton onClick={() => setViewSettingsDialogOpen(true)} sx={{ width: 40, height: 40 }}>
-                <SettingsIcon />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Toggle Dark Mode">
-              <IconButton onClick={toggleColorMode} sx={{ width: 40, height: 40 }}>
-                <DarkModeIcon />
-              </IconButton>
-            </Tooltip>
-          </ButtonGroup>
-        </Stack>
-
-        <Box sx={{ flexGrow: 1 }} />
-
-        {/* <Box sx={{ display: 'flex', alignItems: 'center', px: 2, fontSize: '0.75rem', color: 'text.secondary' }}>
-          {canUndo || canRedo ? `${(historyIndex ?? 0) + 1} / ${historyLength ?? 0}` : "No history"}
-        </Box> */}
-        {onToggleSnapshot && (
-          <Tooltip title="Network Snapshot">
-            <IconButton onClick={onToggleSnapshot}>
-              <VisibilityIcon />
-            </IconButton>
-          </Tooltip>
-        )}
-      </Stack>
 
       {/* React Flow */}
       <div

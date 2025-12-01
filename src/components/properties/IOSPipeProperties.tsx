@@ -111,7 +111,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
             if (!currentPipe) return null;
             return (
                 <Box sx={{ pt: 2 }}>
-                    <IOSListGroup header="General">
+                    <IOSListGroup>
                         <IOSListItem
                             label="Name"
                             value={currentPipe.name}

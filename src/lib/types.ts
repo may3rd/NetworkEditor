@@ -603,3 +603,10 @@ export type ViewSettings = {
     };
   };
 };
+
+export type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
+
+export type NodeFlowState = {
+  role: NodeFlowRole;
+  needsAttention: boolean;
+};

@@ -217,7 +217,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                 </Typography>
             </Box>
 
-            <IOSListGroup header="General">
+            <IOSListGroup>
                 <IOSListItem
                     label="Label"
                     value={node.label}
@@ -233,7 +233,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                 />
             </IOSListGroup>
 
-            <IOSListGroup header="State">
+            <IOSListGroup>
                 <IOSListItem
                     label="Pressure"
                     value={`${node.pressure?.toFixed(2) ?? "-"} ${node.pressureUnit ?? ""}`}

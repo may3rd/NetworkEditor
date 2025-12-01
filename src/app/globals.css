@@ -5,5 +5,14 @@
 html,
 body {
   height: 100%;
-  font-size: small;
+  /* Remove font-size: small to let MUI handle typography */
+}
+
+body {
+  /* Subtle gradient background that adapts to the theme via MUI's CssBaseline, 
+     but we can add a base gradient here if needed. 
+     For now, let's keep it simple and rely on MUI's background.default 
+     which we've set to a nice slate color. 
+     We can add a very subtle mesh gradient if desired later. */
+  background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 50%);
 }
