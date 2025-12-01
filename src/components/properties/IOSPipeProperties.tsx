@@ -334,7 +334,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     onClick={() => navigator.push("Service Type", (net, nav) => {
                         const currentPipe = net.pipes.find(p => p.id === pipe.id);
                         if (!currentPipe) return null;
-                        return <ServiceTypePage value={currentPipe.serviceType || ""} onChange={(v) => onUpdatePipe(pipe.id, { serviceType: v })} />;
+                        return <ServiceTypePage value={currentPipe.serviceType || ""} onChange={(v) => onUpdatePipe(pipe.id, { serviceType: v })} onOpenVelocityCriteria={() => setOpenVelocityCriteria(true)} />;
                     })}
                     chevron
                 />
@@ -399,18 +399,6 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     last
                 />
             </IOSListGroup>
-
-            {/* Add Velocity Criteria link here */}
-            <Box sx={{ pl: 3, pb: 2, mt: -2 }}>
-                <Typography
-                    variant="body2"
-                    color="primary"
-                    onClick={() => setOpenVelocityCriteria(true)}
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Velocity criteria...
-                </Typography>
-            </Box>
 
             <Dialog
                 open={openVelocityCriteria}

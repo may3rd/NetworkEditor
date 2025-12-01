@@ -71,19 +71,17 @@ function PressureNode({ data }: { data: NodeData }) {
 
   // In dark mode, we might want the selected state to be a bit different, 
   // but yellow #fde047 (Yellow 300) usually pops well on dark too.
-  const fillColor = isSelected ? "#fde047" : roleColor;
+  const fillColor = roleColor;
 
   // Use theme text color for border to adapt to light/dark mode automatically
-  const borderColor = theme.palette.text.primary;
-  const borderWidth = 1;
+  const borderColor = isSelected ? "#f59e0b" : theme.palette.text.primary;
+  const borderWidth = isSelected ? 2 : 1;
 
   const baseShadow = isDark
     ? "0 4px 12px rgba(0,0,0,0.5)"
     : "0 4px 12px rgba(0,0,0,0.15)";
 
-  const selectionShadow = isSelected
-    ? `${baseShadow}, 0 0 0 1px rgba(234, 179, 8, 0.5)`
-    : baseShadow;
+  const selectionShadow = baseShadow;
 
   const scaleAmount = isSelected ? 1 : 1;
   const circleSize = 20;

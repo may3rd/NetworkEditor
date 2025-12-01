@@ -417,7 +417,7 @@ export function GasFlowModelPage({ value, onChange }: { value: "adiabatic" | "is
     );
 }
 
-export function ServiceTypePage({ value, onChange }: { value: string, onChange: (val: string) => void }) {
+export function ServiceTypePage({ value, onChange, onOpenVelocityCriteria }: { value: string, onChange: (val: string) => void, onOpenVelocityCriteria: () => void }) {
     return (
         <Box sx={{ pt: 2 }}>
             <IOSListGroup>
@@ -431,6 +431,20 @@ export function ServiceTypePage({ value, onChange }: { value: string, onChange: 
                     />
                 ))}
             </IOSListGroup>
+            <Box sx={{ pl: 3, pb: 2, mt: -2 }}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "primary.main",
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        "&:hover": { textDecoration: "underline" }
+                    }}
+                    onClick={onOpenVelocityCriteria}
+                >
+                    Velocity criteria...
+                </Typography>
+            </Box>
         </Box>
     );
 }
@@ -1478,12 +1492,11 @@ export function PipeSummaryPage({ pipe, viewSettings, navigator }: { pipe: PipeP
             </IOSListGroup>
             <Box sx={{ pl: 3, pb: 2, mt: -2 }}>
                 <Typography
-                    variant="caption"
+                    variant="body2"
                     sx={{
                         color: "primary.main",
                         cursor: "pointer",
                         textDecoration: "none",
-                        fontSize: "12px",
                         "&:hover": { textDecoration: "underline" }
                     }}
                     onClick={() => setOpenVelocityCriteria(true)}
