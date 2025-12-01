@@ -9,6 +9,7 @@ import { useState, useRef } from "react";
 import { HoverCard } from "./HoverCard";
 import { PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
+import { getPipeStatus } from "@/utils/velocityCriteria";
 
 export default function PipeEdge({
     id,
@@ -86,6 +87,14 @@ export default function PipeEdge({
     const isFlowing = isAnimationEnabled && absVelocity > 0;
     const animationName = direction === "forward" ? "flowAnimationForward" : "flowAnimationBackward";
 
+    const status = pipe ? getPipeStatus(pipe) : { velocityStatus: { status: 'ok' }, pressureDropStatus: { status: 'ok' } };
+    let animationColor = theme.palette.info.main;
+    if (status.velocityStatus.status === 'error') {
+        animationColor = theme.palette.error.main;
+    } else if (status.velocityStatus.status === 'warning' || status.pressureDropStatus.status === 'warning') {
+        animationColor = theme.palette.warning.main;
+    }
+
     return (
         <>
             {isFlowing && (
@@ -125,7 +134,7 @@ export default function PipeEdge({
             {isFlowing && (
                 <path
                     d={edgePath}
-                    stroke={theme.palette.info.main}
+                    stroke={animationColor}
                     strokeWidth={3}
                     strokeDasharray="10 10"
                     fill="none"

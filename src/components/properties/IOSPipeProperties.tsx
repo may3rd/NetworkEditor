@@ -1,12 +1,13 @@
 import { PipeProps, NodeProps, PipePatch, ViewSettings, NetworkState } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { computeErosionalVelocity } from "@/lib/calculations/utils";
+import { getPipeStatus } from "@/utils/velocityCriteria";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps } from "@mui/material";
-import { Add, Check, Timeline } from "@mui/icons-material";
-import { RefObject, useEffect, useRef } from "react";
+import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import { Add, Check, Timeline, Close } from "@mui/icons-material";
+import { RefObject, useEffect, useRef, useState } from "react";
 
 function ControlValveIcon(props: SvgIconProps) {
     return (
@@ -54,7 +55,9 @@ import {
     ControlValvePage,
     OrificePage,
     NumberInputPage,
-    GasFlowModelPage
+    GasFlowModelPage,
+    ServiceTypePage,
+    VelocityCriteriaPage
 } from "./ios/PipeSubPages";
 
 type Props = {
@@ -77,6 +80,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const summaryRef = useRef<HTMLDivElement>(null);
+    const [openVelocityCriteria, setOpenVelocityCriteria] = useState(false);
 
     // Scroll listener for title fade-in
     useEffect(() => {
@@ -275,6 +279,16 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                     chevron
                 />
                 <IOSListItem
+                    label="Service Type"
+                    value={pipe.serviceType || "Select Service"}
+                    onClick={() => navigator.push("Service Type", (net, nav) => {
+                        const currentPipe = net.pipes.find(p => p.id === pipe.id);
+                        if (!currentPipe) return null;
+                        return <ServiceTypePage value={currentPipe.serviceType || ""} onChange={(v) => onUpdatePipe(pipe.id, { serviceType: v })} />;
+                    })}
+                    chevron
+                />
+                <IOSListItem
                     label="Direction"
                     value={pipe.direction === "backward" ? "Backward" : "Forward"}
                     onClick={() => navigator.push("Direction", (net, nav) => {
@@ -336,6 +350,53 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                 />
             </IOSListGroup>
 
+            {/* Add Velocity Criteria link here */}
+            <Box sx={{ pl: 3, pb: 2, mt: -2 }}>
+                <Typography
+                    variant="body2"
+                    color="primary"
+                    onClick={() => setOpenVelocityCriteria(true)}
+                    sx={{ cursor: 'pointer' }}
+                >
+                    Velocity criteria...
+                </Typography>
+            </Box>
+
+            <Dialog
+                open={openVelocityCriteria}
+                onClose={() => setOpenVelocityCriteria(false)}
+                maxWidth="lg"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: "16px",
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
+                    }
+                }}
+            >
+                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                        Velocity Criteria
+                    </Typography>
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOpenVelocityCriteria(false)}
+                        sx={{
+                            color: (theme) => theme.palette.grey[500],
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                            '&:hover': {
+                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                            },
+                        }}
+                        size="small"
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers sx={{ borderTop: 'none', borderBottom: 'none' }}>
+                    <VelocityCriteriaPage />
+                </DialogContent>
+            </Dialog>
 
             <IOSListGroup>
                 <IOSListItem
@@ -356,18 +417,21 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                         if (typeof pipe.velocity === 'number') {
                             const text = `Pipe Velocity: ${pipe.velocity.toFixed(3)} ${pipe.velocityUnit ?? "m/s"}`;
 
-                            // Check for erosional velocity limit
-                            const density = pipe.fluid?.density ?? startNode?.fluid?.density;
-                            const erosionalConstant = pipe.erosionalConstant ?? 100;
-                            const erosionalVelocity = computeErosionalVelocity(density, erosionalConstant);
-
-                            if (typeof erosionalVelocity === 'number' && pipe.velocity > erosionalVelocity) {
+                            const status = getPipeStatus(pipe);
+                            if (status.velocityStatus.status === 'error') {
                                 return (
-                                    <Typography component="span" sx={{ color: "error.main", fontSize: "inherit" }}>
-                                        {text} (Exceeded {erosionalVelocity.toFixed(2)} m/s)
+                                    <Typography component="span" sx={{ color: "error.main", fontSize: "inherit", fontWeight: 'bold' }}>
+                                        {text} ({status.velocityStatus.message})
+                                    </Typography>
+                                );
+                            } else if (status.velocityStatus.status === 'warning') {
+                                return (
+                                    <Typography component="span" sx={{ color: "warning.main", fontSize: "inherit", fontWeight: 'bold' }}>
+                                        {text} ({status.velocityStatus.message})
                                     </Typography>
                                 );
                             }
+
                             return text;
                         }
                         return undefined;
@@ -461,7 +525,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                         />
                         <IOSListItem
                             label="User Specified Drop"
-                            value={pipe.userSpecifiedPressureLoss ? `${pipe.userSpecifiedPressureLoss} ${pipe.userSpecifiedPressureLossUnit ?? "Pa"}` : "-"}
+                            value={pipe.userSpecifiedPressureLoss ? `${pipe.userSpecifiedPressureLoss.toFixed(3)} ${pipe.userSpecifiedPressureLossUnit ?? "Pa"}` : "-"}
                             onClick={() => navigator.push("User Specified Drop", (net, nav) => {
                                 const currentPipe = net.pipes.find(p => p.id === pipe.id);
                                 if (!currentPipe) return null;

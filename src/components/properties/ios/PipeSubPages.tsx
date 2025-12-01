@@ -9,6 +9,8 @@ import { IOSContainer } from "../../ios/IOSContainer";
 import { IOSTextField } from "../../ios/IOSTextField";
 import { IOSQuantityPage } from './IOSQuantityPage';
 import { VelocityCriteriaPage } from './VelocityCriteriaPage';
+export { VelocityCriteriaPage };
+import { SERVICE_TYPES } from "@/utils/velocityCriteria";
 import { Check, ArrowForwardIos, Add, Remove } from "@mui/icons-material";
 import { Navigator } from "../../PropertiesPanel";
 import { convertUnit } from "@/lib/unitConversion";
@@ -367,8 +369,8 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
             <IOSListGroup>
                 <IOSListItem
                     label="Copy from Node"
-                    onClick={openCopyFromNodePage}
                     textColor="primary.main"
+                    onClick={openCopyFromNodePage}
                     last
                 />
             </IOSListGroup>
@@ -380,24 +382,43 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
 
 // --- Gas Flow Model ---
 
-export const GasFlowModelPage = ({ value, onChange }: { value: "adiabatic" | "isothermal", onChange: (v: "adiabatic" | "isothermal") => void }) => (
-    <Box sx={{ pt: 4 }}>
-        <IOSListGroup>
-            <IOSListItem
-                label="Adiabatic"
-                value={value === "adiabatic" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
-                onClick={() => onChange("adiabatic")}
-            />
-            <IOSListItem
-                label="Isothermal"
-                value={value === "isothermal" ? <Check color="primary" sx={{ fontSize: 20 }} /> : ""}
-                onClick={() => onChange("isothermal")}
-                last
-            />
-        </IOSListGroup>
-    </Box>
-);
+export function GasFlowModelPage({ value, onChange }: { value: "adiabatic" | "isothermal", onChange: (val: "adiabatic" | "isothermal") => void }) {
+    return (
+        <Box sx={{ pt: 2 }}>
+            <IOSListGroup>
+                <IOSListItem
+                    label="Adiabatic"
+                    value={value === "adiabatic" ? <Check color="primary" sx={{ fontSize: 16 }} /> : ""}
+                    onClick={() => onChange("adiabatic")}
+                />
+                <IOSListItem
+                    label="Isothermal"
+                    value={value === "isothermal" ? <Check color="primary" sx={{ fontSize: 16 }} /> : ""}
+                    onClick={() => onChange("isothermal")}
+                    last
+                />
+            </IOSListGroup>
+        </Box>
+    );
+}
 
+export function ServiceTypePage({ value, onChange }: { value: string, onChange: (val: string) => void }) {
+    return (
+        <Box sx={{ pt: 2 }}>
+            <IOSListGroup header="Select Service Type">
+                {SERVICE_TYPES.map((type, index) => (
+                    <IOSListItem
+                        key={type}
+                        label={type}
+                        value={value === type ? <Check color="primary" sx={{ fontSize: 16 }} /> : ""}
+                        onClick={() => onChange(type)}
+                        last={index === SERVICE_TYPES.length - 1}
+                    />
+                ))}
+            </IOSListGroup>
+        </Box>
+    );
+}
 export const GasFlowModelSelectionPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
     const openModelPage = () => {
         navigator.push("Flow Model", (net, nav) => {

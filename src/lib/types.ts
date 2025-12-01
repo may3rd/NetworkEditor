@@ -146,6 +146,7 @@ export type PipeProps = {
   orifice?: Orifice;
   pressureDropCalculationResults?: PressureDropCalculationResults;
   resultSummary?: resultSummary,
+  serviceType?: string;
 };
 
 // Fluid propertis

@@ -186,10 +186,12 @@ export const VelocityCriteriaPage = () => {
                     <TableHead>
                         <TableRow>
                             <TableCell rowSpan={2} sx={{ fontWeight: 'bold', border: '1px solid rgba(224, 224, 224, 1)' }}>Services</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', border: '1px solid rgba(224, 224, 224, 1)' }}>Pipe diameter</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', border: '1px solid rgba(224, 224, 224, 1)' }}>Velocity</TableCell>
                             <TableCell align="center" sx={{ fontWeight: 'bold', border: '1px solid rgba(224, 224, 224, 1)' }}>Allowable pressure drop</TableCell>
                         </TableRow>
                         <TableRow>
+                            <TableCell align="center" sx={{ border: '1px solid rgba(224, 224, 224, 1)' }}>(NPS, inches)</TableCell>
                             <TableCell align="center" sx={{ border: '1px solid rgba(224, 224, 224, 1)' }}>(m/s)</TableCell>
                             <TableCell align="center" sx={{ border: '1px solid rgba(224, 224, 224, 1)' }}>(bar/100m)</TableCell>
                         </TableRow>
@@ -322,7 +324,7 @@ export const VelocityCriteriaPage = () => {
             <TableContainer component={Paper} elevation={0} sx={{ backgroundColor: 'background.paper' }}>
                 <Table sx={{ minWidth: 650 }} aria-label="existing liquid criteria table">
                     <caption style={{ captionSide: 'top', textAlign: 'center', fontWeight: 'bold', fontSize: '1.1rem', color: theme.palette.text.primary, padding: '10px' }}>
-                        Table 5.2.3 : Maximum velocity and pressure drop of Liquid for Verification of the existing pipeline
+                        Existing Liquid Line Criteria
                     </caption>
                     <TableHead>
                         <TableRow>
