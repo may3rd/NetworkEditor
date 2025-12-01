@@ -1,8 +1,8 @@
-import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio, IconButton } from "@mui/material";
+import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio, IconButton, Button } from "@mui/material";
 import { glassInputSx, glassSelectSx, glassRadioSx } from "@/lib/glassStyles";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
 import { getScheduleEntries, nearest_pipe_diameter, PIPE_FITTING_OPTIONS } from "../../PipeDimension";
-import { PipeProps, PipePatch, FittingType, ViewSettings } from "@/lib/types";
+import { PipeProps, PipePatch, FittingType, ViewSettings, NodeProps } from "@/lib/types";
 import { IOSListGroup } from "../../ios/IOSListGroup";
 import { IOSListItem } from "../../ios/IOSListItem";
 import { IOSContainer } from "../../ios/IOSContainer";
@@ -695,19 +695,51 @@ export const RoughnessPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdat
     />
 );
 
-export const LengthPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void }) => (
-    <IOSQuantityPage
-        label="Length"
-        value={pipe.length ?? ""}
-        unit={pipe.lengthUnit ?? "m"}
-        units={QUANTITY_UNIT_OPTIONS.length}
-        unitFamily="length"
-        onValueChange={(v) => onUpdatePipe(pipe.id, { length: v })}
-        onUnitChange={(u) => onUpdatePipe(pipe.id, { lengthUnit: u })}
-        min={0}
-        autoFocus
-    />
-);
+export const LengthPage = ({ pipe, onUpdatePipe, startNode, endNode }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, startNode?: NodeProps, endNode?: NodeProps }) => {
+    const handleEstimate = () => {
+        if (!startNode || !endNode || !pipe.length || !pipe.pressureDropCalculationResults?.totalSegmentPressureDrop) return;
+
+        const p1 = startNode.pressure;
+        const p2 = endNode.pressure;
+        if (typeof p1 !== 'number' || typeof p2 !== 'number') return;
+
+        const p1Pa = convertUnit(p1, startNode.pressureUnit || "Pa", "Pa");
+        const p2Pa = convertUnit(p2, endNode.pressureUnit || "Pa", "Pa");
+
+        const targetDeltaP = Math.abs(p1Pa - p2Pa);
+        const currentDeltaP = pipe.pressureDropCalculationResults.totalSegmentPressureDrop;
+
+        if (currentDeltaP <= 0) return;
+
+        const newLength = pipe.length * (targetDeltaP / currentDeltaP);
+        onUpdatePipe(pipe.id, { length: newLength });
+    };
+
+    return (
+        <IOSQuantityPage
+            label="Length"
+            value={pipe.length ?? ""}
+            unit={pipe.lengthUnit ?? "m"}
+            units={QUANTITY_UNIT_OPTIONS.length}
+            unitFamily="length"
+            onValueChange={(v) => onUpdatePipe(pipe.id, { length: v })}
+            onUnitChange={(u) => onUpdatePipe(pipe.id, { lengthUnit: u })}
+            min={0}
+            autoFocus
+            action={
+                <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={handleEstimate}
+                    disabled={!startNode || !endNode || !pipe.pressureDropCalculationResults?.totalSegmentPressureDrop}
+                    sx={{ borderRadius: "12px", textTransform: "none", fontSize: "14px" }}
+                >
+                    Estimate Length from Pressure Drop
+                </Button>
+            }
+        />
+    );
+};
 
 export const ElevationPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void }) => (
     <IOSQuantityPage
@@ -760,19 +792,19 @@ const OrificeInputModePage = ({ value, onChange }: { value: "beta_ratio" | "pres
     </Box>
 );
 
-export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator, viewSettings: ViewSettings }) => {
-    const cvData = pipe.controlValve || { id: "cv", inputMode: "cv" };
+export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings, startNode, endNode }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator, viewSettings: ViewSettings, startNode?: NodeProps, endNode?: NodeProps }) => {
+    const cvData = pipe.controlValve || { id: "cv", inputMode: "pressure_drop" };
     const isGas = pipe.fluid?.phase === "gas";
-    const inputMode = cvData.inputMode || "cv";
+    const inputMode = cvData.inputMode || "pressure_drop";
 
     const openInputModePage = () => {
         navigator.push("Input Mode", (net, nav) => {
             const currentPipe = net.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
-            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "pressure_drop" };
             return (
                 <ControlValveInputModePage
-                    value={currentCV.inputMode || "cv"}
+                    value={currentCV.inputMode || "pressure_drop"}
                     onChange={(v) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, inputMode: v } })}
                 />
             );
@@ -783,7 +815,7 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
         navigator.push("CV Value", (net, nav) => {
             const currentPipe = net.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
-            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "pressure_drop" };
             return (
                 <NumberInputPage
                     value={currentCV.cv}
@@ -800,7 +832,7 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
         navigator.push("Cg Value", (net, nav) => {
             const currentPipe = net.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
-            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "pressure_drop" };
             return (
                 <NumberInputPage
                     value={currentCV.cg}
@@ -817,7 +849,24 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
         navigator.push("Pressure Drop", (net, nav) => {
             const currentPipe = net.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
-            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "cv" };
+            const currentCV = currentPipe.controlValve || { id: "cv", inputMode: "pressure_drop" };
+
+            const handleDefineFromNodes = () => {
+                if (!startNode || !endNode) return;
+                const p1 = startNode.pressure;
+                const p2 = endNode.pressure;
+                if (typeof p1 !== 'number' || typeof p2 !== 'number') return;
+
+                const p1Pa = convertUnit(p1, startNode.pressureUnit || "Pa", "Pa");
+                const p2Pa = convertUnit(p2, endNode.pressureUnit || "Pa", "Pa");
+                const deltaP_Pa = Math.abs(p1Pa - p2Pa);
+
+                const targetUnit = currentCV.pressureDropUnit || "kPa";
+                const deltaP_Target = convertUnit(deltaP_Pa, "Pa", targetUnit);
+
+                onUpdatePipe(pipe.id, { controlValve: { ...currentCV, pressureDrop: deltaP_Target } });
+            };
+
             return (
                 <IOSQuantityPage
                     label="Pressure Drop"
@@ -829,6 +878,17 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings }
                     onUnitChange={(u) => onUpdatePipe(pipe.id, { controlValve: { ...currentCV, pressureDropUnit: u } })}
                     min={0}
                     autoFocus
+                    action={
+                        <Button
+                            variant="outlined"
+                            fullWidth
+                            onClick={handleDefineFromNodes}
+                            disabled={!startNode || !endNode}
+                            sx={{ borderRadius: "12px", textTransform: "none", fontSize: "14px" }}
+                        >
+                            Define from nodes
+                        </Button>
+                    }
                 />
             );
         });
@@ -1278,20 +1338,20 @@ export function PipeSummaryPage({ pipe, viewSettings }: { pipe: PipeProps, viewS
 
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header="K-Value">
+            <IOSListGroup>
                 <IOSListItem label="Pipe" value={results?.pipeLengthK?.toFixed(3) ?? "-"} />
                 <IOSListItem label="Fittings" value={results?.fittingK?.toFixed(3) ?? "-"} />
                 <IOSListItem label="Total" value={results?.totalK?.toFixed(3) ?? "-"} last />
             </IOSListGroup>
 
-            <IOSListGroup header="Characteristic Summary">
+            <IOSListGroup>
                 <IOSListItem label="Reynolds Number" value={results?.reynoldsNumber?.toFixed(0) ?? "-"} />
                 <IOSListItem label="Flow Scheme" value={results?.flowScheme ?? "-"} />
                 <IOSListItem label="Friction Factor" value={results?.frictionalFactor?.toFixed(4) ?? "-"} />
                 <IOSListItem label="Velocity" value={formatVelocity(velocity) ?? "-"} last />
             </IOSListGroup>
 
-            <IOSListGroup header="Pressure Loss Summary">
+            <IOSListGroup>
                 <IOSListItem label="Pipe & Fitting" value={formatPressure(results?.pipeAndFittingPressureDrop) ?? "-"} />
                 <IOSListItem label="Elevation Change" value={formatPressure(results?.elevationPressureDrop) ?? "-"} />
                 <IOSListItem label="User supplied K" value="-" />

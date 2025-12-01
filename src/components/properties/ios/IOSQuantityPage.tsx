@@ -4,7 +4,7 @@ import { IOSTextField } from "../../ios/IOSTextField";
 import { IOSListGroup } from "../../ios/IOSListGroup";
 import { IOSListItem } from "../../ios/IOSListItem";
 import { convertUnit, UnitFamily } from "@/lib/unitConversion";
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, ReactNode } from "react";
 
 type Props = {
     label: string;
@@ -18,6 +18,7 @@ type Props = {
     min?: number;
     placeholder?: string;
     autoFocus?: boolean;
+    action?: ReactNode;
 };
 
 export function IOSQuantityPage({
@@ -32,6 +33,7 @@ export function IOSQuantityPage({
     min,
     placeholder,
     autoFocus,
+    action,
 }: Props) {
     const [inputValue, setInputValue] = useState<string>("");
     const [localUnit, setLocalUnit] = useState<string>(unit);
@@ -63,15 +65,19 @@ export function IOSQuantityPage({
         return val;
     }, []);
 
-    // Sync input value with prop value only on mount
+    // Sync input value with prop value
     useEffect(() => {
         setInputValue(formatValue(value));
         if (typeof value === 'number') {
             valueRef.current = value;
         }
-        setLocalUnit(unit); // Initialize localUnit from prop
-        unitRef.current = unit; // Initialize unitRef from prop
-    }, []); // Only run once on mount
+    }, [value, formatValue]);
+
+    // Sync unit with prop unit
+    useEffect(() => {
+        setLocalUnit(unit);
+        unitRef.current = unit;
+    }, [unit]);
 
     // Commit changes on unmount
     useEffect(() => {
@@ -158,7 +164,7 @@ export function IOSQuantityPage({
                 />
             </IOSListGroup>
 
-            <IOSListGroup header="Unit">
+            <IOSListGroup>
                 {units.map((u) => (
                     <IOSListItem
                         key={u}
@@ -169,6 +175,12 @@ export function IOSQuantityPage({
                     />
                 ))}
             </IOSListGroup>
+
+            {action && (
+                <Box sx={{ px: 2 }}>
+                    {action}
+                </Box>
+            )}
         </Box>
     );
 }

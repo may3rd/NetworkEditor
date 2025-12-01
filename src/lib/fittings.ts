@@ -41,6 +41,13 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
     if (updatedControlValve) {
       pipe = { ...pipe, controlValve: updatedControlValve };
     }
+    return {
+      ...pipe,
+      velocity: pipeLengthCompForSummary.velocity,
+      velocityUnit: "m/s",
+      pressureDropCalculationResults: pressureDropResults,
+      resultSummary,
+    };
   } else if (pipe.pipeSectionType === "orifice") {
     const { results, updatedOrifice } = calculateOrificePressureDrop(pipe, context);
     pressureDropResults = results;
@@ -48,6 +55,13 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
     if (updatedOrifice) {
       pipe = { ...pipe, orifice: updatedOrifice };
     }
+    return {
+      ...pipe,
+      velocity: pipeLengthCompForSummary.velocity,
+      velocityUnit: "m/s",
+      pressureDropCalculationResults: pressureDropResults,
+      resultSummary,
+    };
   } else {
     // Default to pipeline calculation
     const fittingResult = computeFittingContribution(pipe, context);
@@ -65,6 +79,8 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
         totalK: pipeResult.totalK,
         equivalentLength: pipeResult.equivalentLength,
         fittings: fittingResult.fittings,
+        velocity: pipeResult.velocity,
+        velocityUnit: "m/s",
         pressureDropCalculationResults: gasResults.pressureDropResults,
         resultSummary: gasResults.resultSummary,
       };
@@ -85,6 +101,8 @@ export function recalculatePipeFittingLosses(pipe: PipeProps): PipeProps {
       totalK: pipeResult.totalK,
       equivalentLength: pipeResult.equivalentLength,
       fittings: fittingResult.fittings,
+      velocity: pipeResult.velocity,
+      velocityUnit: "m/s",
       pressureDropCalculationResults: pressureDropResults,
       resultSummary,
     };

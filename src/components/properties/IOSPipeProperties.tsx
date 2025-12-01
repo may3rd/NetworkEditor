@@ -1,10 +1,11 @@
 import { PipeProps, NodeProps, PipePatch, ViewSettings, NetworkState } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
+import { computeErosionalVelocity } from "@/lib/calculations/utils";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, Switch, IconButton, Typography, Stack, useTheme, SvgIcon, SvgIconProps } from "@mui/material";
-import { Add, Check, Timeline, InfoOutlined } from "@mui/icons-material";
+import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps } from "@mui/material";
+import { Add, Check, Timeline } from "@mui/icons-material";
 import { RefObject, useEffect, useRef } from "react";
 
 function ControlValveIcon(props: SvgIconProps) {
@@ -186,7 +187,16 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
         navigator.push("Length", (network: NetworkState, nav: Navigator) => {
             const currentPipe = network.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
-            return <LengthPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} />;
+
+            const currentStartNode = network.nodes.find(n => n.id === currentPipe.startNodeId);
+            const currentEndNode = network.nodes.find(n => n.id === currentPipe.endNodeId);
+
+            return <LengthPage
+                pipe={currentPipe}
+                onUpdatePipe={onUpdatePipe}
+                startNode={currentStartNode}
+                endNode={currentEndNode}
+            />;
         });
     };
 
@@ -217,11 +227,23 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
     return (
         <Box sx={{ pb: 4 }}>
             {/* Top Summary Section */}
-            <Box ref={summaryRef} sx={{ px: 2, py: 3, display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+            <Box ref={summaryRef} sx={{
+                px: 3,
+                py: 3,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                textAlign: "left",
+                backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
+                mx: 2,
+                borderRadius: "10px",
+                mb: 2,
+                mt: 2,
+            }}>
                 <Box sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: "16px",
+                    width: 60,
+                    height: 60,
+                    borderRadius: "14px",
                     backgroundColor: getIconBgColor(),
                     display: "flex",
                     alignItems: "center",
@@ -231,12 +253,18 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                 }}>
                     {getIcon()}
                 </Box>
-                <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: isDark ? "#fff" : "#000" }}>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: isDark ? "#fff" : "#000", letterSpacing: "-0.5px" }}>
                     {pipe.name || "Unnamed Pipe"}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "text.secondary", maxWidth: "80%" }}>
+                <Typography variant="body1" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
                     {pipe.description ? pipe.description : "No description"}
-                    {pipe.fluid?.id ? ` • ${pipe.fluid.id}` : ""}
+                    {pipe.fluid?.id ? ` • Fluid: ${pipe.fluid.id}` : ""}
+                    {pipe.fluid?.phase ? `, Phase: ${pipe.fluid.phase}` : ""}
+                    {pipe.fluid?.density ? `, Density: ${pipe.fluid.density} ${pipe.fluid.densityUnit}` : ""}
+                    {pipe.fluid?.molecularWeight ? `, Molecular Weight: ${pipe.fluid.molecularWeight}` : ""}
+                    {pipe.fluid?.zFactor ? `, Z Factor: ${pipe.fluid.zFactor}` : ""}
+                    {pipe.fluid?.specificHeatRatio ? `, Specific Heat Ratio: ${pipe.fluid.specificHeatRatio}` : ""}
+                    {pipe.fluid?.viscosity ? `, Viscosity: ${pipe.fluid.viscosity} ${pipe.fluid.viscosityUnit}` : ""}
                 </Typography>
             </Box>
 
@@ -324,11 +352,41 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                         if (!currentPipe) return null;
                         return <DiameterPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} navigator={nav} />;
                     })}
+                    secondary={(() => {
+                        if (typeof pipe.velocity === 'number') {
+                            const text = `Pipe Velocity: ${pipe.velocity.toFixed(3)} ${pipe.velocityUnit ?? "m/s"}`;
+
+                            // Check for erosional velocity limit
+                            const density = pipe.fluid?.density ?? startNode?.fluid?.density;
+                            const erosionalConstant = pipe.erosionalConstant ?? 100;
+                            const erosionalVelocity = computeErosionalVelocity(density, erosionalConstant);
+
+                            if (typeof erosionalVelocity === 'number' && pipe.velocity > erosionalVelocity) {
+                                return (
+                                    <Typography component="span" sx={{ color: "error.main", fontSize: "inherit" }}>
+                                        {text} (Exceeded {erosionalVelocity.toFixed(2)} m/s)
+                                    </Typography>
+                                );
+                            }
+                            return text;
+                        }
+                        return undefined;
+                    })()}
                     chevron
                 />
                 <IOSListItem
                     label="Erosional Constant"
                     value={pipe.erosionalConstant?.toFixed(0) ?? "-"}
+                    secondary={(() => {
+                        const density = pipe.fluid?.density ?? startNode?.fluid?.density;
+                        const erosionalConstant = pipe.erosionalConstant ?? 100;
+                        const erosionalVelocity = computeErosionalVelocity(density, erosionalConstant);
+
+                        if (typeof erosionalVelocity === 'number') {
+                            return `Erosional Velocity: ${erosionalVelocity.toFixed(3)} m/s`;
+                        }
+                        return undefined;
+                    })()}
                     onClick={() => navigator.push("Erosional Constant", (net, nav) => {
                         const currentPipe = net.pipes.find(p => p.id === pipe.id);
                         if (!currentPipe) return null;
@@ -346,7 +404,14 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                 />
 
                 {pipe.pipeSectionType === "control valve" ? (
-                    <ControlValvePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} viewSettings={viewSettings} />
+                    <ControlValvePage
+                        pipe={pipe}
+                        onUpdatePipe={onUpdatePipe}
+                        navigator={navigator}
+                        viewSettings={viewSettings}
+                        startNode={startNode}
+                        endNode={endNode}
+                    />
                 ) : pipe.pipeSectionType === "orifice" ? (
                     <OrificePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} viewSettings={viewSettings} />
                 ) : (
@@ -411,8 +476,8 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
 
             <IOSListGroup>
                 <IOSListItem
-                    label="Summary"
-                    onClick={() => navigator.push("Summary", (net, nav) => {
+                    label="Result Summary"
+                    onClick={() => navigator.push("Result Summary", (net, nav) => {
                         const currentPipe = net.pipes.find(p => p.id === pipe.id);
                         if (!currentPipe) return null;
                         return <PipeSummaryPage pipe={currentPipe} viewSettings={viewSettings} />;

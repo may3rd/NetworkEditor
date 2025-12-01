@@ -139,6 +139,8 @@ export type PipeProps = {
   fluid?: Fluid;
   massFlowRate?: number;
   massFlowRateUnit?: string;
+  velocity?: number;
+  velocityUnit?: string;
   designMargin?: number,
   controlValve?: ControlValve;
   orifice?: Orifice;
