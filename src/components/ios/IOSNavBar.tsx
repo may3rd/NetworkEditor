@@ -8,9 +8,10 @@ type Props = {
     onClose?: () => void;
     backLabel?: string;
     rightAction?: ReactNode;
+    titleOpacity?: number;
 };
 
-export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAction }: Props) {
+export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAction, titleOpacity = 1 }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
@@ -68,6 +69,8 @@ export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAct
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
+                opacity: titleOpacity,
+                transition: "opacity 0.2s ease-in-out",
             }}>
                 {title}
             </Typography>

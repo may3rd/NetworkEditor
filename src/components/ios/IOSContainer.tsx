@@ -1,24 +1,32 @@
 import { Box, useTheme } from "@mui/material";
-import { ReactNode } from "react";
+import { ReactNode, forwardRef } from "react";
 
 type Props = {
     children: ReactNode;
+    onScroll?: (e: React.UIEvent<HTMLDivElement>) => void;
 };
 
-export function IOSContainer({ children }: Props) {
+export const IOSContainer = forwardRef<HTMLDivElement, Props>(({ children, onScroll }, ref) => {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
     return (
-        <Box sx={{
-            backgroundColor: isDark ? "#000000" : "#f2f2f7",
-            minHeight: "100%",
-            width: "100%",
-            position: "relative",
-            overflowX: "hidden",
-            borderRadius: "24px",
-        }}>
+        <Box
+            ref={ref}
+            onScroll={onScroll}
+            sx={{
+                backgroundColor: isDark ? "#000000" : "#f2f2f7",
+                height: "100%",
+                width: "100%",
+                position: "relative",
+                overflowX: "hidden",
+                overflowY: "auto",
+                borderRadius: "24px",
+            }}
+        >
             {children}
         </Box>
     );
-}
+});
+
+IOSContainer.displayName = "IOSContainer";

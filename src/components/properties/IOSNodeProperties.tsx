@@ -6,12 +6,15 @@ import { Box, TextField } from "@mui/material";
 import { glassInputSx } from "@/lib/glassStyles";
 import { Sync } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
+import { RefObject } from "react";
 
 type Props = {
     node: NodeProps;
     network: NetworkState;
     onUpdateNode: (id: string, patch: NodePatch) => void;
     navigator: Navigator;
+    containerRef?: RefObject<HTMLDivElement | null>;
+    setTitleOpacity?: (o: number) => void;
 };
 
 import { IOSTextField } from "../ios/IOSTextField";
@@ -31,7 +34,7 @@ const NamePage = ({ value, onChange }: { value: string, onChange: (v: string) =>
 
 import { PressurePage, TemperaturePage, NodeFluidPage } from "./ios/NodeSubPages";
 
-export function IOSNodeProperties({ node, network, onUpdateNode, navigator }: Props) {
+export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity }: Props) {
 
     const openNamePage = () => {
         navigator.push("Label", (net: NetworkState, nav: Navigator) => {
