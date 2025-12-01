@@ -53,6 +53,7 @@ export default function Home() {
         name: true,
         pressure: false,
         temperature: false,
+        hoverCard: false,
         decimals: {
           pressure: 2,
           temperature: 2,

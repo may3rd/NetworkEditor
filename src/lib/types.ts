@@ -581,6 +581,7 @@ export type ViewSettings = {
     name: boolean;
     pressure: boolean;
     temperature: boolean;
+    hoverCard: boolean;
     decimals: {
       pressure: number;
       temperature: number;

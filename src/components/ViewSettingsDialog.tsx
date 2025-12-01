@@ -225,6 +225,10 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                     label="Temperature"
                                     value={<DecimalStepper value={settings.node.decimals?.temperature} onChange={(v) => handleNodeDecimalChange("temperature", v)} />}
                                     control={<Switch checked={settings.node.temperature} onChange={() => toggleNodeSetting("temperature")} />}
+                                />
+                                <IOSListItem
+                                    label="Hover Card"
+                                    control={<Switch checked={settings.node.hoverCard} onChange={() => toggleNodeSetting("hoverCard")} />}
                                     last
                                 />
                             </IOSListGroup>

@@ -23,24 +23,23 @@ type NodeData = {
   rotation?: number;
   node?: NodeProps;
   isConnectingMode?: boolean;
+  showHoverCard?: boolean;
 };
 
-const ROLE_COLORS_LIGHT: Record<NodeRole | "attention", string> = {
+const ROLE_COLORS_LIGHT: Record<NodeRole, string> = {
   source: "#22c55e", // Green 500
   sink: "#f97316",   // Orange 500
   middle: "#3b82f6", // Blue 500
   isolated: "#94a3b8", // Slate 400
   neutral: "#3b82f6", // Blue 500
-  attention: "#ef4444", // Red 500
 };
 
-const ROLE_COLORS_DARK: Record<NodeRole | "attention", string> = {
+const ROLE_COLORS_DARK: Record<NodeRole, string> = {
   source: "#4ade80", // Green 400
   sink: "#fb923c",   // Orange 400
   middle: "#60a5fa", // Blue 400
   isolated: "#64748b", // Slate 500
   neutral: "#60a5fa", // Blue 400
-  attention: "#f87171", // Red 400
 };
 
 function PressureNode({ data }: { data: NodeData }) {
@@ -61,7 +60,7 @@ function PressureNode({ data }: { data: NodeData }) {
 
   const roleColors = isDark ? ROLE_COLORS_DARK : ROLE_COLORS_LIGHT;
   const roleColor = roleColors[flowRole] ?? roleColors.neutral;
-  const attentionColor = roleColors.attention;
+
 
   // If forced light mode, use hardcoded light mode colors, otherwise use theme
   const textPrimary = data.forceLightMode ? "#000000" : theme.palette.text.primary;
@@ -72,8 +71,8 @@ function PressureNode({ data }: { data: NodeData }) {
   const fillColor = isSelected ? "#fde047" : roleColor;
 
   // Use theme text color for border to adapt to light/dark mode automatically
-  const borderColor = needsAttention ? attentionColor : theme.palette.text.primary;
-  const borderWidth = needsAttention ? 0 : 1;
+  const borderColor = theme.palette.text.primary;
+  const borderWidth = 1;
 
   const baseShadow = isDark
     ? "0 4px 12px rgba(0,0,0,0.5)"
@@ -85,7 +84,6 @@ function PressureNode({ data }: { data: NodeData }) {
 
   const scaleAmount = isSelected ? 1 : 1;
   const circleSize = 20;
-  const dashThickness = needsAttention ? 2 : 0;
 
   // Handle colors
   const sourceColor = isDark ? "#60a5fa" : "#3b82f6"; // Blue
@@ -202,34 +200,7 @@ function PressureNode({ data }: { data: NodeData }) {
         id="source"
       />
 
-      {needsAttention && (
-        <style>
-          {`@keyframes dash-rotate {
-              from { transform: rotate(0deg); }
-              to { transform: rotate(360deg); }
-            }`}
-        </style>
-      )}
       <div style={{ position: "relative", width: circleSize, height: circleSize }}>
-        {needsAttention && (
-          <div
-            style={{
-              position: "absolute",
-              top: -dashThickness / 2,
-              left: -dashThickness / 2,
-              width: circleSize + dashThickness,
-              height: circleSize + dashThickness,
-              borderRadius: "50%",
-              border: `2px dashed ${attentionColor}`,
-              boxSizing: "border-box",
-              animation: "dash-rotate 6s linear infinite",
-              pointerEvents: "none",
-              transformOrigin: "center",
-              zIndex: 3,
-            }}
-          />
-        )}
-
         <div
           style={{
             width: circleSize,
@@ -246,6 +217,30 @@ function PressureNode({ data }: { data: NodeData }) {
             zIndex: 2,
           }}
         />
+        {needsAttention && (
+          <div
+            style={{
+              position: "absolute",
+              top: -5,
+              right: -5,
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              backgroundColor: "#fbbf24",
+              color: "#000",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "10px",
+              fontWeight: 800,
+              zIndex: 3,
+              border: `1px solid ${textPrimary}`,
+              boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+            }}
+          >
+            !
+          </div>
+        )}
       </div>
       <div
         style={{
@@ -277,7 +272,7 @@ function PressureNode({ data }: { data: NodeData }) {
         )}
       </div>
 
-      {isHovered && data.node && (
+      {isHovered && data.node && data.showHoverCard && (
         <HoverCard
           title={data.node.label}
           subtitle="Node Properties"
