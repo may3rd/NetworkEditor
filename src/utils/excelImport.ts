@@ -63,7 +63,8 @@ export const parseExcelNetwork = async (file: File): Promise<NetworkState | null
                         return; // Skip this sheet
                     }
 
-                    let xPos = 0;
+                    let previousPipeEndNode: NodeProps | null = null;
+                    let previousColIndex = -999;
                     const xSpacing = 200;
 
                     PIPE_COLUMNS.forEach((colIndex, i) => {
@@ -168,30 +169,64 @@ export const parseExcelNetwork = async (file: File): Promise<NetworkState | null
                             specificHeatRatio: phase === "gas" ? specificHeatRatio : undefined
                         };
 
-                        // Create Nodes
-                        const startNodeId = uuidv4();
+                        // Determine if we should link to the previous pipe
+                        // Link if:
+                        // 1. We have a previous pipe (previousPipeEndNode is not null)
+                        // 2. The current column is exactly 3 columns after the previous one (adjacent in PIPE_COLUMNS logic)
+                        const isLinked = previousPipeEndNode && (colIndex - previousColIndex === 3);
+
+                        let startNodeId: string;
+                        let startNode: NodeProps | undefined;
+                        let currentStartX: number;
+
+                        if (isLinked && previousPipeEndNode) {
+                            // Reuse previous end node as start node
+                            startNodeId = previousPipeEndNode.id;
+                            startNode = previousPipeEndNode; // Reference to the existing node object
+                            currentStartX = previousPipeEndNode.position.x;
+
+                            // Update the shared node with current pipe's properties if applicable
+                            // If current pipe is Forward, its Start Node (the shared node) gets the Pressure/Temp from Excel
+                            if (direction === "forward") {
+                                startNode.pressure = pressure;
+                                startNode.pressureUnit = 'kPag';
+                                startNode.temperature = temperature;
+                                startNode.temperatureUnit = 'C';
+                                startNode.fluid = fluid;
+                            }
+                        } else {
+                            // New independent start node
+                            startNodeId = uuidv4();
+                            // If we had a previous pipe but not linked, add a gap.
+                            // If first pipe, start at 0.
+                            currentStartX = previousPipeEndNode ? previousPipeEndNode.position.x + xSpacing : 0;
+
+                            startNode = {
+                                id: startNodeId,
+                                label: `${name}_In`,
+                                position: { x: currentStartX, y: yPos },
+                            };
+
+                            // Assign Fluid and Boundary Conditions for new Start Node
+                            if (direction === "forward") {
+                                startNode.fluid = fluid;
+                                startNode.pressure = pressure;
+                                startNode.pressureUnit = 'kPag';
+                                startNode.temperature = temperature;
+                                startNode.temperatureUnit = 'C';
+                            }
+
+                            nodes.push(startNode);
+                        }
+
                         const endNodeId = uuidv4();
-
-                        const startNode: NodeProps = {
-                            id: startNodeId,
-                            label: `${name}_In`,
-                            position: { x: xPos, y: yPos },
-                        };
-
                         const endNode: NodeProps = {
                             id: endNodeId,
                             label: `${name}_Out`,
-                            position: { x: xPos + xSpacing, y: yPos },
+                            position: { x: currentStartX + xSpacing, y: yPos },
                         };
 
-                        // Assign Fluid and Boundary Conditions based on Direction
-                        if (direction === "forward") {
-                            startNode.fluid = fluid;
-                            startNode.pressure = pressure;
-                            startNode.pressureUnit = 'kPag';
-                            startNode.temperature = temperature;
-                            startNode.temperatureUnit = 'C';
-                        } else {
+                        if (direction !== "forward") {
                             endNode.fluid = fluid;
                             endNode.pressure = pressure;
                             endNode.pressureUnit = 'kPag';
@@ -199,7 +234,7 @@ export const parseExcelNetwork = async (file: File): Promise<NetworkState | null
                             endNode.temperatureUnit = 'C';
                         }
 
-                        nodes.push(startNode, endNode);
+                        nodes.push(endNode);
 
                         // Create Pipe
                         const pipe: PipeProps = {
@@ -249,7 +284,9 @@ export const parseExcelNetwork = async (file: File): Promise<NetworkState | null
 
                         pipes.push(pipe);
 
-                        xPos += xSpacing * 2; // Move to next position
+                        // Update tracking variables
+                        previousPipeEndNode = endNode;
+                        previousColIndex = colIndex;
                     });
 
                     // Increment Y position for the next sheet to avoid overlap

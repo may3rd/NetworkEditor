@@ -77,7 +77,60 @@ export function PipeFluidSection({ pipe, sourceNode, isGasPipe, onUpdatePipe }: 
                     onUpdatePipe(pipe.id, { massFlowRateUnit: newUnit, designMassFlowRateUnit: newUnit })
                 }
                 min={0}
+                helperText={(() => {
+                    const dMassFlow = pipe.massFlowRate;
+                    if (typeof dMassFlow !== 'number' || !Number.isFinite(dMassFlow)) return undefined;
+
+                    const massFlowUnit = pipe.massFlowRateUnit ?? "kg/h";
+                    const massFlowKgH = convertUnit(dMassFlow, massFlowUnit, "kg/h");
+
+                    let flowText = "";
+                    if (isGasPipe) {
+                        const mw = pipe.fluid?.molecularWeight ?? sourceNode?.fluid?.molecularWeight;
+                        if (mw) {
+                            const normalFlowNm3H = (massFlowKgH / mw) * 24.465;
+                            flowText = `Normal Flow: ${normalFlowNm3H.toFixed(3)} Nm³/h`;
+                        }
+                    } else {
+                        const density = pipe.fluid?.density ?? sourceNode?.fluid?.density;
+                        if (density) {
+                            let densityKgM3 = density;
+                            const densityUnit = pipe.fluid?.densityUnit ?? sourceNode?.fluid?.densityUnit;
+                            if (densityUnit && densityUnit !== "kg/m3") {
+                                densityKgM3 = convertUnit(density, densityUnit, "kg/m3");
+                            }
+                            const volFlowM3H = massFlowKgH / densityKgM3;
+                            flowText = `Volume Flow: ${volFlowM3H.toFixed(3)} m³/h`;
+                        }
+                    }
+
+                    const velocity = pipe.resultSummary?.outletState?.velocity;
+                    const erosionalVelocity = pipe.resultSummary?.outletState?.erosionalVelocity;
+                    const isErosionAlert =
+                        typeof velocity === "number" &&
+                        typeof erosionalVelocity === "number" &&
+                        velocity > erosionalVelocity;
+
+                    const velocityText =
+                        typeof velocity === "number"
+                            ? ` | Velocity: ${velocity.toFixed(2)} m/s`
+                            : "";
+
+                    const erosionText = isErosionAlert
+                        ? ` (Exceeds Erosional Velocity: ${erosionalVelocity?.toFixed(2)} m/s)`
+                        : "";
+
+                    return (
+                        <span style={{ color: isErosionAlert ? "#d32f2f" : "inherit" }}>
+                            {flowText}
+                            {velocityText}
+                            {erosionText}
+                        </span>
+                    ) as any;
+                })()}
             />
+
+
 
             <Stack spacing={2}>
                 <TextField
@@ -111,88 +164,7 @@ export function PipeFluidSection({ pipe, sourceNode, isGasPipe, onUpdatePipe }: 
                 />
             </Stack>
 
-            <Stack spacing={2}>
-                <QuantityInput
-                    label={isGasPipe ? "Design Normal Flow Rate" : "Design Volume Flow Rate"}
-                    value={(() => {
-                        const dMassFlow = pipe.designMassFlowRate ?? computeDesignMassFlowRate(pipe.massFlowRate, pipe.designMargin);
-                        if (dMassFlow === undefined) return "";
 
-                        const massFlowUnit = pipe.designMassFlowRateUnit ?? pipe.massFlowRateUnit ?? "kg/h";
-
-                        const massFlowKgH = convertUnit(
-                            dMassFlow,
-                            massFlowUnit,
-                            "kg/h"
-                        );
-
-                        if (isGasPipe) {
-                            const mw = pipe.fluid?.molecularWeight ?? sourceNode?.fluid?.molecularWeight;
-                            if (!mw) return "";
-                            // Normal flow in Nm3/h
-                            const normalFlowNm3H = (massFlowKgH / mw) * 24.465;
-
-                            const displayUnit = pipe.designFlowRateDisplayUnit ?? "Nm3/h";
-                            if (displayUnit === "Nm3/h") return normalFlowNm3H;
-                            if (displayUnit === "Nm3/d") return normalFlowNm3H * 24;
-                            if (displayUnit === "MSCFD") return normalFlowNm3H * 0.000847552; // 1 Nm3/h = 35.3147 SCFH * 24 / 1e6 = 0.000847552 MSCFD
-                            return normalFlowNm3H;
-                        } else {
-                            const density = pipe.fluid?.density ?? sourceNode?.fluid?.density;
-                            if (!density) return "";
-
-                            let densityKgM3 = density;
-                            const densityUnit = pipe.fluid?.densityUnit ?? sourceNode?.fluid?.densityUnit;
-                            if (densityUnit && densityUnit !== "kg/m3") {
-                                densityKgM3 = convertUnit(density, densityUnit, "kg/m3");
-                            }
-
-                            const volFlowM3H = massFlowKgH / densityKgM3;
-                            const displayUnit = pipe.designFlowRateDisplayUnit ?? "m3/h";
-
-                            return convertUnit(volFlowM3H, "m3/h", displayUnit, "volumeFlowRate");
-                        }
-                    })()}
-                    unit={pipe.designFlowRateDisplayUnit ?? (isGasPipe ? "Nm3/h" : "m3/h")}
-                    units={isGasPipe ? ["Nm3/h", "Nm3/d", "MSCFD"] : QUANTITY_UNIT_OPTIONS.volumeFlowRate}
-                    unitFamily={isGasPipe ? undefined : "volumeFlowRate"}
-                    onValueChange={() => { }} // Read-only derived value
-                    onUnitChange={(newUnit) => onUpdatePipe(pipe.id, { designFlowRateDisplayUnit: newUnit })}
-                    isDisabled={false} // Allow unit selection
-                    decimalPlaces={3}
-                    helperText={(() => {
-                        const velocity = pipe.resultSummary?.outletState?.velocity;
-                        const erosionalVelocity = pipe.resultSummary?.outletState?.erosionalVelocity;
-                        const isErosionAlert =
-                            typeof velocity === "number" &&
-                            typeof erosionalVelocity === "number" &&
-                            velocity > erosionalVelocity;
-
-                        const velocityText =
-                            typeof velocity === "number"
-                                ? `Velocity: ${velocity.toFixed(2)} m/s`
-                                : "";
-
-                        const erosionText = isErosionAlert
-                            ? ` (Exceeds Erosional Velocity: ${erosionalVelocity?.toFixed(2)} m/s)`
-                            : "";
-
-                        const standardCondText = isGasPipe ? "Standard Conditions: 1 atm, 25°C. " : "";
-
-                        return (
-                            <span style={{ color: isErosionAlert ? "#d32f2f" : "inherit" }}>
-                                {standardCondText}
-                                {velocityText}
-                                {erosionText}
-                            </span>
-                        ) as any;
-                    })()}
-                    sx={{ input: { color: 'success.main' } }}
-                    readOnly
-                    color="success"
-                    alwaysShowColor
-                />
-            </Stack>
         </Stack>
     );
 }

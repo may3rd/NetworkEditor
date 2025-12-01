@@ -159,20 +159,17 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                 <IOSListItem
                     label="Mass Flow Rate"
                     value={`${typeof pipe.massFlowRate === 'number' ? pipe.massFlowRate.toFixed(3) : "-"} ${pipe.massFlowRateUnit ?? ""}`}
+                    secondary={
+                        (typeof pipe.massFlowRate === 'number' && typeof pipe.fluid?.density === 'number' && pipe.fluid.density > 0)
+                            ? `Vol: ${(pipe.massFlowRate / pipe.fluid.density).toFixed(3)} m³/h`
+                            : undefined
+                    }
                     onClick={openMassFlowRatePage}
                     chevron
                     last
                 />
             </IOSListGroup>
-            <Box sx={{ px: 2, pt: 1, pb: 2 }}>
-                <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
-                    Volume Flow Rate: {
-                        (typeof pipe.massFlowRate === 'number' && typeof pipe.fluid?.density === 'number' && pipe.fluid.density > 0)
-                            ? `${(pipe.massFlowRate / pipe.fluid.density).toFixed(3)} m³/h`
-                            : "-"
-                    }
-                </Typography>
-            </Box>
+
 
             <IOSListGroup header="Physical">
                 <IOSListItem
