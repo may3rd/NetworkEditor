@@ -240,10 +240,6 @@ export function calculatePressureDropResults(
             (elevationPressureDrop ?? 0) +
             (userSpecifiedPressureDrop ?? 0);
 
-    if (totalSegmentPressureDrop === undefined && typeof velocity === "number") {
-        totalSegmentPressureDrop = 0.0;
-    }
-
     let normalizedPressureDrop: number | undefined;
 
     if (pipeAndFittingPressureDrop !== undefined &&

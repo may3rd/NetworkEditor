@@ -1066,15 +1066,27 @@ function EditorCanvas({
   }, [network, onNetworkChange]);
 
   useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || !isAddingNode) return;
-      event.preventDefault();
+    if (isConnectingMode) {
       setIsAddingNode(false);
+    }
+  }, [isConnectingMode]);
+
+  useEffect(() => {
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+
+      if (isAddingNode) {
+        event.preventDefault();
+        setIsAddingNode(false);
+      } else if (isConnectingMode && onToggleConnectingMode) {
+        event.preventDefault();
+        onToggleConnectingMode();
+      }
     };
 
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
-  }, [isAddingNode]);
+  }, [isAddingNode, isConnectingMode, onToggleConnectingMode]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

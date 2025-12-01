@@ -10,7 +10,7 @@ import { HoverCard } from "./HoverCard";
 import { PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { getPipeStatus } from "@/utils/velocityCriteria";
-import { WarningAmber } from "@mui/icons-material";
+
 
 export default function PipeEdge({
     id,
@@ -172,16 +172,20 @@ export default function PipeEdge({
                                 position: "absolute",
                                 top: -8,
                                 right: -8,
-                                background: theme.palette.background.paper,
+                                width: 14,
+                                height: 14,
                                 borderRadius: "50%",
-                                width: 16,
-                                height: 16,
+                                backgroundColor: "#fbbf24",
+                                color: "#000",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
+                                fontSize: "10px",
+                                fontWeight: 800,
+                                border: `1px solid ${theme.palette.text.primary}`,
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.15)"
                             }}>
-                                <WarningAmber color="warning" sx={{ fontSize: 14 }} />
+                                !
                             </div>
                         )}
                         {labelLines.map((line, i) => (
@@ -198,14 +202,22 @@ export default function PipeEdge({
                             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
                             zIndex: 1,
                             pointerEvents: "none",
-                            background: theme.palette.background.paper,
+                            width: 14,
+                            height: 14,
                             borderRadius: "50%",
-                            padding: 2,
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
+                            backgroundColor: "#fbbf24",
+                            color: "#000",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                            border: `1px solid ${theme.palette.text.primary}`,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.15)"
                         }}
                         className="nodrag nopan"
                     >
-                        <WarningAmber color="warning" sx={{ fontSize: 16 }} />
+                        !
                     </div>
                 )}
 

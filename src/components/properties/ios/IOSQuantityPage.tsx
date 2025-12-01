@@ -177,7 +177,7 @@ export function IOSQuantityPage({
             </IOSListGroup>
 
             {action && (
-                <Box sx={{ px: 2 }}>
+                <Box>
                     {action}
                 </Box>
             )}

@@ -232,17 +232,16 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
         <Box sx={{ pb: 4 }}>
             {/* Top Summary Section */}
             <Box ref={summaryRef} sx={{
-                px: 3,
-                py: 3,
+                px: 2,
+                py: 2,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
                 textAlign: "left",
                 backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
-                mx: 2,
                 borderRadius: "10px",
-                mb: 2,
-                mt: 2,
+                mx: 2,
+                my: 2,
             }}>
                 <Box sx={{
                     width: 60,
@@ -262,7 +261,9 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                 </Typography>
                 <Typography variant="body1" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
                     {pipe.description ? pipe.description : "No description"}
-                    {pipe.fluid?.id ? ` • Fluid: ${pipe.fluid.id}` : ""}
+                </Typography>
+                <Typography variant="body1" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
+                    {pipe.fluid?.id ? `Fluid: ${pipe.fluid.id}` : ""}
                     {pipe.fluid?.phase ? `, Phase: ${pipe.fluid.phase}` : ""}
                     {pipe.fluid?.density ? `, Density: ${pipe.fluid.density} ${pipe.fluid.densityUnit}` : ""}
                     {pipe.fluid?.molecularWeight ? `, Molecular Weight: ${pipe.fluid.molecularWeight}` : ""}
@@ -477,7 +478,14 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                         endNode={endNode}
                     />
                 ) : pipe.pipeSectionType === "orifice" ? (
-                    <OrificePage pipe={pipe} onUpdatePipe={onUpdatePipe} navigator={navigator} viewSettings={viewSettings} />
+                    <OrificePage
+                        pipe={pipe}
+                        onUpdatePipe={onUpdatePipe}
+                        navigator={navigator}
+                        viewSettings={viewSettings}
+                        startNode={startNode}
+                        endNode={endNode}
+                    />
                 ) : (
                     <>
                         <IOSListItem

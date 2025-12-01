@@ -6,7 +6,7 @@ import { NodeProps, NodePatch } from "@/lib/types";
 import { IOSListGroup } from "../../ios/IOSListGroup";
 import { Navigator } from "../../PropertiesPanel";
 import { IOSListItem } from "../../ios/IOSListItem";
-import { Check } from "@mui/icons-material";
+import { Check, ContentCopy } from "@mui/icons-material";
 import { IOSTextField } from "../../ios/IOSTextField";
 import { useState, useEffect, useRef } from "react";
 
@@ -383,6 +383,20 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                     label="Copy from Node"
                     onClick={openCopyFromNodePage}
                     textColor="primary.main"
+                    icon={
+                        <Box sx={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: "7px",
+                            backgroundColor: "primary.main",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white"
+                        }}>
+                            <ContentCopy sx={{ fontSize: 18 }} />
+                        </Box>
+                    }
                     last
                 />
             </IOSListGroup>

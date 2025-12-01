@@ -11,7 +11,7 @@ import { IOSQuantityPage } from './IOSQuantityPage';
 import { VelocityCriteriaPage } from './VelocityCriteriaPage';
 export { VelocityCriteriaPage };
 import { SERVICE_TYPES } from "@/utils/velocityCriteria";
-import { Check, ArrowForwardIos, Add, Remove } from "@mui/icons-material";
+import { Check, ArrowForwardIos, Add, Remove, AutoFixHigh, ContentCopy } from "@mui/icons-material";
 import { Navigator } from "../../PropertiesPanel";
 import { convertUnit } from "@/lib/unitConversion";
 import { NodeSelectionPage } from "./NodeSubPages";
@@ -372,6 +372,20 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                     label="Copy from Node"
                     textColor="primary.main"
                     onClick={openCopyFromNodePage}
+                    icon={
+                        <Box sx={{
+                            width: 30,
+                            height: 30,
+                            borderRadius: "7px",
+                            backgroundColor: "primary.main",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            color: "white"
+                        }}>
+                            <ContentCopy sx={{ fontSize: 18 }} />
+                        </Box>
+                    }
                     last
                 />
             </IOSListGroup>
@@ -771,15 +785,28 @@ export const LengthPage = ({ pipe, onUpdatePipe, startNode, endNode }: { pipe: P
             min={0}
             autoFocus
             action={
-                <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={handleEstimate}
-                    disabled={!startNode || !endNode || !pipe.diameter || !pipe.massFlowRate || !pipe.roughness}
-                    sx={{ borderRadius: "12px", textTransform: "none", fontSize: "14px" }}
-                >
-                    Estimate Length from Pressure Drop
-                </Button>
+                <IOSListGroup>
+                    <IOSListItem
+                        label="Estimate from Pressure Drop"
+                        onClick={handleEstimate}
+                        icon={
+                            <Box sx={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: "7px",
+                                backgroundColor: "primary.main",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white"
+                            }}>
+                                <AutoFixHigh sx={{ fontSize: 18 }} />
+                            </Box>
+                        }
+                        textColor="primary.main"
+                        last
+                    />
+                </IOSListGroup>
             }
         />
     );
@@ -923,15 +950,28 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings, 
                     min={0}
                     autoFocus
                     action={
-                        <Button
-                            variant="outlined"
-                            fullWidth
-                            onClick={handleDefineFromNodes}
-                            disabled={!startNode || !endNode}
-                            sx={{ borderRadius: "12px", textTransform: "none", fontSize: "14px" }}
-                        >
-                            Define from nodes
-                        </Button>
+                        <IOSListGroup>
+                            <IOSListItem
+                                label="Define from nodes"
+                                onClick={handleDefineFromNodes}
+                                icon={
+                                    <Box sx={{
+                                        width: 30,
+                                        height: 30,
+                                        borderRadius: "7px",
+                                        backgroundColor: "primary.main",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "white"
+                                    }}>
+                                        <AutoFixHigh sx={{ fontSize: 18 }} />
+                                    </Box>
+                                }
+                                textColor="primary.main"
+                                last
+                            />
+                        </IOSListGroup>
                     }
                 />
             );
@@ -1010,7 +1050,7 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings, 
     );
 };
 
-export const OrificePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator, viewSettings: ViewSettings }) => {
+export const OrificePage = ({ pipe, onUpdatePipe, navigator, viewSettings, startNode, endNode }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator, viewSettings: ViewSettings, startNode?: NodeProps, endNode?: NodeProps }) => {
     const orificeData = pipe.orifice || { id: "orifice", inputMode: "beta_ratio" };
     const inputMode = orificeData.inputMode || "beta_ratio";
 
@@ -1050,6 +1090,23 @@ export const OrificePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { p
             const currentPipe = net.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
             const currentOrifice = currentPipe.orifice || { id: "orifice", inputMode: "beta_ratio" };
+
+            const handleDefineFromNodes = () => {
+                if (!startNode || !endNode) return;
+                const p1 = startNode.pressure;
+                const p2 = endNode.pressure;
+                if (typeof p1 !== 'number' || typeof p2 !== 'number') return;
+
+                const p1Pa = convertUnit(p1, startNode.pressureUnit || "Pa", "Pa");
+                const p2Pa = convertUnit(p2, endNode.pressureUnit || "Pa", "Pa");
+                const deltaP_Pa = Math.abs(p1Pa - p2Pa);
+
+                const targetUnit = currentOrifice.pressureDropUnit || "kPa";
+                const deltaP_Target = convertUnit(deltaP_Pa, "Pa", targetUnit);
+
+                onUpdatePipe(pipe.id, { orifice: { ...currentOrifice, pressureDrop: deltaP_Target } });
+            };
+
             return (
                 <IOSQuantityPage
                     label="Pressure Drop"
@@ -1061,6 +1118,30 @@ export const OrificePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { p
                     onUnitChange={(u) => onUpdatePipe(pipe.id, { orifice: { ...currentOrifice, pressureDropUnit: u } })}
                     min={0}
                     autoFocus
+                    action={
+                        <IOSListGroup>
+                            <IOSListItem
+                                label="Define from nodes"
+                                onClick={handleDefineFromNodes}
+                                icon={
+                                    <Box sx={{
+                                        width: 30,
+                                        height: 30,
+                                        borderRadius: "7px",
+                                        backgroundColor: "primary.main",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        color: "white"
+                                    }}>
+                                        <AutoFixHigh sx={{ fontSize: 18 }} />
+                                    </Box>
+                                }
+                                textColor="primary.main"
+                                last
+                            />
+                        </IOSListGroup>
+                    }
                 />
             );
         });

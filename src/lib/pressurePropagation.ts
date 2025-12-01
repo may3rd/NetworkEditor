@@ -82,6 +82,12 @@ export const propagatePressure = (
                 if (targetDeltaP > 0) {
                     // Create temp pipe with 1m length to find gradient
                     let tempPipe: PipeProps = { ...updatedPipe, length: 1, lengthUnit: "m" };
+
+                    // Inject fluid if missing
+                    if (!tempPipe.fluid && currentNode.fluid) {
+                        tempPipe.fluid = { ...currentNode.fluid };
+                    }
+
                     tempPipe = recalculatePipeFittingLosses(tempPipe);
 
                     const gradient = tempPipe.pressureDropCalculationResults?.totalSegmentPressureDrop;

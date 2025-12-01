@@ -2,7 +2,7 @@ import { NodeProps, NodePatch, NetworkState } from "@/lib/types";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, TextField } from "@mui/material";
+import { Box, TextField, Typography, useTheme } from "@mui/material";
 import { Sync, PlayArrow } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
 import { propagatePressure } from "@/lib/pressurePropagation";
@@ -36,6 +36,8 @@ const NamePage = ({ value, onChange }: { value: string, onChange: (v: string) =>
 import { PressurePage, TemperaturePage, NodeFluidPage } from "./ios/NodeSubPages";
 
 export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity, onNetworkChange }: Props) {
+    const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
 
     const openNamePage = () => {
         navigator.push("Label", (net: NetworkState, nav: Navigator) => {
@@ -157,8 +159,64 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
         });
     })();
 
+    const getIcon = () => {
+        const phase = node.fluid?.phase;
+        if (phase === "liquid") {
+            return <Typography variant="h4" sx={{ color: "#ffffff", fontWeight: 700 }}>L</Typography>;
+        } else if (phase === "gas") {
+            return <Typography variant="h4" sx={{ color: "#ffffff", fontWeight: 700 }}>G</Typography>;
+        } else {
+            return <Typography variant="h4" sx={{ color: "#ffffff", fontWeight: 700 }}>?</Typography>;
+        }
+    };
+
+    const getIconBgColor = () => {
+        const phase = node.fluid?.phase;
+        if (phase === "liquid") {
+            return "primary.main"; // Blue
+        } else if (phase === "gas") {
+            return "#ff3b30"; // Red
+        } else {
+            return "#8E8E93"; // Grey
+        }
+    };
+
     return (
         <Box sx={{ pt: 2 }}>
+            {/* Top Summary Section */}
+            <Box sx={{
+                px: 2,
+                py: 2,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                textAlign: "left",
+                backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
+                borderRadius: "10px",
+                mx: 2,
+                my: 2,
+            }}>
+                <Box sx={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: "14px",
+                    backgroundColor: getIconBgColor(),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mb: 2,
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                }}>
+                    {getIcon()}
+                </Box>
+                <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: isDark ? "#fff" : "#000", letterSpacing: "-0.5px" }}>
+                    {node.label}
+                </Typography>
+                <Typography variant="body1" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
+                    {node.fluid?.id || "No Fluid Defined"}
+                </Typography>
+            </Box>
+
             <IOSListGroup header="General">
                 <IOSListItem
                     label="Label"
@@ -196,7 +254,20 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                     <IOSListItem
                         label="Propagate Pressure"
                         onClick={handlePropagatePressure}
-                        icon={<PlayArrow sx={{ fontSize: 20 }} />}
+                        icon={
+                            <Box sx={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: "7px",
+                                backgroundColor: "primary.main",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white"
+                            }}>
+                                <PlayArrow sx={{ fontSize: 18 }} />
+                            </Box>
+                        }
                         textColor="primary.main"
                         last
                     />
@@ -204,7 +275,20 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                     <IOSListItem
                         label="Update from Pipe"
                         onClick={handleUpdateFromPipe}
-                        icon={<Sync sx={{ fontSize: 20 }} />}
+                        icon={
+                            <Box sx={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: "7px",
+                                backgroundColor: "primary.main",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white"
+                            }}>
+                                <Sync sx={{ fontSize: 18 }} />
+                            </Box>
+                        }
                         textColor="primary.main"
                         last
                     />
