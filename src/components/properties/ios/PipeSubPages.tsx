@@ -943,14 +943,14 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings, 
                 isGas ? (
                     <IOSListItem
                         label="Cg"
-                        value={cvData.cg?.toString() ?? "-"}
+                        value={cvData.cg?.toFixed(4) ?? "-"}
                         onClick={openCgPage}
                         chevron
                     />
                 ) : (
                     <IOSListItem
                         label="CV"
-                        value={cvData.cv?.toString() ?? "-"}
+                        value={cvData.cv?.toFixed(4) ?? "-"}
                         onClick={openCVPage}
                         chevron
                     />
@@ -958,7 +958,7 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings, 
             ) : (
                 <IOSListItem
                     label="Pressure Drop"
-                    value={`${cvData.pressureDrop ?? "-"} ${cvData.pressureDropUnit ?? "kPa"}`}
+                    value={`${cvData.pressureDrop?.toFixed(3) ?? "-"} ${cvData.pressureDropUnit ?? "kPa"}`}
                     onClick={openPressureDropPage}
                     chevron
                 />
@@ -973,13 +973,13 @@ export const ControlValvePage = ({ pipe, onUpdatePipe, navigator, viewSettings, 
                 isGas ? (
                     <IOSListItem
                         label="Calculated Cg"
-                        value={pipe.pressureDropCalculationResults?.controlValveCg?.toFixed(2) ?? "-"}
+                        value={pipe.pressureDropCalculationResults?.controlValveCg?.toFixed(3) ?? "-"}
                         last
                     />
                 ) : (
                     <IOSListItem
                         label="Calculated CV"
-                        value={pipe.pressureDropCalculationResults?.controlValveCV?.toFixed(2) ?? "-"}
+                        value={pipe.pressureDropCalculationResults?.controlValveCV?.toFixed(3) ?? "-"}
                         last
                     />
                 )
@@ -1069,14 +1069,14 @@ export const OrificePage = ({ pipe, onUpdatePipe, navigator, viewSettings }: { p
             {inputMode === "beta_ratio" ? (
                 <IOSListItem
                     label="Beta Ratio"
-                    value={orificeData.betaRatio?.toString() ?? "-"}
+                    value={orificeData.betaRatio?.toFixed(4) ?? "-"}
                     onClick={openBetaRatioPage}
                     chevron
                 />
             ) : (
                 <IOSListItem
                     label="Pressure Drop"
-                    value={`${orificeData.pressureDrop ?? "-"} ${orificeData.pressureDropUnit ?? "kPa"}`}
+                    value={`${orificeData.pressureDrop?.toFixed(3) ?? "-"} ${orificeData.pressureDropUnit ?? "kPa"}`}
                     onClick={openPressureDropPage}
                     chevron
                 />

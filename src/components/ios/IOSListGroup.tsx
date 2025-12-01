@@ -5,9 +5,10 @@ type Props = {
     children: ReactNode;
     header?: string;
     footer?: string;
+    headerAlign?: "left" | "center" | "right";
 };
 
-export function IOSListGroup({ children, header, footer }: Props) {
+export function IOSListGroup({ children, header, footer, headerAlign = "left" }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
@@ -19,11 +20,11 @@ export function IOSListGroup({ children, header, footer }: Props) {
                     sx={{
                         display: "block",
                         fontWeight: "bold",
-                        pl: 2,
+                        pl: headerAlign === "left" ? 2 : 0,
                         pb: 1,
                         color: isDark ? "#8e8e93" : "#6e6e73",
-                        textTransform: "uppercase",
-                        fontSize: "11px",
+                        fontSize: "13px",
+                        textAlign: headerAlign,
                     }}
                 >
                     {header}

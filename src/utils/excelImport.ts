@@ -295,7 +295,7 @@ export const parseExcelNetwork = async (file: File): Promise<NetworkState | null
                     });
 
                     // Increment Y position for the next sheet to avoid overlap
-                    yPos += 500;
+                    yPos += 200;
                 });
 
                 resolve({ nodes, pipes });
