@@ -1,4 +1,4 @@
-import { PipeProps, NodeProps, PipePatch, ViewSettings, NetworkState } from "@/lib/types";
+import { PipeProps, NodeProps, PipePatch, ViewSettings, NetworkState, NodePatch } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { computeErosionalVelocity } from "@/lib/calculations/utils";
 import { getPipeStatus } from "@/utils/velocityCriteria";
@@ -57,7 +57,8 @@ import {
     NumberInputPage,
     GasFlowModelPage,
     ServiceTypePage,
-    VelocityCriteriaPage
+    VelocityCriteriaPage,
+    BoundaryNodePage
 } from "./ios/PipeSubPages";
 
 type Props = {
@@ -65,13 +66,14 @@ type Props = {
     startNode?: NodeProps;
     endNode?: NodeProps;
     onUpdatePipe: (id: string, patch: PipePatch) => void;
+    onUpdateNode: (id: string, patch: NodePatch) => void;
     navigator: Navigator;
     viewSettings: ViewSettings;
     containerRef?: RefObject<HTMLDivElement | null>;
     setTitleOpacity?: (o: number) => void;
 };
 
-export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
+export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUpdateNode,
     navigator,
     viewSettings,
     containerRef,
@@ -109,6 +111,11 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
         navigator.push("About", (network: NetworkState, nav: Navigator) => {
             const currentPipe = network.pipes.find(p => p.id === pipe.id);
             if (!currentPipe) return null;
+            const direction = currentPipe.direction ?? "forward";
+            const currentStartNode = network.nodes.find(n => n.id === currentPipe.startNodeId);
+            const currentEndNode = network.nodes.find(n => n.id === currentPipe.endNodeId);
+            const boundaryNode = direction === "forward" ? currentStartNode : currentEndNode;
+
             return (
                 <Box sx={{ pt: 2 }}>
                     <IOSListGroup>
@@ -132,6 +139,14 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                             last
                         />
                     </IOSListGroup>
+
+                    {boundaryNode && (
+                        <BoundaryNodePage
+                            node={boundaryNode}
+                            onUpdateNode={onUpdateNode}
+                            navigator={nav}
+                        />
+                    )}
                 </Box>
             );
         });
@@ -259,12 +274,12 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe,
                 <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: isDark ? "#fff" : "#000", letterSpacing: "-0.5px" }}>
                     {pipe.name || "Unnamed Pipe"}
                 </Typography>
-                <Typography variant="body1" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
+                <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
                     {pipe.description ? pipe.description : "No description"}
                 </Typography>
-                <Typography variant="body1" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
+                <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.4 }}>
                     {pipe.fluid?.id ? `Fluid: ${pipe.fluid.id}` : ""}
-                    {pipe.fluid?.phase ? `, Phase: ${pipe.fluid.phase}` : ""}
+                    {pipe.fluid?.phase ? ` (${pipe.fluid.phase})` : ""}
                     {pipe.fluid?.density ? `, Density: ${pipe.fluid.density} ${pipe.fluid.densityUnit}` : ""}
                     {pipe.fluid?.molecularWeight ? `, Molecular Weight: ${pipe.fluid.molecularWeight}` : ""}
                     {pipe.fluid?.zFactor ? `, Z Factor: ${pipe.fluid.zFactor}` : ""}

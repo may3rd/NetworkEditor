@@ -77,6 +77,7 @@ export function PropertiesPanel({
           startNode={startNode}
           endNode={endNode}
           onUpdatePipe={onUpdatePipe}
+          onUpdateNode={onUpdateNode}
           navigator={nav}
           viewSettings={viewSettings}
           containerRef={ref}

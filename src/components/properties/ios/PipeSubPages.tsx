@@ -2,7 +2,7 @@ import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typog
 import { glassInputSx, glassSelectSx, glassRadioSx } from "@/lib/glassStyles";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
 import { getScheduleEntries, nearest_pipe_diameter, PIPE_FITTING_OPTIONS } from "../../PipeDimension";
-import { PipeProps, PipePatch, FittingType, ViewSettings, NodeProps } from "@/lib/types";
+import { PipeProps, PipePatch, FittingType, ViewSettings, NodeProps, NodePatch } from "@/lib/types";
 import { IOSListGroup } from "../../ios/IOSListGroup";
 import { IOSListItem } from "../../ios/IOSListItem";
 import { IOSContainer } from "../../ios/IOSContainer";
@@ -253,7 +253,7 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
 
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header="General">
+            <IOSListGroup>
                 <IOSListItem
                     label="Name"
                     value={fluid.id}
@@ -270,7 +270,7 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
             </IOSListGroup>
 
             {fluid.phase === "liquid" ? (
-                <IOSListGroup header="Liquid Properties">
+                <IOSListGroup>
                     <IOSListItem
                         label="Density"
                         value={`${fluid.density ?? "-"} ${fluid.densityUnit ?? "kg/m3"}`}
@@ -286,7 +286,7 @@ export const FluidPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, 
                     />
                 </IOSListGroup>
             ) : (
-                <IOSListGroup header="Gas Properties">
+                <IOSListGroup>
                     <IOSListItem
                         label="Flow Model"
                         value={pipe.gasFlowModel === "isothermal" ? "Isothermal" : "Adiabatic"}
@@ -420,7 +420,7 @@ export function GasFlowModelPage({ value, onChange }: { value: "adiabatic" | "is
 export function ServiceTypePage({ value, onChange }: { value: string, onChange: (val: string) => void }) {
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header="Select Service Type">
+            <IOSListGroup>
                 {SERVICE_TYPES.map((type, index) => (
                     <IOSListItem
                         key={type}
@@ -449,7 +449,7 @@ export const GasFlowModelSelectionPage = ({ pipe, onUpdatePipe, navigator }: { p
     };
 
     return (
-        <IOSListGroup header="Gas Flow Model">
+        <IOSListGroup>
             <IOSListItem
                 label="Model"
                 value={pipe.gasFlowModel === "isothermal" ? "Isothermal" : "Adiabatic"}
@@ -622,7 +622,7 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
 
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header="Configuration">
+            <IOSListGroup>
                 <IOSListItem
                     label="Pipe Diameter Mode"
                     value={pipe.diameterInputMode === "diameter" ? "Diameter" : "NPS"}
@@ -633,7 +633,7 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
             </IOSListGroup>
 
             {pipe.diameterInputMode === "diameter" ? (
-                <IOSListGroup header="Dimensions">
+                <IOSListGroup>
                     <IOSListItem
                         label="Pipe Diameter"
                         value={`${typeof pipe.diameter === 'number' ? pipe.diameter.toFixed(3) : "-"} ${pipe.diameterUnit ?? "mm"}`}
@@ -657,7 +657,7 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
                 </IOSListGroup>
             ) : (
                 <>
-                    <IOSListGroup header="Nominal Pipe Size">
+                    <IOSListGroup>
                         <IOSListItem
                             label="NPD"
                             value={pipe.pipeNPD?.toString() ?? "-"}
@@ -676,7 +676,7 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
                         Pipe Diameter: {typeof pipe.diameter === 'number' ? pipe.diameter.toFixed(3) : "-"} {pipe.diameterUnit ?? "mm"}
                     </Typography>
 
-                    <IOSListGroup header="Dimensions">
+                    <IOSListGroup>
                         <IOSListItem
                             label="Inlet Diameter"
                             value={`${typeof pipe.inletDiameter === 'number' ? pipe.inletDiameter.toFixed(3) : "-"} ${pipe.inletDiameterUnit ?? "mm"}`}
@@ -1299,7 +1299,7 @@ export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
 
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header="General">
+            <IOSListGroup>
                 <IOSListItem
                     label="Fitting Safety Factor"
                     value={`${pipe.pipingFittingSafetyFactor ?? 0}%`}
@@ -1315,7 +1315,7 @@ export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
                 />
             </IOSListGroup>
 
-            <IOSListGroup header="Fittings">
+            <IOSListGroup>
                 {PIPE_FITTING_OPTIONS.map((option, index) => {
                     const count = getCount(option.value);
                     const isToggle = option.value === "pipe_entrance_normal" || option.value === "pipe_entrance_raise" || option.value === "pipe_exit";
@@ -1471,7 +1471,7 @@ export function PipeSummaryPage({ pipe, viewSettings, navigator }: { pipe: PipeP
                 <IOSListItem label="Total" value={results?.totalK?.toFixed(3) ?? "-"} last />
             </IOSListGroup>
 
-            <IOSListGroup header="Results">
+            <IOSListGroup>
                 <IOSListItem label="Reynolds Number" value={results?.reynoldsNumber?.toFixed(0) ?? "-"} />
                 <IOSListItem label="Friction Factor" value={results?.frictionalFactor?.toFixed(4) ?? "-"} />
                 <IOSListItem label="Velocity" value={formatVelocity(velocity) ?? "-"} last />
@@ -1522,3 +1522,54 @@ export function PipeSummaryPage({ pipe, viewSettings, navigator }: { pipe: PipeP
         </Box>
     );
 }
+
+// --- Boundary Node ---
+
+export const BoundaryNodePage = ({ node, onUpdateNode, navigator }: { node: NodeProps, onUpdateNode: (id: string, patch: NodePatch) => void, navigator: Navigator }) => {
+
+    const openQuantityPage = (
+        label: string,
+        field: "pressure" | "temperature",
+        unitField: "pressureUnit" | "temperatureUnit",
+        units: readonly string[],
+        family: any, // UnitFamily
+        min?: number
+    ) => {
+        navigator.push(label, (net, nav) => {
+            const currentNode = net.nodes.find(n => n.id === node.id);
+            if (!currentNode) return null;
+            return (
+                <IOSQuantityPage
+                    label={label}
+                    value={currentNode[field] ?? ""}
+                    unit={currentNode[unitField] ?? units[0]}
+                    units={units}
+                    unitFamily={family}
+                    onChange={(v, u) => onUpdateNode(node.id, { [field]: v, [unitField]: u })}
+                    min={min}
+                    autoFocus
+                />
+            );
+        });
+    };
+
+    return (
+        <Box sx={{ pt: 2 }}>
+            <IOSListGroup header={node.label}>
+                <IOSListItem
+                    label="Pressure"
+                    value={`${node.pressure?.toFixed(2) ?? "-"} ${node.pressureUnit ?? ""}`}
+                    onClick={() => openQuantityPage("Pressure", "pressure", "pressureUnit", QUANTITY_UNIT_OPTIONS.pressure, "pressure", 0)}
+                    chevron
+                />
+                <IOSListItem
+                    label="Temperature"
+                    value={`${node.temperature?.toFixed(2) ?? "-"} ${node.temperatureUnit ?? ""}`}
+                    onClick={() => openQuantityPage("Temperature", "temperature", "temperatureUnit", QUANTITY_UNIT_OPTIONS.temperature, "temperature")}
+                    chevron
+                    last
+                />
+            </IOSListGroup>
+        </Box>
+    );
+};
