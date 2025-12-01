@@ -650,6 +650,7 @@ export default function Home() {
 
               onClose={() => handleSelect(null, null)}
               viewSettings={viewSettings}
+              onNetworkChange={handleNetworkChange}
             />
           </Paper>
         </Slide>

@@ -3,9 +3,9 @@ import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
 import { Box, TextField } from "@mui/material";
-import { glassInputSx } from "@/lib/glassStyles";
-import { Sync } from "@mui/icons-material";
+import { Sync, PlayArrow } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
+import { propagatePressure } from "@/lib/pressurePropagation";
 import { RefObject } from "react";
 
 type Props = {
@@ -15,6 +15,7 @@ type Props = {
     navigator: Navigator;
     containerRef?: RefObject<HTMLDivElement | null>;
     setTitleOpacity?: (o: number) => void;
+    onNetworkChange?: (network: NetworkState) => void;
 };
 
 import { IOSTextField } from "../ios/IOSTextField";
@@ -34,7 +35,7 @@ const NamePage = ({ value, onChange }: { value: string, onChange: (v: string) =>
 
 import { PressurePage, TemperaturePage, NodeFluidPage } from "./ios/NodeSubPages";
 
-export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity }: Props) {
+export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity, onNetworkChange }: Props) {
 
     const openNamePage = () => {
         navigator.push("Label", (net: NetworkState, nav: Navigator) => {
@@ -112,6 +113,50 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
         }
     };
 
+    const handlePropagatePressure = () => {
+        if (!onNetworkChange) {
+            console.error("onNetworkChange is required for pressure propagation");
+            return;
+        }
+
+        const result = propagatePressure(node.id, network);
+
+        if (result.warnings.length > 0) {
+            alert(`Propagation completed with warnings:\n\n${result.warnings.join("\n")}`);
+        }
+
+        // Update the network with all modified nodes and pipes
+        const nextNodes = network.nodes.map(n => {
+            const updated = result.updatedNodes.find(un => un.id === n.id);
+            return updated || n;
+        });
+
+        const nextPipes = network.pipes.map(p => {
+            const updated = result.updatedPipes.find(up => up.id === p.id);
+            return updated || p;
+        });
+
+        onNetworkChange({
+            ...network,
+            nodes: nextNodes,
+            pipes: nextPipes
+        });
+    };
+
+    // Determine if this is a source node (all connected pipes are outgoing)
+    const isSourceNode = (() => {
+        const connectedPipes = network.pipes.filter(
+            (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id
+        );
+        if (connectedPipes.length === 0) return false; // Isolated node is not a source for propagation
+
+        return connectedPipes.every(pipe => {
+            if (pipe.startNodeId === node.id) return pipe.direction === "forward" || !pipe.direction;
+            if (pipe.endNodeId === node.id) return pipe.direction === "backward";
+            return false;
+        });
+    })();
+
     return (
         <Box sx={{ pt: 2 }}>
             <IOSListGroup header="General">
@@ -147,13 +192,23 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
             </IOSListGroup>
 
             <IOSListGroup>
-                <IOSListItem
-                    label="Update from Pipe"
-                    onClick={handleUpdateFromPipe}
-                    icon={<Sync sx={{ fontSize: 20 }} />}
-                    textColor="primary.main"
-                    last
-                />
+                {isSourceNode ? (
+                    <IOSListItem
+                        label="Propagate Pressure"
+                        onClick={handlePropagatePressure}
+                        icon={<PlayArrow sx={{ fontSize: 20 }} />}
+                        textColor="primary.main"
+                        last
+                    />
+                ) : (
+                    <IOSListItem
+                        label="Update from Pipe"
+                        onClick={handleUpdateFromPipe}
+                        icon={<Sync sx={{ fontSize: 20 }} />}
+                        textColor="primary.main"
+                        last
+                    />
+                )}
             </IOSListGroup>
         </Box>
     );

@@ -15,6 +15,7 @@ type Props = {
   onUpdatePipe: (id: string, patch: PipePatch) => void;
   onClose: () => void;
   viewSettings: ViewSettings;
+  onNetworkChange?: (network: NetworkState) => void;
 };
 
 export type Navigator = {
@@ -29,6 +30,7 @@ export function PropertiesPanel({
   onUpdatePipe,
   onClose,
   viewSettings,
+  onNetworkChange,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [titleOpacity, setTitleOpacity] = useState(1);
@@ -64,7 +66,7 @@ export function PropertiesPanel({
       if (selectedElement.type === "node") {
         const node = net.nodes.find((n) => n.id === selectedElement.id);
         if (!node) return null;
-        return <IOSNodeProperties node={node} network={net} onUpdateNode={onUpdateNode} navigator={nav} />;
+        return <IOSNodeProperties node={node} network={net} onUpdateNode={onUpdateNode} navigator={nav} onNetworkChange={onNetworkChange} />;
       } else {
         const pipe = net.pipes.find((p) => p.id === selectedElement.id);
         if (!pipe) return null;

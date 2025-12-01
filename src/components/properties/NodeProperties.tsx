@@ -20,14 +20,17 @@ import { NetworkState, NodeProps, NodePatch, PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { validateNodeConfiguration } from "@/utils/nodeUtils";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
+import { propagatePressure } from "@/lib/pressurePropagation";
+import { PlayArrow as PlayArrowIcon } from "@mui/icons-material";
 
 type Props = {
     node: NodeProps;
     network: NetworkState;
     onUpdateNode: (id: string, patch: NodePatch) => void;
+    onNetworkChange?: (network: NetworkState) => void;
 };
 
-export function NodeProperties({ node, network, onUpdateNode }: Props) {
+export function NodeProperties({ node, network, onUpdateNode, onNetworkChange }: Props) {
     const nodeFluidPhase = node.fluid?.phase ?? "liquid";
 
     const handleAutoFluid = () => {
@@ -152,6 +155,50 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
         updateFromState(sourceState);
     };
 
+    const handlePropagatePressure = () => {
+        if (!onNetworkChange) {
+            console.error("onNetworkChange is required for pressure propagation");
+            return;
+        }
+
+        const result = propagatePressure(node.id, network);
+
+        if (result.warnings.length > 0) {
+            alert(`Propagation completed with warnings:\n\n${result.warnings.join("\n")}`);
+        }
+
+        // Update the network with all modified nodes and pipes
+        const nextNodes = network.nodes.map(n => {
+            const updated = result.updatedNodes.find(un => un.id === n.id);
+            return updated || n;
+        });
+
+        const nextPipes = network.pipes.map(p => {
+            const updated = result.updatedPipes.find(up => up.id === p.id);
+            return updated || p;
+        });
+
+        onNetworkChange({
+            ...network,
+            nodes: nextNodes,
+            pipes: nextPipes
+        });
+    };
+
+    // Determine if this is a source node (all connected pipes are outgoing)
+    const isSourceNode = (() => {
+        const connectedPipes = network.pipes.filter(
+            (pipe) => pipe.startNodeId === node.id || pipe.endNodeId === node.id
+        );
+        if (connectedPipes.length === 0) return false; // Isolated node is not a source for propagation
+
+        return connectedPipes.every(pipe => {
+            if (pipe.startNodeId === node.id) return pipe.direction === "forward" || !pipe.direction;
+            if (pipe.endNodeId === node.id) return pipe.direction === "backward";
+            return false;
+        });
+    })();
+
     return (
         <Stack spacing={2}>
             <Stack spacing={2}>
@@ -168,16 +215,26 @@ export function NodeProperties({ node, network, onUpdateNode }: Props) {
                     <Typography fontSize={12}>
                         Conditions
                     </Typography>
-                    <Tooltip title={validation.message || "Update from Pipe"}>
+                    <Tooltip title={isSourceNode ? "Propagate Pressure Downstream" : (validation.message || "Update from Pipe")}>
                         <span>
-                            <IconButton
-                                color="primary"
-                                size="small"
-                                onClick={() => handleUpdateFromPipe(node)}
-                                disabled={!validation.isValid}
-                            >
-                                <AutoFixHighIcon />
-                            </IconButton>
+                            {isSourceNode ? (
+                                <IconButton
+                                    color="primary"
+                                    size="small"
+                                    onClick={handlePropagatePressure}
+                                >
+                                    <PlayArrowIcon />
+                                </IconButton>
+                            ) : (
+                                <IconButton
+                                    color="primary"
+                                    size="small"
+                                    onClick={() => handleUpdateFromPipe(node)}
+                                    disabled={!validation.isValid}
+                                >
+                                    <AutoFixHighIcon />
+                                </IconButton>
+                            )}
                         </span>
                     </Tooltip>
                 </Stack>
