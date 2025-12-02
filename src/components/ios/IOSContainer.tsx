@@ -1,3 +1,4 @@
+import { glassPanelSx } from "@/lib/glassStyles";
 import { Box, useTheme } from "@mui/material";
 import { ReactNode, forwardRef } from "react";
 
@@ -15,7 +16,7 @@ export const IOSContainer = forwardRef<HTMLDivElement, Props>(({ children, onScr
             ref={ref}
             onScroll={onScroll}
             sx={{
-                backgroundColor: "transparent",
+                ...glassPanelSx,
                 height: "100%",
                 width: "100%",
                 position: "relative",

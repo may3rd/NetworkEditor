@@ -8,7 +8,7 @@ import { convertUnit } from "@/lib/unitConversion";
 import { propagatePressure } from "@/lib/pressurePropagation";
 import { getNodeWarnings } from "@/utils/validationUtils";
 import { RefObject } from "react";
-import { glassDialogSx } from "@/lib/glassStyles";
+import { glassListGroupSx } from "@/lib/glassStyles";
 
 type Props = {
     node: NodeProps;
@@ -187,7 +187,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
         <Box sx={{ pt: 2 }}>
             {/* Top Summary Section */}
             <Box sx={{
-                ...glassDialogSx,
+                ...glassListGroupSx,
                 px: 2,
                 py: 2,
                 display: "flex",

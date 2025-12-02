@@ -161,41 +161,39 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                 sx: glassDialogSx
             }}
         >
-            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {currentView === "unitSystem" ? (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box sx={{ width: 40, display: 'flex', alignItems: 'center' }}>
+                    {currentView === "unitSystem" && (
                         <IconButton
                             onClick={() => setCurrentView("main")}
-                            sx={{ mr: 1, color: (theme) => theme.palette.primary.main }}
+                            sx={{ color: (theme) => theme.palette.primary.main }}
                             size="small"
                         >
                             <ArrowBackIcon />
                         </IconButton>
-                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                            Unit System
-                        </Typography>
-                    </Box>
-                ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                            View Settings
-                        </Typography>
-                    </Box>
-                )}
-                <IconButton
-                    aria-label="close"
-                    onClick={onClose}
-                    sx={{
-                        color: (theme) => theme.palette.grey[500],
-                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
-                        '&:hover': {
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
-                        },
-                    }}
-                    size="small"
-                >
-                    <CloseIcon />
-                </IconButton>
+                    )}
+                </Box>
+
+                <Typography variant="h6" component="div" sx={{ fontWeight: 600, flex: 1, textAlign: 'center' }}>
+                    {currentView === "unitSystem" ? "Unit System" : "View Settings"}
+                </Typography>
+
+                <Box sx={{ width: 40, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <IconButton
+                        aria-label="close"
+                        onClick={onClose}
+                        sx={{
+                            color: (theme) => theme.palette.grey[500],
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                            '&:hover': {
+                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                            },
+                        }}
+                        size="small"
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
             </DialogTitle>
             <DialogContent dividers sx={{ borderTop: 'none', borderBottom: 'none', p: 0 }}>
                 <Box sx={{ pt: 2 }}>
