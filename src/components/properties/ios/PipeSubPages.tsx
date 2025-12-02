@@ -1297,8 +1297,6 @@ export const DirectionPage = ({ pipe, onUpdatePipe }: { pipe: PipeProps, onUpdat
 
 // --- Pipe Fittings ---
 
-
-
 export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
     const fittings = pipe.fittings || [];
 

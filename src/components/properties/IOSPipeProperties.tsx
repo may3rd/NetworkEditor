@@ -520,20 +520,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                                 const currentPipe = net.pipes.find(p => p.id === pipe.id);
                                 if (!currentPipe) return null;
                                 return <PipeFittingsPage pipe={currentPipe} onUpdatePipe={onUpdatePipe} navigator={nav} />;
-                            }, "Back", (
-                                <IconButton size="small" sx={{
-                                    width: "30px",
-                                    height: "30px",
-                                    borderRadius: "50%",
-                                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "#ffffff",
-                                    color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
-                                    "&:hover": {
-                                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "#ffffff",
-                                    },
-                                }}>
-                                    <Add sx={{ fontSize: "20px" }} />
-                                </IconButton>
-                            ))}
+                            }, "Back")}
                             chevron
                         />
                         <IOSListItem

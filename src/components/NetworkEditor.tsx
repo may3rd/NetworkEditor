@@ -967,9 +967,9 @@ function EditorCanvas({
           }
         }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
           Background Settings
-          <IconButton onClick={() => setShowBackgroundSettings(false)} size="small">
+          <IconButton onClick={() => setShowBackgroundSettings(false)} size="small" sx={{ position: 'absolute', right: 8, top: 8 }}>
             <CloseIcon />
           </IconButton>
         </DialogTitle>
@@ -1039,15 +1039,31 @@ function EditorCanvas({
               />
             </Stack>
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={keepAspectRatio}
-                  onChange={(e) => setKeepAspectRatio(e.target.checked)}
-                />
-              }
-              label="Keep Aspect Ratio"
-            />
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={keepAspectRatio}
+                    onChange={(e) => setKeepAspectRatio(e.target.checked)}
+                  />
+                }
+                label="Keep Aspect Ratio"
+              />
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  onNetworkChange?.({
+                    ...network,
+                    backgroundImageSize: network.backgroundImageOriginalSize ?? network.backgroundImageSize,
+                    backgroundImageOpacity: 1,
+                    backgroundImagePosition: { x: 0, y: 0 },
+                  });
+                }}
+              >
+                Reset
+              </Button>
+            </Stack>
 
             <Stack direction="row" spacing={2}>
               <TextField
@@ -1066,31 +1082,7 @@ function EditorCanvas({
               />
             </Stack>
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={network.backgroundImageLocked ?? true}
-                  onChange={(e) => onNetworkChange?.({ ...network, backgroundImageLocked: e.target.checked })}
-                />
-              }
-              label="Lock Background (Prevent Dragging)"
-            />
-
             <Stack direction="row" spacing={2}>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  onNetworkChange?.({
-                    ...network,
-                    backgroundImageSize: network.backgroundImageOriginalSize ?? network.backgroundImageSize,
-                    backgroundImageOpacity: 1,
-                    backgroundImagePosition: { x: 0, y: 0 },
-                  });
-                }}
-                fullWidth
-              >
-                Reset
-              </Button>
               <Button
                 variant="outlined"
                 color="error"
@@ -1109,6 +1101,13 @@ function EditorCanvas({
                 fullWidth
               >
                 Remove
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => setShowBackgroundSettings(false)}
+                fullWidth
+              >
+                OK
               </Button>
             </Stack>
           </Stack>

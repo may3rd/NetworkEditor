@@ -55,7 +55,7 @@ export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAct
                             backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "#ffffff",
                             color: isDark ? "#ffffff" : "#000000",
                             "&:hover": {
-                                backgroundColor: isDark ? "rgba(255, 255, 255, 0.2)" : "#ffffff",
+                                backgroundColor: isDark ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
                             },
                             display: "flex",
                             alignItems: "center",

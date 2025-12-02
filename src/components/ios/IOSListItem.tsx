@@ -29,7 +29,7 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
                     backgroundColor: isDark ? "#3a3a3c" : "#e5e5ea",
                 } : undefined,
                 "&:hover": onClick ? {
-                    backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.08)",
+                    backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.04)",
                 } : undefined,
                 transition: "background-color 0.2s",
                 display: "flex",
