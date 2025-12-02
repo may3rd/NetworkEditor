@@ -72,6 +72,6 @@ export const glassLabelSx = {
 export const glassListGroupSx = {
     backgroundColor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : '#ffffff',
     backdropFilter: "blur(4px)",
-    borderRadius: "10px",
+    borderRadius: "16px",
     overflow: "hidden",
 };

@@ -1,4 +1,4 @@
-import { TextField, TextFieldProps, InputAdornment, IconButton, useTheme } from "@mui/material";
+import { Box, TextField, TextFieldProps, InputAdornment, IconButton, useTheme } from "@mui/material";
 import { Cancel } from "@mui/icons-material";
 
 type Props = TextFieldProps & {

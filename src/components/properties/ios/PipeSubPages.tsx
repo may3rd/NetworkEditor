@@ -1421,27 +1421,6 @@ export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
                                             size="small"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                updateFitting(option.value, count + 1);
-                                            }}
-                                            sx={{
-                                                width: "28px",
-                                                height: "28px",
-                                                color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
-                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
-                                                "&:hover": {
-                                                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
-                                                }
-                                            }}
-                                        >
-                                            <Add sx={{ fontSize: "16px" }} />
-                                        </IconButton>
-                                        <Typography sx={{ minWidth: "24px", textAlign: "center", fontSize: "14px" }}>
-                                            {count}
-                                        </Typography>
-                                        <IconButton
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
                                                 updateFitting(option.value, Math.max(0, count - 1));
                                             }}
                                             sx={{
@@ -1455,6 +1434,27 @@ export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
                                             }}
                                         >
                                             <Remove sx={{ fontSize: "16px" }} />
+                                        </IconButton>
+                                        <Typography sx={{ minWidth: "24px", textAlign: "center", fontSize: "14px" }}>
+                                            {count}
+                                        </Typography>
+                                        <IconButton
+                                            size="small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                updateFitting(option.value, count + 1);
+                                            }}
+                                            sx={{
+                                                width: "28px",
+                                                height: "28px",
+                                                color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
+                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                                                "&:hover": {
+                                                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                                                }
+                                            }}
+                                        >
+                                            <Add sx={{ fontSize: "16px" }} />
                                         </IconButton>
                                     </Stack>
                                 ) : undefined)}

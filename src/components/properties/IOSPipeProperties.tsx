@@ -246,9 +246,6 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
 
     return (
         <Box sx={{
-            ...glassPanelSx,
-            pb: 4,
-            borderRadius: "0px",
             mt: "-100px",
             pt: "100px",
         }}>
@@ -261,7 +258,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                 flexDirection: "column",
                 alignItems: "flex-start",
                 textAlign: "left",
-                borderRadius: "10px",
+                borderRadius: "16px",
                 mx: 2,
                 my: 2,
             }}>
@@ -405,8 +402,6 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     last
                 />
             </IOSListGroup>
-
-
 
             <IOSListGroup>
                 <IOSListItem

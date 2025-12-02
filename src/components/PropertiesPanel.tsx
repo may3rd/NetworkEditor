@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, ReactNode, useRef, RefObject } from "react";
+import { useState, useEffect, useLayoutEffect, ReactNode, useRef, RefObject } from "react";
 import { Paper, Box, Typography } from "@mui/material";
 import { NetworkState, NodePatch, PipePatch, ViewSettings } from "@/lib/types";
 import { glassPanelSx } from "@/lib/glassStyles";
@@ -37,10 +37,42 @@ export function PropertiesPanel() {
     backLabel?: string;
     rightAction?: ReactNode;
     render: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void) => ReactNode;
+    scrollPos?: number;
   }[]>([]);
 
+  const prevStackLengthRef = useRef(0);
+
+  // Handle scroll restoration
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (stack.length > prevStackLengthRef.current) {
+      // Pushed: Reset scroll to top
+      container.scrollTop = 0;
+    } else if (stack.length < prevStackLengthRef.current) {
+      // Popped: Restore scroll position
+      const activePage = stack[stack.length - 1];
+      if (activePage && activePage.scrollPos !== undefined) {
+        container.scrollTop = activePage.scrollPos;
+      }
+    }
+
+    prevStackLengthRef.current = stack.length;
+  }, [stack]);
+
   const push = (title: string, render: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void) => ReactNode, backLabel?: string, rightAction?: ReactNode) => {
-    setStack(prev => [...prev, { id: title, title, render, backLabel, rightAction }]);
+    setStack(prev => {
+      const newStack = [...prev];
+      // Save scroll position of current top page
+      if (newStack.length > 0 && containerRef.current) {
+        newStack[newStack.length - 1] = {
+          ...newStack[newStack.length - 1],
+          scrollPos: containerRef.current.scrollTop
+        };
+      }
+      return [...newStack, { id: title, title, render, backLabel, rightAction }];
+    });
     setTitleOpacity(1); // Reset opacity on push
   };
 
@@ -110,6 +142,7 @@ export function PropertiesPanel() {
   }
 
   const activePage = stack[stack.length - 1];
+  // eslint-disable-next-line
   const activeComponent = activePage.render(network, navigator, containerRef, setTitleOpacity);
 
   return (

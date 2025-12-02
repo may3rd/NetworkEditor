@@ -54,6 +54,14 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
         });
     };
 
+    const openFluidPage = () => {
+        navigator.push("Fluid", (net: NetworkState, nav: Navigator) => {
+            const currentNode = net.nodes.find(n => n.id === node.id);
+            if (!currentNode) return null;
+            return <NodeFluidPage node={currentNode} onUpdateNode={onUpdateNode} navigator={nav} />;
+        });
+    };
+
     const openPressurePage = () => {
         navigator.push("Pressure", (net: NetworkState, nav: Navigator) => {
             const currentNode = net.nodes.find(n => n.id === node.id);
@@ -67,14 +75,6 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
             const currentNode = net.nodes.find(n => n.id === node.id);
             if (!currentNode) return null;
             return <TemperaturePage node={currentNode} onUpdateNode={onUpdateNode} />;
-        });
-    };
-
-    const openFluidPage = () => {
-        navigator.push("Fluid", (net: NetworkState, nav: Navigator) => {
-            const currentNode = net.nodes.find(n => n.id === node.id);
-            if (!currentNode) return null;
-            return <NodeFluidPage node={currentNode} onUpdateNode={onUpdateNode} navigator={nav} />;
         });
     };
 
@@ -184,7 +184,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
     };
 
     return (
-        <Box sx={{ pt: 2 }}>
+        <Box sx={{ mt: "-100px", pt: "100px" }}>
             {/* Top Summary Section */}
             <Box sx={{
                 ...glassListGroupSx,
@@ -195,7 +195,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                 alignItems: "flex-start",
                 textAlign: "left",
                 // backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
-                borderRadius: "10px",
+                borderRadius: "16px",
                 mx: 2,
                 my: 2,
             }}>

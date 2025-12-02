@@ -21,7 +21,7 @@ export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAct
             top: 0,
             zIndex: 100,
             backgroundColor: isDark ? "rgba(0, 0, 0, 0.0)" : "rgba(242, 242, 247, 0.0)",
-            backdropFilter: "blur(10px)",
+            backdropFilter: "transparent",
             borderBottom: "none",
             height: "44px",
             display: "flex",
@@ -31,6 +31,18 @@ export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAct
             pr: 1,
             pt: 2,
         }}>
+            <Box
+                sx={{
+                    left: 0,
+                    top: "-44px",
+                    width: "340px",
+                    height: "44px",
+                    position: "absolute",
+                    boxShadow: isDark ? "0px 0px 24px 44px rgba(30, 41, 59, 1.0)" : "0px 0px 24px 44px #e0e0e0",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}
+            ></Box>
             <Box sx={{ width: "80px", display: "flex", alignItems: "center" }}>
                 {(onBack || onClose) && (
                     <IconButton
@@ -71,6 +83,7 @@ export function IOSNavBar({ title, onBack, onClose, backLabel = "Back", rightAct
                 textOverflow: "ellipsis",
                 opacity: titleOpacity,
                 transition: "opacity 0.2s ease-in-out",
+                zIndex: 101,
             }}>
                 {title}
             </Typography>

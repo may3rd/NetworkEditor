@@ -37,7 +37,6 @@ export const TemperaturePage = ({ node, onUpdateNode }: { node: NodeProps, onUpd
 );
 
 // --- Fluid Sub-Pages ---
-
 const FluidNamePage = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
     <Box sx={{ pt: 4 }}>
         <IOSListGroup>
@@ -48,6 +47,7 @@ const FluidNamePage = ({ value, onChange }: { value: string, onChange: (v: strin
                 onClear={() => onChange("")}
                 placeholder="Fluid Name"
                 autoFocus
+                sx={{ borderRadius: "16px" }}
             />
         </IOSListGroup>
     </Box>
@@ -280,7 +280,7 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
 
     return (
         <Box sx={{ pt: 2 }}>
-            <IOSListGroup header="General">
+            <IOSListGroup>
                 <IOSListItem
                     label="Name"
                     value={fluid.id}
@@ -297,7 +297,7 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
             </IOSListGroup>
 
             {fluid.phase === "liquid" ? (
-                <IOSListGroup header="Liquid Properties">
+                <IOSListGroup>
                     <IOSListItem
                         label="Density"
                         value={`${fluid.density ?? "-"} ${fluid.densityUnit ?? "kg/m3"}`}
@@ -313,7 +313,7 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                     />
                 </IOSListGroup>
             ) : (
-                <IOSListGroup header="Gas Properties">
+                <IOSListGroup>
                     <IOSListItem
                         label="Molecular Weight"
                         value={fluid.molecularWeight?.toString() ?? "-"}

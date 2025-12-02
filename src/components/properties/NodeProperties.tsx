@@ -209,7 +209,7 @@ export function NodeProperties({ node, network, onUpdateNode, onNetworkChange }:
                 sx={{
                     p: 2,
                     backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#ffffff",
-                    borderRadius: "10px",
+                    borderRadius: "16px",
                     boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                 }}
             >
