@@ -920,6 +920,7 @@ function EditorCanvas({
             backgroundImageSize={network.backgroundImageSize}
             backgroundImagePosition={network.backgroundImagePosition}
             backgroundImageOpacity={network.backgroundImageOpacity}
+            className="network-custom-background"
           />
           {showGrid && <Background className="network-grid" style={{ backgroundColor: 'transparent' }} />}
           <MiniMap

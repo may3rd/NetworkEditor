@@ -110,6 +110,15 @@ export default function Home() {
     };
     const hiddenGridLayers: Array<{ el: HTMLElement; display: string }> = [];
 
+    // Store original background image attributes
+    const bgImageEl = flowElement.querySelector(".network-custom-background image");
+    const originalBgAttributes = bgImageEl ? {
+      x: bgImageEl.getAttribute("x"),
+      y: bgImageEl.getAttribute("y"),
+      width: bgImageEl.getAttribute("width"),
+      height: bgImageEl.getAttribute("height"),
+    } : null;
+
     try {
       if (hasContent && viewport) {
         flowElement.style.width = `${exportWidth}px`;
@@ -117,8 +126,19 @@ export default function Home() {
         flowElement.style.overflow = "visible";
         viewport.style.transform = `translate(${PADDING - bounds.minX}px, ${PADDING - bounds.minY}px) scale(1)`;
         viewport.style.transformOrigin = "0 0";
+
+        // Adjust background image position for export
+        if (bgImageEl && network.backgroundImagePosition && network.backgroundImageSize) {
+          const bgX = network.backgroundImagePosition.x + (PADDING - bounds.minX);
+          const bgY = network.backgroundImagePosition.y + (PADDING - bounds.minY);
+          bgImageEl.setAttribute("x", String(bgX));
+          bgImageEl.setAttribute("y", String(bgY));
+          bgImageEl.setAttribute("width", String(network.backgroundImageSize.width));
+          bgImageEl.setAttribute("height", String(network.backgroundImageSize.height));
+        }
       }
       flowElement.querySelectorAll<HTMLElement>(".react-flow__background").forEach(el => {
+        if (el.classList.contains("network-custom-background")) return;
         hiddenGridLayers.push({ el, display: el.style.display });
         el.style.display = "none";
       });
@@ -137,7 +157,7 @@ export default function Home() {
             className.includes("react-flow__controls") ||
             className.includes("react-flow__minimap") ||
             className.includes("react-flow__panel") ||
-            className.includes("react-flow__background")
+            (className.includes("react-flow__background") && !className.includes("network-custom-background"))
           );
         },
       });
@@ -162,6 +182,15 @@ export default function Home() {
       hiddenGridLayers.forEach(({ el, display }) => {
         el.style.display = display;
       });
+
+      // Restore background image attributes
+      if (bgImageEl && originalBgAttributes) {
+        if (originalBgAttributes.x !== null) bgImageEl.setAttribute("x", originalBgAttributes.x);
+        if (originalBgAttributes.y !== null) bgImageEl.setAttribute("y", originalBgAttributes.y);
+        if (originalBgAttributes.width !== null) bgImageEl.setAttribute("width", originalBgAttributes.width);
+        if (originalBgAttributes.height !== null) bgImageEl.setAttribute("height", originalBgAttributes.height);
+      }
+
       setIsExporting(false);
     }
   }, [network, setIsExporting]);
