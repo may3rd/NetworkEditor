@@ -90,6 +90,7 @@ export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: P
                 headerActions={headerActions}
                 isSnapshot={isSnapshot}
                 onColumnSettingsClick={() => setVisibilityDialogOpen(true)}
+                projectDetails={network.projectDetails}
             />
 
             <PipeVisibilityDialog

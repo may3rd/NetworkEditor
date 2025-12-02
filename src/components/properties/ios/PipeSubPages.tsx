@@ -20,8 +20,10 @@ const VelocityCriteriaDialog = ({ open, onClose }: { open: boolean, onClose: () 
         onClose={onClose}
         maxWidth="lg"
         fullWidth
-        PaperProps={{
-            sx: glassDialogSx
+        slotProps={{
+            paper: {
+                sx: glassDialogSx
+            }
         }}
     >
         <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center' }}>
@@ -1578,10 +1580,12 @@ export function PipeSummaryPage({ pipe, viewSettings, navigator }: { pipe: PipeP
                 onClose={() => setOpenVelocityCriteria(false)}
                 maxWidth="lg"
                 fullWidth
-                PaperProps={{
-                    sx: {
-                        borderRadius: "16px",
-                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderRadius: "16px",
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
+                        }
                     }
                 }}
             >

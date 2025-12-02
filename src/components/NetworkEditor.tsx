@@ -1063,8 +1063,10 @@ function EditorCanvas({
         onClose={() => setShowBackgroundSettings(false)}
         maxWidth="xs"
         fullWidth
-        PaperProps={{
-          sx: glassDialogSx
+        slotProps={{
+          paper: {
+            sx: glassDialogSx
+          }
         }}
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1080,6 +1082,28 @@ function EditorCanvas({
               <Slider
                 value={(network.backgroundImageOpacity ?? 1) * 100}
                 onChange={(_, value) => onNetworkChange?.({ ...network, backgroundImageOpacity: (value as number) / 100 })}
+                valueLabelDisplay="auto"
+              />
+            </Box>
+
+            <Box>
+              <Typography gutterBottom>Scale ({Math.round((network.backgroundImageSize?.width && network.backgroundImageOriginalSize?.width ? (network.backgroundImageSize.width / network.backgroundImageOriginalSize.width) : 1) * 100)}%)</Typography>
+              <Slider
+                value={(network.backgroundImageSize?.width && network.backgroundImageOriginalSize?.width ? (network.backgroundImageSize.width / network.backgroundImageOriginalSize.width) : 1) * 100}
+                min={10}
+                max={200}
+                onChange={(_, value) => {
+                  const scale = (value as number) / 100;
+                  if (network.backgroundImageOriginalSize) {
+                    onNetworkChange?.({
+                      ...network,
+                      backgroundImageSize: {
+                        width: Math.round(network.backgroundImageOriginalSize.width * scale),
+                        height: Math.round(network.backgroundImageOriginalSize.height * scale)
+                      }
+                    });
+                  }
+                }}
                 valueLabelDisplay="auto"
               />
             </Box>

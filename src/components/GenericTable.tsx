@@ -21,6 +21,7 @@ import PrintIcon from '@mui/icons-material/Print';
 import DownloadIcon from '@mui/icons-material/Download';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { RowConfig } from "./summary/tableConfig";
+import { ProjectDetails } from "@/lib/types";
 
 type Props<T> = {
     data: T[];
@@ -32,6 +33,7 @@ type Props<T> = {
     isSnapshot?: boolean;
     initialRowsPerPage?: number;
     onColumnSettingsClick?: () => void;
+    projectDetails?: ProjectDetails;
 };
 
 export function GenericTable<T>({
@@ -43,7 +45,8 @@ export function GenericTable<T>({
     headerActions,
     isSnapshot = false,
     initialRowsPerPage = 8,
-    onColumnSettingsClick
+    onColumnSettingsClick,
+    projectDetails
 }: Props<T>) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
@@ -462,43 +465,45 @@ export function GenericTable<T>({
 
                     {/* Footer (Visible only in print via CSS) */}
                     <Box className="print-footer" sx={{ display: 'none' }}>
-                        {/* Row 1: TITLE */}
+                        {/* Row 1: TITLE + Rev 3 (Top) */}
                         <div className="footer-row">
                             <div className="footer-cell" style={{ flex: 1, borderRight: '1px solid black' }}>
-                                <span className="footer-label">TITLE : placeholder</span>
+                                <span className="footer-label">TITLE : {projectDetails?.title}</span>
                             </div>
-                            {/* Right side empty columns to match Rev block below */}
+                            {/* Right side: Rev 3 */}
                             <div style={{ width: '45%', display: 'flex' }}>
-                                <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>00</div>
-                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
+                                <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[2]?.rev}</div>
+                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[2]?.by} {projectDetails?.revisions[2]?.date ? `/ ${projectDetails?.revisions[2]?.date}` : ""}</div>
+                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[2]?.checked} {projectDetails?.revisions[2]?.checkedDate ? `/ ${projectDetails?.revisions[2]?.checkedDate}` : ""}</div>
+                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[2]?.approved} {projectDetails?.revisions[2]?.approvedDate ? `/ ${projectDetails?.revisions[2]?.approvedDate}` : ""}</div>
                             </div>
                         </div>
 
-                        {/* Row 2: PROJECT */}
+                        {/* Row 2: PROJECT + Rev 2 (Middle) */}
                         <div className="footer-row">
                             <div className="footer-cell" style={{ flex: 1, borderRight: '1px solid black' }}>
-                                <span className="footer-label">PROJECT : placeholder</span>``
+                                <span className="footer-label">PROJECT : {projectDetails?.projectName}</span>
                             </div>
+                            {/* Right side: Rev 2 */}
                             <div style={{ width: '45%', display: 'flex' }}>
-                                <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>00</div>
-                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
+                                <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[1]?.rev}</div>
+                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[1]?.by} {projectDetails?.revisions[1]?.date ? `/ ${projectDetails?.revisions[1]?.date}` : ""}</div>
+                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[1]?.checked} {projectDetails?.revisions[1]?.checkedDate ? `/ ${projectDetails?.revisions[1]?.checkedDate}` : ""}</div>
+                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[1]?.approved} {projectDetails?.revisions[1]?.approvedDate ? `/ ${projectDetails?.revisions[1]?.approvedDate}` : ""}</div>
                             </div>
                         </div>
 
-                        {/* Row 3: CLIENT */}
+                        {/* Row 3: CLIENT + Rev 1 (Bottom) */}
                         <div className="footer-row">
                             <div className="footer-cell" style={{ flex: 1, borderRight: '1px solid black' }}>
-                                <span className="footer-label">CLIENT : placeholder</span>
+                                <span className="footer-label">CLIENT : {projectDetails?.clientName}</span>
                             </div>
+                            {/* Right side: Rev 1 */}
                             <div style={{ width: '45%', display: 'flex' }}>
-                                <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>00</div>
-                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
+                                <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[0]?.rev}</div>
+                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[0]?.by} {projectDetails?.revisions[0]?.date ? `/ ${projectDetails?.revisions[0]?.date}` : ""}</div>
+                                <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[0]?.checked} {projectDetails?.revisions[0]?.checkedDate ? `/ ${projectDetails?.revisions[0]?.checkedDate}` : ""}</div>
+                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{projectDetails?.revisions[0]?.approved} {projectDetails?.revisions[0]?.approvedDate ? `/ ${projectDetails?.revisions[0]?.approvedDate}` : ""}</div>
                             </div>
                         </div>
 
@@ -552,13 +557,13 @@ export function GenericTable<T>({
                                 {/* Row C: Values */}
                                 <div style={{ display: 'flex', flex: 1 }}>
                                     <div style={{ flex: 1, borderRight: '1px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        Project No. placeholder
+                                        {projectDetails?.projectNo}
                                     </div>
                                     <div style={{ flex: 1, borderRight: '1px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        Document No. placeholder
+                                        {projectDetails?.calculationNo}
                                     </div>
                                     <div style={{ flex: 1, borderRight: '3px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <span>XX OF XX</span>
+                                        <span>{projectDetails?.pageNumber || "XX"} OF {projectDetails?.totalPages || "XX"}</span>
                                     </div>
                                 </div>
                             </div>

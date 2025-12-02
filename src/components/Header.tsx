@@ -1,23 +1,33 @@
 "use client";
 
-import { Image, FileOpen, Save } from "@mui/icons-material";
+import { Assignment } from "@mui/icons-material";
 import { Button, Box, Typography, Stack, ButtonGroup, Paper, Tooltip } from "@mui/material";
+import { useState } from "react";
+import { NetworkState, ProjectDetails } from "@/lib/types";
+import { ProjectDetailsDialog } from "./ProjectDetailsDialog";
 
 type Props = {
+  network: NetworkState;
+  onNetworkChange: (updatedNetwork: NetworkState) => void;
   onReset: () => void;
-  onExportPng: () => void;
-  onLoadNetwork: () => void;
-  onSaveNetwork: () => void;
   onImportExcel: () => void;
 };
 
 export function Header({
+  network,
+  onNetworkChange,
   onReset,
-  onExportPng,
-  onLoadNetwork,
-  onSaveNetwork,
   onImportExcel,
 }: Props) {
+  const [projectDetailsOpen, setProjectDetailsOpen] = useState(false);
+
+  const handleSaveProjectDetails = (details: ProjectDetails) => {
+    onNetworkChange({
+      ...network,
+      projectDetails: details
+    });
+  };
+
   return (
     <Paper
       elevation={0}
@@ -49,31 +59,26 @@ export function Header({
                 Example
               </Button>
             </Tooltip>
+            <Tooltip title="Edit Project Details">
+              <Button onClick={() => setProjectDetailsOpen(true)} startIcon={<Assignment />}>
+                Project Details
+              </Button>
+            </Tooltip>
             <Tooltip title="Import network from Excel">
               <Button onClick={onImportExcel} color="success">
                 Import Excel
               </Button>
             </Tooltip>
           </ButtonGroup>
-
-          {/* <ButtonGroup variant="outlined">
-            <Tooltip title="Export network as PNG">
-                <Button onClick={onExportPng} startIcon={<Image />}>
-                    Export
-                </Button>
-            </Tooltip>
-            <Tooltip title="Load network from file">
-                <Button onClick={onLoadNetwork} startIcon={<FileOpen />}>
-                    Load
-                </Button>
-            </Tooltip>
-            <Tooltip title="Save network to file">
-                <Button onClick={onSaveNetwork} startIcon={<Save />}>
-                    Save
-                </Button>
-          </ButtonGroup> */}
         </Box>
       </Box>
+
+      <ProjectDetailsDialog
+        open={projectDetailsOpen}
+        onClose={() => setProjectDetailsOpen(false)}
+        initialDetails={network.projectDetails}
+        onSave={handleSaveProjectDetails}
+      />
     </Paper >
   );
 }

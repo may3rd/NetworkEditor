@@ -214,6 +214,26 @@ export type NetworkState = {
   backgroundImageOriginalSize?: { width: number; height: number };
   visiblePipeIds?: string[];
   viewSettings?: ViewSettings;
+  projectDetails?: ProjectDetails;
+};
+
+export type ProjectDetails = {
+  projectNo: string;
+  projectName: string;
+  clientName: string;
+  calculationNo: string;
+  title: string;
+  revisions: {
+    rev: string;
+    by: string;
+    date: string;
+    checked: string;
+    checkedDate: string;
+    approved: string;
+    approvedDate: string;
+  }[];
+  pageNumber: string;
+  totalPages: string;
 };
 
 const baseNetwork: NetworkState = {
@@ -539,6 +559,44 @@ const baseNetwork: NetworkState = {
       },
     },
   ],
+  projectDetails: {
+    projectNo: "12345",
+    projectName: "Example Project",
+    clientName: "Example Client",
+    calculationNo: "CALC-001",
+    title: "Hydraulic Analysis",
+    pageNumber: "1",
+    totalPages: "10",
+    revisions: [
+      {
+        rev: "A",
+        by: "J. Doe",
+        date: "2023-10-26",
+        checked: "A. Smith",
+        checkedDate: "2023-10-27",
+        approved: "B. Jones",
+        approvedDate: "2023-10-28",
+      },
+      {
+        rev: "B",
+        by: "J. Doe",
+        date: "2023-11-01",
+        checked: "A. Smith",
+        checkedDate: "2023-11-02",
+        approved: "B. Jones",
+        approvedDate: "2023-11-03",
+      },
+      {
+        rev: "0",
+        by: "J. Doe",
+        date: "2023-11-10",
+        checked: "A. Smith",
+        checkedDate: "2023-11-11",
+        approved: "B. Jones",
+        approvedDate: "2023-11-12",
+      },
+    ],
+  },
 };
 
 export const createInitialNetwork = (): NetworkState => {
@@ -564,7 +622,7 @@ export const createInitialNetwork = (): NetworkState => {
     };
   });
 
-  return { nodes, pipes };
+  return { nodes, pipes, projectDetails: baseNetwork.projectDetails };
 };
 
 export const copyFluidFromNodeToPipe = (node: NodeProps, pipe: PipeProps) => {

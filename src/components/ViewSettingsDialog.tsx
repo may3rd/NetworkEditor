@@ -157,8 +157,10 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                sx: glassDialogSx
+            slotProps={{
+                paper: {
+                    sx: glassDialogSx
+                }
             }}
         >
             <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

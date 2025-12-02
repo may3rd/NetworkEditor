@@ -480,6 +480,8 @@ export default function Home() {
         onChange={handleExcelFileChange}
       />
       <Header
+        network={network}
+        onNetworkChange={handleNetworkChange}
         onReset={handleReset}
         onExportPng={handleExportPng}
         onLoadNetwork={handleLoadNetworkClick}
@@ -675,12 +677,14 @@ export default function Home() {
         onClose={() => setShowSummary(false)}
         maxWidth="xl"
         fullWidth
-        PaperProps={{
-          sx: {
-            height: "100vh",
-            bgcolor: "background.paper",
-            borderRadius: 0,
-            m: 0,
+        slotProps={{
+          paper: {
+            sx: {
+              height: "100vh",
+              bgcolor: "background.paper",
+              borderRadius: 0,
+              m: 0,
+            }
           }
         }}
       >
@@ -700,14 +704,16 @@ export default function Home() {
         onClose={() => setShowSnapshot(false)}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: {
-            bgcolor: "#0f172a",
-            color: "#86efac",
-            borderRadius: 2,
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: "-10px 0 40px rgba(0,0,0,0.7)",
+        slotProps={{
+          paper: {
+            sx: {
+              bgcolor: "#0f172a",
+              color: "#86efac",
+              borderRadius: 2,
+              border: "1px solid",
+              borderColor: "divider",
+              boxShadow: "-10px 0 40px rgba(0,0,0,0.7)",
+            }
           }
         }}
       >
