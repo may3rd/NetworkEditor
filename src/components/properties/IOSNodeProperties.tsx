@@ -296,7 +296,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                                 width: 30,
                                 height: 30,
                                 borderRadius: "7px",
-                                backgroundColor: "primary.main",
+                                background: "linear-gradient(#00C4F9,#0076F0)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",

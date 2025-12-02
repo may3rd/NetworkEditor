@@ -177,6 +177,15 @@ function PressureNode({ data }: { data: NodeData }) {
     }
   };
 
+  const myShadow = isDark ?
+    "0px 0px 2px 1px rgba(255, 255, 255, 0.7), 2px 2px 2px -2px rgba(0, 0, 0, 0.7) inset, -2px -2px 2px -2px rgba(0, 0, 0, 0.7) inset"
+    : "0px 0px 2px 1px rgba(0, 0, 0, 0.7), 2px 2px 2px -2px rgba(255, 255, 255, 0.7) inset, -2px -2px 2px -2px rgba(255, 255, 255, 0.7) inset";
+
+  // animateShadow
+  const animatedIconShadowKey70 = isDark ?
+    "0px 0px 2px 1px rgba(255, 255, 255, 0.7), -2px 2px 2px -2px rgba(0, 0, 0, 0.7) inset, 2px -2px 2px -2px rgba(0, 0, 0, 0.7) inset"
+    : "0px 0px 2px 1px rgba(0, 0, 0, 0.7), -2px 2px 2px -2px rgba(255, 255, 255, 0.7) inset, 2px -2px 2px -2px rgba(255, 255, 255, 0.7) inset";
+
   return (
     <div
       onMouseEnter={!showHandles ? handleMouseEnter : undefined}
@@ -210,13 +219,13 @@ function PressureNode({ data }: { data: NodeData }) {
           {`
             @keyframes pulse-sky {
               0% {
-                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0.7);
+                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0.7), ${myShadow};
               }
               70% {
-                box-shadow: 0 0 0 6px rgba(14, 165, 233, 0);
+                box-shadow: 0 0 0 6px rgba(14, 165, 233, 0), ${animatedIconShadowKey70};
               }
               100% {
-                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0);
+                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0), ${myShadow};
               }
             }
           `}
@@ -228,7 +237,7 @@ function PressureNode({ data }: { data: NodeData }) {
             height: circleSize,
             borderRadius: "50%",
             background: fillColor,
-            boxShadow: "0px 0px 2px 1px rgba(255, 255, 255, 0.3) inset, 2px 2px 2px -2px rgba(255,255,255,0.7) inset, -2px -2px 2px -2px rgba(255,255,255,0.7) inset",
+            boxShadow: myShadow,
             // border: `${borderWidth}px solid ${borderColor}`,
             // boxShadow: isSelected ? "0 0 0 4px rgba(14, 165, 233, 0.3)" : baseShadow,
             animation: isSelected ? "pulse-sky 2s infinite" : "none",
@@ -304,10 +313,10 @@ function PressureNode({ data }: { data: NodeData }) {
           y={hoverPos.y}
           rows={(() => {
             const rows: Array<{ label: string; value: string | number | React.ReactNode }> = [
-              { label: "Pressure", value: typeof data.node.pressure === 'number' ? `${convertUnit(data.node.pressure, data.node.pressureUnit, data.displayPressureUnit || data.node.pressureUnit).toFixed(2)} ${data.displayPressureUnit || data.node.pressureUnit}` : "N/A" },
-              { label: "Temperature", value: typeof data.node.temperature === 'number' ? `${data.node.temperature.toFixed(2)} ${data.node.temperatureUnit}` : "N/A" },
               { label: "Fluid", value: data.node.fluid?.id || "None" },
               { label: "Phase", value: data.node.fluid?.phase || "N/A" },
+              { label: "Pressure", value: typeof data.node.pressure === 'number' ? `${convertUnit(data.node.pressure, data.node.pressureUnit, data.displayPressureUnit || data.node.pressureUnit).toFixed(2)} ${data.displayPressureUnit || data.node.pressureUnit}` : "N/A" },
+              { label: "Temperature", value: typeof data.node.temperature === 'number' ? `${data.node.temperature.toFixed(2)} ${data.node.temperatureUnit}` : "N/A" },
             ];
 
             const warnings = getNodeWarnings(data.node, data.flowRole || "neutral", data.pipes || []);
