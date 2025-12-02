@@ -17,7 +17,7 @@ The application has a modern, clean look with a dark theme and a light theme. Th
 The application has recently undergone a major refactor to move state management from local state/prop drilling to a global Zustand store.
 
 ### Recent Changes
-- **Zustand Integration**: `NetworkEditor.tsx` and `PropertiesPanel.tsx` now consume state directly from `useNetworkStore`.
+- **Zustand Integration**: `NetworkEditor.tsx`, `PropertiesPanel.tsx`, and `SummaryTable.tsx` now consume state directly from `useNetworkStore`.
 - **Prop Removal**: `page.tsx` has been cleaned up and no longer passes massive amounts of props to child components.
 - **Refactoring**: `NetworkEditor` was split into a wrapper and an inner `EditorCanvas` component.
 - **Linting**: Fixed various lint errors and circular dependency issues in the refactored components.
@@ -44,7 +44,6 @@ The application has recently undergone a major refactor to move state management
     ```
 
 ## Next Steps / Pending Tasks
-- **SummaryTable Refactor**: The `SummaryTable` component still receives `network` and `onNetworkChange` as props. Consider refactoring it to use `useNetworkStore` for consistency.
 - **Testing**: Verify all interactions (drag, drop, connect, property updates) work as expected after the refactor.
 - **Feature Work**: Continue with any pending feature requests (e.g., advanced fluid calculations, export options).
 - **Database**: Add a database to store the network data.

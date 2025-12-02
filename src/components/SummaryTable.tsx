@@ -8,18 +8,19 @@ import {
     Button,
 } from "@mui/material";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { NetworkState, PipeProps } from "@/lib/types";
+import { PipeProps } from "@/lib/types";
 import { PipeVisibilityDialog } from "./PipeVisibilityDialog";
 import { GenericTable } from "./GenericTable";
 import { getPipeSummaryRows } from "./summary/tableConfig";
 
+import { useNetworkStore } from "@/store/useNetworkStore";
+
 type Props = {
-    network: NetworkState;
     isSnapshot?: boolean;
-    onNetworkChange?: (updatedNetwork: NetworkState) => void;
 };
 
-export function SummaryTable({ network, isSnapshot = false, onNetworkChange }: Props) {
+export function SummaryTable({ isSnapshot = false }: Props) {
+    const { network, setNetwork: onNetworkChange } = useNetworkStore();
     const [unitSystem, setUnitSystem] = useState<"metric" | "imperial" | "fieldSI" | "metric_kgcm2">("metric");
     const [visibilityDialogOpen, setVisibilityDialogOpen] = useState(false);
 

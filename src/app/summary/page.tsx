@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { SummaryTable } from "@/components/SummaryTable";
-import { NetworkState } from "@/lib/types";
-import { Box, Typography, CircularProgress } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
+import { useNetworkStore } from "@/store/useNetworkStore";
 
 export default function SummarySnapshotPage() {
-    const [network, setNetwork] = useState<NetworkState | null>(null);
+    const { setNetwork, network } = useNetworkStore();
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         try {
@@ -14,12 +15,14 @@ export default function SummarySnapshotPage() {
             if (storedNetwork) {
                 setNetwork(JSON.parse(storedNetwork));
             }
+            setLoaded(true);
         } catch (error) {
             console.error("Failed to load network snapshot:", error);
+            setLoaded(true);
         }
-    }, []);
+    }, [setNetwork]);
 
-    if (!network) {
+    if (!loaded) {
         return (
             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
                 <CircularProgress />
@@ -27,9 +30,15 @@ export default function SummarySnapshotPage() {
         );
     }
 
+    if (!network.nodes.length && !network.pipes.length) {
+        // Handle case where load failed or empty
+        // But maybe network was empty.
+        // Let's just show table, it will be empty.
+    }
+
     return (
         <Box sx={{ width: "100%", height: "100vh", p: 2, overflow: "auto" }}>
-            <SummaryTable network={network} isSnapshot={true} onNetworkChange={setNetwork} />
+            <SummaryTable isSnapshot={true} />
         </Box>
     );
 }
