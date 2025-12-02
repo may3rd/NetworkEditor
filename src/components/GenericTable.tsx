@@ -154,6 +154,7 @@ export function GenericTable<T>({
                         display: flex !important;
                         flex-direction: row !important;
                         border: 20px solid #2e75b6 !important; /* Blue border */
+                        borderRadius: 0 !important;
                         box-sizing: border-box;
                     }
                     
@@ -299,7 +300,7 @@ export function GenericTable<T>({
             </style>
 
             {/* Print Layout Wrapper */}
-            <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', width: '100%' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'row', height: '100%', width: '100%', borderRadius: "16px" }}>
 
                 {/* Left Disclaimer Column (Visible only in print via CSS, or we can show it always if desired. 
                     The CSS above handles visibility, but we need the DOM structure.) */}
@@ -314,7 +315,7 @@ export function GenericTable<T>({
 
                     {/* Header */}
                     <Box className="print-header-container" sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, p: 1 }}>
-                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', flex: 1, textAlign: "center", color: '#000' }}>
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 'bold', flex: 1, textAlign: "center", color: 'text.primary' }}>
                             {title}
                         </Typography>
                         <Box sx={{ display: "flex", gap: 2, alignItems: "center" }} className="no-print">

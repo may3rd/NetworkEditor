@@ -23,6 +23,7 @@ export const IOSContainer = forwardRef<HTMLDivElement, Props>(({ children, onScr
                 overflowX: "hidden",
                 overflowY: "auto",
                 borderRadius: "24px",
+                border: "none",
             }}
         >
             {children}
