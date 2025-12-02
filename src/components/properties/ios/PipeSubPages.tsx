@@ -1,5 +1,5 @@
 import { Box, TextField, FormControl, InputLabel, Select, MenuItem, Stack, Typography, Switch, RadioGroup, FormControlLabel, Radio, IconButton, Button, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
-import { glassInputSx, glassSelectSx, glassRadioSx } from "@/lib/glassStyles";
+import { glassInputSx, glassSelectSx, glassRadioSx, glassDialogSx } from "@/lib/glassStyles";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
 import { getScheduleEntries, nearest_pipe_diameter, PIPE_FITTING_OPTIONS } from "../../PipeDimension";
 import { PipeProps, PipePatch, FittingType, ViewSettings, NodeProps, NodePatch } from "@/lib/types";
@@ -21,11 +21,7 @@ const VelocityCriteriaDialog = ({ open, onClose }: { open: boolean, onClose: () 
         maxWidth="lg"
         fullWidth
         PaperProps={{
-            sx: {
-                borderRadius: "16px",
-                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
-                boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
-            }
+            sx: glassDialogSx
         }}
     >
         <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center' }}>

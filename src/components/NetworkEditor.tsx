@@ -82,6 +82,7 @@ import ViewSettingsDialog from "@/components/ViewSettingsDialog";
 import { type ViewSettings } from "@/lib/types";
 import { useCopyPaste } from "@/hooks/useCopyPaste";
 import { CustomCursor } from "./CustomCursor";
+import { glassDialogSx } from "@/lib/glassStyles";
 
 
 
@@ -1063,10 +1064,7 @@ function EditorCanvas({
         maxWidth="xs"
         fullWidth
         PaperProps={{
-          sx: {
-            borderRadius: 2,
-            boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
-          }
+          sx: glassDialogSx
         }}
       >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -18,6 +18,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { ViewSettings } from "@/lib/types";
 import { IOSListGroup } from "./ios/IOSListGroup";
 import { IOSListItem } from "./ios/IOSListItem";
+import { glassDialogSx } from "@/lib/glassStyles";
 import { useState } from "react";
 
 type Props = {
@@ -157,11 +158,7 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
             maxWidth="sm"
             fullWidth
             PaperProps={{
-                sx: {
-                    borderRadius: "16px",
-                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
-                    boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
-                }
+                sx: glassDialogSx
             }}
         >
             <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
