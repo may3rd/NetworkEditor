@@ -160,6 +160,7 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                 sx: {
                     borderRadius: "16px",
                     backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
+                    boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
                 }
             }}
         >

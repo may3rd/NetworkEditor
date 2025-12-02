@@ -9,9 +9,87 @@ import { IOSContainer } from "../../ios/IOSContainer";
 import { IOSTextField } from "../../ios/IOSTextField";
 import { IOSQuantityPage } from './IOSQuantityPage';
 import { VelocityCriteriaPage } from './VelocityCriteriaPage';
-export { VelocityCriteriaPage };
 import { SERVICE_TYPES } from "@/utils/velocityCriteria";
-import { Check, ArrowForwardIos, Add, Remove, AutoFixHigh, ContentCopy } from "@mui/icons-material";
+import { Check, ArrowForwardIos, Add, Remove, AutoFixHigh, ContentCopy, Close } from "@mui/icons-material";
+
+// ... (existing code)
+
+const VelocityCriteriaDialog = ({ open, onClose }: { open: boolean, onClose: () => void }) => (
+    <Dialog
+        open={open}
+        onClose={onClose}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+            sx: {
+                borderRadius: "16px",
+                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
+                boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
+            }
+        }}
+    >
+        <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center' }}>
+            <Typography variant="h6" component="div" sx={{ fontWeight: 600, flex: 1, textAlign: 'center' }}>
+                Velocity Criteria
+            </Typography>
+            <IconButton
+                aria-label="close"
+                onClick={onClose}
+                sx={{
+                    position: 'absolute',
+                    right: 16,
+                    color: (theme) => theme.palette.grey[500],
+                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                    '&:hover': {
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                    },
+                }}
+                size="small"
+            >
+                <Close />
+            </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ borderTop: 'none', borderBottom: 'none' }}>
+            <VelocityCriteriaPage />
+        </DialogContent>
+    </Dialog>
+);
+
+export function ServiceTypePage({ value, onChange }: { value: string, onChange: (val: string) => void }) {
+    const [openVelocityCriteria, setOpenVelocityCriteria] = useState(false);
+
+    return (
+        <Box sx={{ pt: 2 }}>
+            <IOSListGroup>
+                {SERVICE_TYPES.map((type, index) => (
+                    <IOSListItem
+                        key={type}
+                        label={type}
+                        value={value === type ? <Check color="primary" sx={{ fontSize: 16 }} /> : ""}
+                        onClick={() => onChange(type)}
+                        last={index === SERVICE_TYPES.length - 1}
+                    />
+                ))}
+            </IOSListGroup>
+            <Box sx={{ pl: 3, pb: 2, mt: -2 }}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "primary.main",
+                        cursor: "pointer",
+                        textDecoration: "none",
+                        "&:hover": { textDecoration: "underline" }
+                    }}
+                    onClick={() => setOpenVelocityCriteria(true)}
+                >
+                    Velocity criteria...
+                </Typography>
+            </Box>
+
+            <VelocityCriteriaDialog open={openVelocityCriteria} onClose={() => setOpenVelocityCriteria(false)} />
+        </Box>
+    );
+}
 import { Navigator } from "../../PropertiesPanel";
 import { convertUnit } from "@/lib/unitConversion";
 import { NodeSelectionPage } from "./NodeSubPages";
@@ -417,37 +495,7 @@ export function GasFlowModelPage({ value, onChange }: { value: "adiabatic" | "is
     );
 }
 
-export function ServiceTypePage({ value, onChange, onOpenVelocityCriteria }: { value: string, onChange: (val: string) => void, onOpenVelocityCriteria: () => void }) {
-    return (
-        <Box sx={{ pt: 2 }}>
-            <IOSListGroup>
-                {SERVICE_TYPES.map((type, index) => (
-                    <IOSListItem
-                        key={type}
-                        label={type}
-                        value={value === type ? <Check color="primary" sx={{ fontSize: 16 }} /> : ""}
-                        onClick={() => onChange(type)}
-                        last={index === SERVICE_TYPES.length - 1}
-                    />
-                ))}
-            </IOSListGroup>
-            <Box sx={{ pl: 3, pb: 2, mt: -2 }}>
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: "primary.main",
-                        cursor: "pointer",
-                        textDecoration: "none",
-                        "&:hover": { textDecoration: "underline" }
-                    }}
-                    onClick={onOpenVelocityCriteria}
-                >
-                    Velocity criteria...
-                </Typography>
-            </Box>
-        </Box>
-    );
-}
+
 export const GasFlowModelSelectionPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProps, onUpdatePipe: (id: string, patch: PipePatch) => void, navigator: Navigator }) => {
     const openModelPage = () => {
         navigator.push("Flow Model", (net, nav) => {
@@ -1330,84 +1378,95 @@ export const PipeFittingsPage = ({ pipe, onUpdatePipe, navigator }: { pipe: Pipe
             </IOSListGroup>
 
             <IOSListGroup>
-                {PIPE_FITTING_OPTIONS.map((option, index) => {
-                    const count = getCount(option.value);
-                    const isToggle = option.value === "pipe_entrance_normal" || option.value === "pipe_entrance_raise" || option.value === "pipe_exit";
-                    const isSwage = option.value === "inlet_swage" || option.value === "outlet_swage";
+                {(() => {
+                    const lastVisibleIndex = PIPE_FITTING_OPTIONS.reduce((lastIndex, option, index) => {
+                        const count = getCount(option.value);
+                        const isSwage = option.value === "inlet_swage" || option.value === "outlet_swage";
+                        if (isSwage && count === 0) {
+                            return lastIndex;
+                        }
+                        return index;
+                    }, -1);
 
-                    if (isSwage && count === 0) {
-                        return null;
-                    }
+                    return PIPE_FITTING_OPTIONS.map((option, index) => {
+                        const count = getCount(option.value);
+                        const isToggle = option.value === "pipe_entrance_normal" || option.value === "pipe_entrance_raise" || option.value === "pipe_exit";
+                        const isSwage = option.value === "inlet_swage" || option.value === "outlet_swage";
 
-                    return (
-                        <IOSListItem
-                            key={option.value}
-                            label={option.label}
-                            control={isToggle ? (
-                                <Switch
-                                    size="small"
-                                    checked={count > 0}
-                                    onChange={(e) => updateFitting(option.value, e.target.checked ? 1 : 0)}
-                                />
-                            ) : undefined}
-                            value={isSwage ? (() => {
-                                const pipeDia = pipe.diameter || 0;
-                                if (option.value === "inlet_swage") {
-                                    const inletDia = pipe.inletDiameter || pipeDia;
-                                    return inletDia < pipeDia ? "Expand" : "Reduce";
-                                } else {
-                                    const outletDia = pipe.outletDiameter || pipeDia;
-                                    return outletDia < pipeDia ? "Reduce" : "Expand";
-                                }
-                            })() : (!isToggle ? (
-                                <Stack direction="row" alignItems="center" spacing={1}>
-                                    <IconButton
+                        if (isSwage && count === 0) {
+                            return null;
+                        }
+
+                        return (
+                            <IOSListItem
+                                key={option.value}
+                                label={option.label}
+                                control={isToggle ? (
+                                    <Switch
                                         size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            updateFitting(option.value, count + 1);
-                                        }}
-                                        sx={{
-                                            width: "28px",
-                                            height: "28px",
-                                            color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
-                                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
-                                            "&:hover": {
-                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
-                                            }
-                                        }}
-                                    >
-                                        <Add sx={{ fontSize: "16px" }} />
-                                    </IconButton>
-                                    <Typography sx={{ minWidth: "24px", textAlign: "center", fontSize: "14px" }}>
-                                        {count}
-                                    </Typography>
-                                    <IconButton
-                                        size="small"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            updateFitting(option.value, Math.max(0, count - 1));
-                                        }}
-                                        sx={{
-                                            width: "28px",
-                                            height: "28px",
-                                            color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
-                                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
-                                            "&:hover": {
-                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
-                                            }
-                                        }}
-                                    >
-                                        <Remove sx={{ fontSize: "16px" }} />
-                                    </IconButton>
-                                </Stack>
-                            ) : undefined)}
-                            onClick={(!isToggle && !isSwage) ? undefined : undefined}
-                            chevron={!isToggle && !isSwage ? false : (!isToggle && !isSwage)}
-                            last={index === PIPE_FITTING_OPTIONS.length - 1}
-                        />
-                    );
-                })}
+                                        checked={count > 0}
+                                        onChange={(e) => updateFitting(option.value, e.target.checked ? 1 : 0)}
+                                    />
+                                ) : undefined}
+                                value={isSwage ? (() => {
+                                    const pipeDia = pipe.diameter || 0;
+                                    if (option.value === "inlet_swage") {
+                                        const inletDia = pipe.inletDiameter || pipeDia;
+                                        return inletDia < pipeDia ? "Expand" : "Reduce";
+                                    } else {
+                                        const outletDia = pipe.outletDiameter || pipeDia;
+                                        return outletDia < pipeDia ? "Reduce" : "Expand";
+                                    }
+                                })() : (!isToggle ? (
+                                    <Stack direction="row" alignItems="center" spacing={1}>
+                                        <IconButton
+                                            size="small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                updateFitting(option.value, count + 1);
+                                            }}
+                                            sx={{
+                                                width: "28px",
+                                                height: "28px",
+                                                color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
+                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                                                "&:hover": {
+                                                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                                                }
+                                            }}
+                                        >
+                                            <Add sx={{ fontSize: "16px" }} />
+                                        </IconButton>
+                                        <Typography sx={{ minWidth: "24px", textAlign: "center", fontSize: "14px" }}>
+                                            {count}
+                                        </Typography>
+                                        <IconButton
+                                            size="small"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                updateFitting(option.value, Math.max(0, count - 1));
+                                            }}
+                                            sx={{
+                                                width: "28px",
+                                                height: "28px",
+                                                color: (theme) => theme.palette.mode === 'dark' ? "#ffffff" : "#000000",
+                                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                                                "&:hover": {
+                                                    backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                                                }
+                                            }}
+                                        >
+                                            <Remove sx={{ fontSize: "16px" }} />
+                                        </IconButton>
+                                    </Stack>
+                                ) : undefined)}
+                                onClick={(!isToggle && !isSwage) ? undefined : undefined}
+                                chevron={!isToggle && !isSwage ? false : (!isToggle && !isSwage)}
+                                last={index === lastVisibleIndex}
+                            />
+                        );
+                    });
+                })()}
             </IOSListGroup>
         </Box>
     );
@@ -1521,16 +1580,39 @@ export function PipeSummaryPage({ pipe, viewSettings, navigator }: { pipe: PipeP
             <Dialog
                 open={openVelocityCriteria}
                 onClose={() => setOpenVelocityCriteria(false)}
-                maxWidth="md"
+                maxWidth="lg"
                 fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: "16px",
+                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
+                    }
+                }}
             >
-                <DialogTitle>Velocity Criteria</DialogTitle>
-                <DialogContent>
+                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', alignItems: 'center' }}>
+                    <Typography variant="h6" component="div" sx={{ fontWeight: 600, flex: 1, textAlign: 'center' }}>
+                        Velocity Criteria
+                    </Typography>
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOpenVelocityCriteria(false)}
+                        sx={{
+                            position: 'absolute',
+                            right: 16,
+                            color: (theme) => theme.palette.grey[500],
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+                            '&:hover': {
+                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                            },
+                        }}
+                        size="small"
+                    >
+                        <Close />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent dividers sx={{ borderTop: 'none', borderBottom: 'none' }}>
                     <VelocityCriteriaPage />
                 </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setOpenVelocityCriteria(false)}>Close</Button>
-                </DialogActions>
             </Dialog>
         </Box>
     );

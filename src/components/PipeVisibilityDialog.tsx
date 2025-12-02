@@ -204,7 +204,10 @@ export function PipeVisibilityDialog({ open, onClose, allPipes, visiblePipeIds, 
             maxWidth="md"
             fullWidth
             PaperProps={{
-                sx: { borderRadius: 2 }
+                sx: {
+                    borderRadius: 2,
+                    boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
+                }
             }}
         >
             <DialogTitle sx={{ pb: 1 }}>

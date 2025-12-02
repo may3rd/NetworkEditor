@@ -58,7 +58,6 @@ import {
     NumberInputPage,
     GasFlowModelPage,
     ServiceTypePage,
-    VelocityCriteriaPage,
     BoundaryNodePage
 } from "./ios/PipeSubPages";
 
@@ -83,7 +82,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const summaryRef = useRef<HTMLDivElement>(null);
-    const [openVelocityCriteria, setOpenVelocityCriteria] = useState(false);
+
 
     // Scroll listener for title fade-in
     useEffect(() => {
@@ -334,7 +333,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     onClick={() => navigator.push("Service Type", (net, nav) => {
                         const currentPipe = net.pipes.find(p => p.id === pipe.id);
                         if (!currentPipe) return null;
-                        return <ServiceTypePage value={currentPipe.serviceType || ""} onChange={(v) => onUpdatePipe(pipe.id, { serviceType: v })} onOpenVelocityCriteria={() => setOpenVelocityCriteria(true)} />;
+                        return <ServiceTypePage value={currentPipe.serviceType || ""} onChange={(v) => onUpdatePipe(pipe.id, { serviceType: v })} />;
                     })}
                     chevron
                 />
@@ -400,41 +399,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                 />
             </IOSListGroup>
 
-            <Dialog
-                open={openVelocityCriteria}
-                onClose={() => setOpenVelocityCriteria(false)}
-                maxWidth="lg"
-                fullWidth
-                PaperProps={{
-                    sx: {
-                        borderRadius: "16px",
-                        backgroundColor: (theme) => theme.palette.mode === 'dark' ? "#1c1c1e" : "#f2f2f7",
-                    }
-                }}
-            >
-                <DialogTitle sx={{ m: 0, p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                        Velocity Criteria
-                    </Typography>
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setOpenVelocityCriteria(false)}
-                        sx={{
-                            color: (theme) => theme.palette.grey[500],
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
-                            '&:hover': {
-                                backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(255, 255, 255, 0.2)" : "rgba(0, 0, 0, 0.1)",
-                            },
-                        }}
-                        size="small"
-                    >
-                        <Close />
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent dividers sx={{ borderTop: 'none', borderBottom: 'none' }}>
-                    <VelocityCriteriaPage />
-                </DialogContent>
-            </Dialog>
+
 
             <IOSListGroup>
                 <IOSListItem

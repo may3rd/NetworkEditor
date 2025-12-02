@@ -55,7 +55,7 @@ export function IOSListItem({ label, value, onClick, control, chevron, last, ico
                     left: "0px", // Adjust this to make it shorter from the left
                     right: "8px", // Adjust this to make it shorter from the right
                     height: "1px",
-                    backgroundColor: isDark ? "#38383a" : "#c6c6c8",
+                    backgroundColor: isDark ? "#38383a" : "#E5E5EA",
                     display: last ? "none" : "block",
                 },
             }}>

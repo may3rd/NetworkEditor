@@ -529,6 +529,7 @@ export default function Home() {
               right: "0px",
               bottom: 0,
               width: "340px",
+              borderRadius: "27px",
               zIndex: 10,
               backgroundColor: "transparent",
             }}
@@ -695,6 +696,7 @@ export default function Home() {
             borderRadius: 2,
             border: "1px solid",
             borderColor: "divider",
+            boxShadow: "-10px 0 40px rgba(0,0,0,0.7)",
           }
         }}
       >

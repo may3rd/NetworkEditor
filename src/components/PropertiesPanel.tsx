@@ -124,9 +124,9 @@ export function PropertiesPanel({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        borderLeft: "1px solid",
-        borderColor: "divider",
-        borderRadius: "24px",
+        border: "none",
+        borderRadius: "26px",
+        boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
         zIndex: 1100, // Above canvas
       }}
     >

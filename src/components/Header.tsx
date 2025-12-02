@@ -36,9 +36,9 @@ export function Header({
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%", flexWrap: { xs: "wrap", md: "nowrap" } }}>
         <Stack gap={0.5} flex="1 1 auto">
-          <Typography variant="h5" component="h1" fontWeight="bold">Pipeline Network Builder</Typography>
+          <Typography variant="h5" component="h1" fontWeight="bold"><i>E-PT Suite</i> - Pipeline Network Builder</Typography>
           <Typography color="text.secondary">
-            Sketch networks, edit properties, then print summary table and export network as PNG.
+            Sketch networks, edit properties, print summary table and export network as PNG.
           </Typography>
         </Stack>
 

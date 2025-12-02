@@ -921,9 +921,8 @@ function EditorCanvas({
         position: "relative",
         display: "flex",
         flexDirection: "column",
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
+        borderRadius: "24px",
+        border: "none",
       }}
     >
       <EditorToolbar
@@ -1059,7 +1058,18 @@ function EditorCanvas({
         `}</style>
       </div>
 
-      <Dialog open={showBackgroundSettings} onClose={() => setShowBackgroundSettings(false)} maxWidth="xs" fullWidth>
+      <Dialog
+        open={showBackgroundSettings}
+        onClose={() => setShowBackgroundSettings(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
+          }
+        }}
+      >
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           Background Settings
           <IconButton onClick={() => setShowBackgroundSettings(false)} size="small">
