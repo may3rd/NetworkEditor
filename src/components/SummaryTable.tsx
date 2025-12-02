@@ -9,9 +9,9 @@ import {
 } from "@mui/material";
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import { PipeProps } from "@/lib/types";
-import { PipeVisibilityDialog } from "./PipeVisibilityDialog";
-import { GenericTable } from "./GenericTable";
-import { getPipeSummaryRows } from "./summary/tableConfig";
+import { PipeVisibilityDialog } from "./summaryTable/PipeVisibilityDialog";
+import { GenericTable } from "./summaryTable/GenericTable";
+import { getPipeSummaryRows } from "./summaryTable/tableConfig";
 
 import { useNetworkStore } from "@/store/useNetworkStore";
 

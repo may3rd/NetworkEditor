@@ -35,7 +35,7 @@ const NamePage = ({ value, onChange }: { value: string, onChange: (v: string) =>
     </Box>
 );
 
-import { PressurePage, TemperaturePage, NodeFluidPage } from "./ios/NodeSubPages";
+import { PressurePage, TemperaturePage, NodeFluidPage } from "./subPages/NodeSubPages";
 
 export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity, onNetworkChange }: Props) {
     const theme = useTheme();

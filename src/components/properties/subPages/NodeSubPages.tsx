@@ -1,7 +1,7 @@
 import { Box, TextField, FormControl, Typography, RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { glassInputSx, glassRadioSx } from "@/lib/glassStyles";
-import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../../QuantityInput";
-import { IOSQuantityPage } from "./IOSQuantityPage";
+import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
+import { IOSQuantityPage } from "../../ios/IOSQuantityPage";
 import { NodeProps, NodePatch } from "@/lib/types";
 import { IOSListGroup } from "../../ios/IOSListGroup";
 import { Navigator } from "../../PropertiesPanel";

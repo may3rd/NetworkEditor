@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import { v4 as uuidv4 } from 'uuid';
 import { NetworkState, NodeProps, PipeProps, FittingType } from '@/lib/types';
-import { PIPE_FITTING_OPTIONS } from '@/components/PipeDimension';
+import { PIPE_FITTING_OPTIONS } from '@/components/properties/subPages/PipeDimension';
 
 // Columns to check for pipes (H, K, N, Q, T, W, Z, AC)
 const PIPE_COLUMNS = [7, 10, 13, 16, 19, 22, 25, 28];

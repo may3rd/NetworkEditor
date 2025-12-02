@@ -18,7 +18,7 @@ import {
     getScheduleEntries,
     nearest_pipe_diameter,
     normalizeSchedule,
-} from "../PipeDimension";
+} from "./PipeDimension";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
 
 type Props = {

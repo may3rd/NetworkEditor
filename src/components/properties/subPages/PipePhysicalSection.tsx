@@ -24,7 +24,7 @@ import {
     calculateGasFlowForPipe,
     computeFittingContribution,
 } from "@/lib/calculations/pipeline";
-import { PIPE_FITTING_OPTIONS } from "../PipeDimension";
+import { PIPE_FITTING_OPTIONS } from "./PipeDimension";
 import { QuantityInput, QUANTITY_UNIT_OPTIONS } from "../QuantityInput";
 
 const FITTING_TYPE_OPTIONS = ["SCRD", "LR", "SR"] as const;

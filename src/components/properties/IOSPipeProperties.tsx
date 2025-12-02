@@ -60,7 +60,7 @@ import {
     GasFlowModelPage,
     ServiceTypePage,
     BoundaryNodePage
-} from "./ios/PipeSubPages";
+} from "./subPages/PipeSubPages";
 
 type Props = {
     pipe: PipeProps;

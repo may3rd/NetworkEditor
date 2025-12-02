@@ -20,7 +20,7 @@ import {
 import PrintIcon from '@mui/icons-material/Print';
 import DownloadIcon from '@mui/icons-material/Download';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { RowConfig } from "./summary/tableConfig";
+import { RowConfig } from "./tableConfig";
 import { ProjectDetails } from "@/lib/types";
 
 type Props<T> = {

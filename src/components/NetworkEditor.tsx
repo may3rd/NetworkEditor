@@ -68,10 +68,10 @@ import {
   type OnConnectStartParams,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import PressureNode from "@/components/PressureNode";
-import BackgroundNode from "@/components/BackgroundNode";
-import PipeEdge from "@/components/PipeEdge";
-import CustomBackground from "@/components/CustomBackground";
+import PressureNode from "@/components/nodes/PressureNode";
+import BackgroundNode from "@/components/customBackgrounds/BackgroundNode";
+import PipeEdge from "@/components/nodes/PipeEdge";
+import CustomBackground from "@/components/customBackgrounds/CustomBackground";
 import { NetworkState, type NodeProps, type PipeProps } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { convertUnit } from "@/lib/unitConversion";
