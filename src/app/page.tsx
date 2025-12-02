@@ -483,9 +483,6 @@ export default function Home() {
         network={network}
         onNetworkChange={handleNetworkChange}
         onReset={handleReset}
-        onExportPng={handleExportPng}
-        onLoadNetwork={handleLoadNetworkClick}
-        onSaveNetwork={handleSaveNetwork}
         onImportExcel={handleImportExcelClick}
       />
 
