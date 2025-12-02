@@ -75,7 +75,7 @@ function PressureNode({ data }: { data: NodeData }) {
   const fillColor = roleColor;
 
   // Use theme text color for border to adapt to light/dark mode automatically
-  const borderColor = isSelected ? "#f59e0b" : theme.palette.text.primary;
+  const borderColor = isSelected ? "#0ea5e9" : theme.palette.text.primary;
   const borderWidth = isSelected ? 2 : 1;
 
   const baseShadow = isDark
@@ -205,15 +205,15 @@ function PressureNode({ data }: { data: NodeData }) {
       <div style={{ position: "relative", width: circleSize, height: circleSize }}>
         <style>
           {`
-            @keyframes pulse-orange {
+            @keyframes pulse-sky {
               0% {
-                box-shadow: 0 0 0 0px rgba(245, 158, 11, 0.7);
+                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0.7);
               }
               70% {
-                box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+                box-shadow: 0 0 0 6px rgba(14, 165, 233, 0);
               }
               100% {
-                box-shadow: 0 0 0 0px rgba(245, 158, 11, 0);
+                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0);
               }
             }
           `}
@@ -226,8 +226,8 @@ function PressureNode({ data }: { data: NodeData }) {
             borderRadius: "50%",
             background: alpha(fillColor, 0.6),
             border: `${borderWidth}px solid ${borderColor}`,
-            boxShadow: isSelected ? "0 0 0 4px rgba(245, 158, 11, 0.3)" : baseShadow,
-            animation: isSelected ? "pulse-orange 2s infinite" : "none",
+            boxShadow: isSelected ? "0 0 0 4px rgba(14, 165, 233, 0.3)" : baseShadow,
+            animation: isSelected ? "pulse-sky 2s infinite" : "none",
             transform: `scale(${scaleAmount})`,
             transition: "background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease",
             position: "absolute",
