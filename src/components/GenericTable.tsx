@@ -164,7 +164,7 @@ export function GenericTable<T>({
                         display: flex !important;
                         align-items: center;
                         justify-content: center;
-                        border-right: 1px solid #000000;
+                        border-right: 3px solid #000000;
                         background-color: white !important;
                     }
                     .disclaimer-text {
@@ -187,6 +187,8 @@ export function GenericTable<T>({
                     .print-header-container {
                         margin-bottom: 0 !important;
                         border-bottom: 1px solid #000000;
+                        border-top: 3px solid #000000;
+                        border-right: 3px solid #000000;
                         padding: 4px;
                     }
                     .no-print {
@@ -214,7 +216,7 @@ export function GenericTable<T>({
                         height: auto !important;
                     }
                     .MuiTableCell-root:last-child {
-                        border-right: none !important;
+                        border-right: 3px solid black !important;
                     }
                     
                     /* Header Cells */
@@ -234,6 +236,9 @@ export function GenericTable<T>({
                         border-top: 1px solid #000 !important;
                         border-bottom: 1px solid #000 !important;
                     }
+                    .section-header-cell:last-child {
+                        border-right: 3px solid #000 !important;
+                    }
 
                     /* Footer Styles */
                     .print-footer {
@@ -241,10 +246,17 @@ export function GenericTable<T>({
                         flex-direction: column;
                         border-top: 2px solid #000000;
                         font-size: 8pt;
+                        margin-top: -1px;
                     }
                     .footer-row {
                         display: flex;
-                        border-bottom: 1px solid black;
+                        border-top: 1px solid black;
+                    }
+                    .footer-row-bottom {
+                        display: flex;
+                        border-top: 1px solid black;
+                        border-bottom: 3px solid black !important;
+                        border-right: 3px solid black !important;
                     }
                     .footer-row:last-child {
                         border-bottom: none;
@@ -458,20 +470,20 @@ export function GenericTable<T>({
                                 <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>00</div>
                                 <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
                                 <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
+                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
                             </div>
                         </div>
 
                         {/* Row 2: PROJECT */}
                         <div className="footer-row">
                             <div className="footer-cell" style={{ flex: 1, borderRight: '1px solid black' }}>
-                                <span className="footer-label">PROJECT : placeholder</span>
+                                <span className="footer-label">PROJECT : placeholder</span>``
                             </div>
                             <div style={{ width: '45%', display: 'flex' }}>
                                 <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>00</div>
                                 <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
                                 <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
+                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
                             </div>
                         </div>
 
@@ -484,7 +496,7 @@ export function GenericTable<T>({
                                 <div style={{ width: '15%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>00</div>
                                 <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
                                 <div style={{ width: '28.33%', borderRight: '1px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
-                                <div style={{ width: '28.33%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
+                                <div style={{ width: '28.33%', borderRight: '3px solid black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>ABC / 123</div>
                             </div>
                         </div>
 
@@ -492,20 +504,20 @@ export function GenericTable<T>({
                         <div className="footer-row" style={{ height: '60px' }}> {/* Increased height for logo block */}
 
                             {/* Left Block: Logo + Company */}
-                            <div style={{ flex: 1, display: 'flex', borderRight: '1px solid black' }}>
-                                <div className="footer-cell" style={{ width: '60px', justifyContent: 'center', borderRight: '1px solid black', padding: '2px' }}>
+                            <div style={{ flex: 1, display: 'flex', borderRight: '1px solid black', borderBottom: 'none' }}>
+                                <div className="footer-cell" style={{ width: '60px', justifyContent: 'center', borderRight: '1px solid black', borderBottom: 'none', padding: '2px' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                                         <span style={{ fontWeight: 'bold', fontStyle: 'italic', color: '#0070c0', fontSize: '10pt' }}>GC</span>
                                         <span style={{ fontWeight: 'bold', fontStyle: 'italic', color: '#0070c0', fontSize: '10pt' }}>ME</span>
                                     </div>
                                 </div>
-                                <div className="footer-cell" style={{ flex: 1, justifyContent: 'center', fontWeight: 'bold', textAlign: 'center' }}>
+                                <div className="footer-cell" style={{ flex: 1, justifyContent: 'center', fontWeight: 'bold', textAlign: 'center', borderBottom: 'none' }}>
                                     GC MAINTENANCE & ENGINEERING COMPANY LIMITED
                                 </div>
                             </div>
 
                             {/* Right Block: Rev Info */}
-                            <div style={{ width: '45%', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ width: '45%', display: 'flex', flexDirection: 'column', borderBottom: '1px solid black' }}>
                                 {/* Row A: Rev Headers */}
                                 <div style={{ display: 'flex', borderBottom: '1px solid black', flex: 1 }}>
                                     <div style={{ width: '15%', borderRight: '1px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -517,7 +529,7 @@ export function GenericTable<T>({
                                     <div style={{ width: '28.33%', borderRight: '1px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <span className="footer-label" style={{ marginRight: 0 }}>CHKD / DATE</span>
                                     </div>
-                                    <div style={{ width: '28.33%', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ width: '28.33%', borderRight: '3px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <span className="footer-label" style={{ marginRight: 0 }}>APPD / DATE</span>
                                     </div>
                                 </div>
@@ -530,7 +542,7 @@ export function GenericTable<T>({
                                     <div style={{ flex: 1, borderRight: '1px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <span className="footer-label" style={{ marginRight: 0 }}>DOCUMENT NO.</span>
                                     </div>
-                                    <div style={{ flex: 1, padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ flex: 1, borderRight: '3px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <span className="footer-label" style={{ marginRight: 0 }}>PAGE NO.</span>
                                     </div>
                                 </div>
@@ -538,19 +550,19 @@ export function GenericTable<T>({
                                 {/* Row C: Values */}
                                 <div style={{ display: 'flex', flex: 1 }}>
                                     <div style={{ flex: 1, borderRight: '1px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        {/* Placeholder */}
+                                        Project No. placeholder
                                     </div>
                                     <div style={{ flex: 1, borderRight: '1px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        {/* Placeholder */}
+                                        Document No. placeholder
                                     </div>
-                                    <div style={{ flex: 1, padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <div style={{ flex: 1, borderRight: '3px solid black', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <span>XX OF XX</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="footer-row" style={{ backgroundColor: '#2e75b6', color: 'white', justifyContent: 'space-between', padding: '2px 4px', fontSize: '0.5rem' }}>
+                        <div className="footer-row-bottom" style={{ backgroundColor: '#2e75b6', color: 'white', justifyContent: 'space-between', padding: '2px 4px', fontSize: '0.5rem' }}>
                             <span>CA-PR-1050.0202</span>
                             <span>VALIDATION REPORT : RPT-PR-1050.0202</span>
                         </div>
