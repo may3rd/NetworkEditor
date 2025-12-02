@@ -9,30 +9,25 @@ import { IOSNavBar } from "./ios/IOSNavBar";
 import { IOSPipeProperties } from "./properties/IOSPipeProperties";
 import { IOSNodeProperties } from "./properties/IOSNodeProperties";
 
-type Props = {
-  network: NetworkState;
-  selectedElement: { type: "node" | "pipe"; id: string } | null;
-  onUpdateNode: (id: string, patch: NodePatch) => void;
-  onUpdatePipe: (id: string, patch: PipePatch) => void;
-  onClose: () => void;
-  viewSettings: ViewSettings;
-  onNetworkChange?: (network: NetworkState) => void;
-};
+import { useNetworkStore } from "@/store/useNetworkStore";
 
 export type Navigator = {
   push: (title: string, component: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void) => ReactNode, backLabel?: string, rightAction?: ReactNode) => void;
   pop: () => void;
 };
 
-export function PropertiesPanel({
-  network,
-  selectedElement,
-  onUpdateNode,
-  onUpdatePipe,
-  onClose,
-  viewSettings,
-  onNetworkChange,
-}: Props) {
+export function PropertiesPanel() {
+  const {
+    network,
+    selection: selectedElement,
+    updateNode: onUpdateNode,
+    updatePipe: onUpdatePipe,
+    selectElement,
+    viewSettings,
+    setNetwork: onNetworkChange,
+  } = useNetworkStore();
+
+  const onClose = () => selectElement(null, null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [titleOpacity, setTitleOpacity] = useState(1);
 

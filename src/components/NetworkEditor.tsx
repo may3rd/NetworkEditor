@@ -83,47 +83,9 @@ import { type ViewSettings } from "@/lib/types";
 import { useCopyPaste } from "@/hooks/useCopyPaste";
 import { CustomCursor } from "./CustomCursor";
 import { glassDialogSx } from "@/lib/glassStyles";
+import { useNetworkStore } from "@/store/useNetworkStore";
 
-
-
-type NetworkEditorProps = {
-  network: NetworkState;
-  onSelect: (id: string | null, type: "node" | "pipe" | null) => void;
-  selectedId: string | null;
-  selectedType: "node" | "pipe" | null;
-  onDelete?: () => void;
-  onUndo?: () => void;
-  onRedo?: () => void;
-  canUndo?: boolean;
-  canRedo?: boolean;
-  historyIndex?: number;
-  historyLength?: number;
-  onNetworkChange?: (updatedNetwork: NetworkState) => void;
-  height?: string | number;
-  showPressures?: boolean;
-  setShowPressures?: (show: boolean) => void;
-  forceLightMode?: boolean;
-  onLoad?: () => void;
-  onSave?: () => void;
-  onExport?: () => void;
-  onNew?: () => void;
-  onToggleSnapshot?: () => void;
-  onToggleSummary?: () => void;
-  isAnimationEnabled?: boolean;
-  isConnectingMode?: boolean;
-  onToggleAnimation?: () => void;
-  onToggleConnectingMode?: () => void;
-  onSelectionChangeProp?: (selection: { nodes: string[]; edges: string[] }) => void;
-  viewSettings: ViewSettings;
-  setViewSettings: (settings: ViewSettings) => void;
-};
-
-type NodeFlowRole = "source" | "sink" | "middle" | "isolated" | "neutral";
-
-type NodeFlowState = {
-  role: NodeFlowRole;
-  needsAttention: boolean;
-};
+// ... other imports
 
 const generateUniquePipeName = (pipes: PipeProps[]): string => {
   let counter = 1;
@@ -136,42 +98,100 @@ const generateUniquePipeName = (pipes: PipeProps[]): string => {
   }
 };
 
-const styles = {
-  background: "background.paper",
-}
-
 export function NetworkEditor({
-  network,
-  onSelect,
-  selectedId,
-  selectedType,
-  onDelete,
-  onUndo,
-  onRedo,
-  canUndo = false,
-  canRedo = false,
-  historyIndex = 0,
-  historyLength = 0,
-  onNetworkChange,
   height = 520,
-  showPressures: externalShowPressures,
-  setShowPressures: externalSetShowPressures,
   forceLightMode = false,
   onLoad,
   onSave,
   onExport,
   onNew,
-  onToggleSnapshot,
-  onToggleSummary,
-  isAnimationEnabled = false,
-  isConnectingMode = false,
-  onToggleAnimation,
-  onToggleConnectingMode,
-  onSelectionChangeProp,
-  viewSettings,
-  setViewSettings,
-}: NetworkEditorProps) {
+}: {
+  height?: string | number;
+  forceLightMode?: boolean;
+  onLoad?: () => void;
+  onSave?: () => void;
+  onExport?: () => void;
+  onNew?: () => void;
+}) {
+  return (
+    <ReactFlowProvider>
+      <EditorCanvas
+        height={height}
+        forceLightMode={forceLightMode}
+        onLoad={onLoad}
+        onSave={onSave}
+        onExport={onExport}
+        onNew={onNew}
+      />
+    </ReactFlowProvider>
+  );
+}
+
+function EditorCanvas({
+  height,
+  forceLightMode,
+  onLoad,
+  onSave,
+  onExport,
+  onNew,
+}: {
+  height?: string | number;
+  forceLightMode?: boolean;
+  onLoad?: () => void;
+  onSave?: () => void;
+  onExport?: () => void;
+  onNew?: () => void;
+}) {
   const theme = useTheme();
+  const {
+    network,
+    setNetwork,
+    selectElement,
+    selectedId,
+    selectedType,
+    deleteSelection,
+    undo,
+    redo,
+    historyIndex,
+    history,
+    viewSettings,
+    setViewSettings,
+    isAnimationEnabled,
+    setIsAnimationEnabled,
+    isConnectingMode,
+    setIsConnectingMode,
+    setMultiSelection,
+    showSnapshot,
+    setShowSnapshot,
+    showSummary,
+    setShowSummary,
+  } = useNetworkStore();
+
+  const [snapToGrid, setSnapToGrid] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
+  const [isAddingNode, setIsAddingNode] = useState(false);
+  const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
+  const [keepAspectRatio, setKeepAspectRatio] = useState(true);
+  const [panModeEnabled, setPanModeEnabled] = useState(false);
+
+  const onSelect = selectElement;
+  const onDelete = deleteSelection;
+  const onUndo = undo;
+  const onRedo = redo;
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+  const historyLength = history.length;
+  const onNetworkChange = setNetwork;
+  const onToggleSnapshot = () => setShowSnapshot(!showSnapshot);
+  const onToggleSummary = () => setShowSummary(!showSummary);
+  const onToggleAnimation = () => setIsAnimationEnabled(!isAnimationEnabled);
+  const onToggleConnectingMode = () => {
+    if (!isConnectingMode) setIsAddingNode(false);
+    setIsConnectingMode(!isConnectingMode);
+  };
+  const onSelectionChangeProp = setMultiSelection;
+
+  // ... rest of component
 
   // viewSettings state is now passed as prop
 
@@ -188,31 +208,12 @@ export function NetworkEditor({
 
   const displayPressureUnit = getPressureUnit(viewSettings.unitSystem);
 
-  // Sync external showPressures prop with viewSettings (backward compatibility)
+  // Sync viewSettings to network state
   useEffect(() => {
-    if (externalShowPressures !== undefined) {
-      setViewSettings({
-        ...viewSettings,
-        node: {
-          ...viewSettings.node,
-          pressure: externalShowPressures,
-        },
-        pipe: { ...viewSettings.pipe, deltaP: externalShowPressures }
-      });
-    }
-  }, [externalShowPressures, viewSettings, setViewSettings]); // Added viewSettings and setViewSettings to dependency array
-
-  // Sync internal changes back to external prop if provided
-  useEffect(() => {
-    if (externalSetShowPressures) {
-      externalSetShowPressures(viewSettings.node.pressure || viewSettings.pipe.deltaP);
-    }
-
-    // Sync viewSettings to network state
     if (onNetworkChange) {
       // Avoid infinite loops by checking if deep equal or similar, but for now simple check
       // Actually, onNetworkChange updates the network prop, which might cause re-render.
-      // We need to be careful. 
+      // We need to be careful.
       // Let's just update if the network.viewSettings is different from current viewSettings
       if (JSON.stringify(network.viewSettings) !== JSON.stringify(viewSettings)) {
         onNetworkChange({
@@ -221,7 +222,7 @@ export function NetworkEditor({
         });
       }
     }
-  }, [viewSettings, externalSetShowPressures, onNetworkChange, network]);
+  }, [viewSettings, onNetworkChange, network]);
 
   const nodeFlowStates = useNodeFlowState(network.nodes, network.pipes);
 
@@ -238,7 +239,7 @@ export function NetworkEditor({
         pipes: network.pipes,
       });
     },
-    [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit, isConnectingMode]
+    [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit, isConnectingMode, network.pipes]
   );
 
   const rfNodes = useMemo<Node[]>(
@@ -285,6 +286,8 @@ export function NetworkEditor({
     pastedNodeIdsRef.current = new Set(ids);
   }, []);
 
+  const onPaste = handlePaste;
+
   useEffect(() => {
     if (selectedType === "pipe" && selectedId) {
       const selectedPipe = network.pipes.find(pipe => pipe.id === selectedId);
@@ -310,7 +313,7 @@ export function NetworkEditor({
     [network.pipes, selectedId, selectedType, viewSettings, theme, forceLightMode, isAnimationEnabled, isConnectingMode]
   );
 
-  const nodeTypes = useMemo(() => ({ pressure: PressureNode, background: BackgroundNode }), []);
+  const nodeTypes = useMemo(() => ({ pressure: PressureNode, background: BackgroundNode } as any), []);
   const edgeTypes = useMemo(() => ({ pipe: PipeEdge }), []);
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
@@ -501,134 +504,8 @@ export function NetworkEditor({
     onNetworkChange?.({ ...network, nodes: updatedNodes });
   }, [network, selectedId, selectedType, onNetworkChange]);
 
-  return (
-    <ReactFlowProvider>
-      <EditorCanvas {...{
-        network,
-        onSelect,
-        selectedId,
-        selectedType,
-        onDelete,
-        onUndo,
-        onRedo,
-        canUndo,
-        canRedo,
-        historyIndex,
-        historyLength,
-        onNetworkChange,
-        height,
-        localNodes,
-        setLocalNodes,
-        rfEdges,
-        nodeTypes,
-        edgeTypes,
-        defaultEdgeOptions,
-        handleNodesChange,
-        handleConnect,
-        mapNodeToReactFlow,
-        viewSettings,
-        setViewSettings,
-        forceLightMode,
-        handleRotateCW,
-        handleRotateCCW,
-        handleSwapLeftRight,
-        handleSwapUpDown,
-        onLoad,
-        onSave,
-        onExport,
-        onNew,
-        onPaste: handlePaste,
-        onToggleSnapshot,
-        onToggleSummary,
-        isAnimationEnabled,
-        isConnectingMode,
-        onToggleAnimation,
-        onToggleConnectingMode,
-        onSelectionChangeProp,
-      }} />
-    </ReactFlowProvider>
-  );
-}
 
-function EditorCanvas({
-  network,
-  onSelect,
-  onNetworkChange,
-  height,
-  localNodes,
-  setLocalNodes,
-  rfEdges,
-  nodeTypes,
-  edgeTypes,
-  defaultEdgeOptions,
-  handleNodesChange,
-  handleConnect,
-  canUndo = false,
-  canRedo = false,
-  onUndo,
-  onRedo,
-  historyIndex,
-  historyLength,
-  mapNodeToReactFlow,
-  viewSettings,
-  setViewSettings,
-  onDelete,
-  selectedId,
-  selectedType,
-  forceLightMode,
-  handleRotateCW,
-  handleRotateCCW,
-  handleSwapLeftRight,
-  handleSwapUpDown,
-  onLoad,
-  onSave,
-  onExport,
-  onPaste,
-  onNew,
-  onToggleSnapshot,
-  onToggleSummary,
-  isAnimationEnabled,
-  isConnectingMode,
-  onToggleAnimation,
-  onToggleConnectingMode,
-  onSelectionChangeProp,
-}: NetworkEditorProps & {
-  localNodes: Node[];
-  setLocalNodes: React.Dispatch<React.SetStateAction<Node<any, string | undefined>[]>>;
-  rfEdges: Edge[];
-  nodeTypes: { [key: string]: any };
-  edgeTypes: { [key: string]: any };
-  defaultEdgeOptions: DefaultEdgeOptions;
-  handleNodesChange: (changes: NodeChange<Node>[]) => void;
-  handleConnect: (connection: Connection) => void;
-  mapNodeToReactFlow: (node: NodeProps, isSelected: boolean) => Node;
-  viewSettings: ViewSettings;
-  setViewSettings: (settings: ViewSettings) => void;
-  onDelete?: () => void;
-  selectedId: string | null;
-  selectedType: "node" | "pipe" | null;
-  forceLightMode?: boolean;
-  handleRotateCW: () => void;
-  handleRotateCCW: () => void;
-  handleSwapLeftRight: () => void;
-  handleSwapUpDown: () => void;
-  onPaste: (ids: string[]) => void;
-  onNew?: () => void;
-  onToggleSnapshot?: () => void;
-  onToggleSummary?: () => void;
-  isAnimationEnabled?: boolean;
-  isConnectingMode?: boolean;
-  onToggleAnimation?: () => void;
-  onToggleConnectingMode?: () => void;
-  onSelectionChangeProp?: (selection: { nodes: string[]; edges: string[] }) => void;
-}) {
-  const theme = useTheme();
-  const [snapToGrid, setSnapToGrid] = useState(true);
-  const [showGrid, setShowGrid] = useState(false);
-  const [isAddingNode, setIsAddingNode] = useState(false);
-  const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
-  const [keepAspectRatio, setKeepAspectRatio] = useState(true);
-  const [panModeEnabled, setPanModeEnabled] = useState(false);
+
 
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
   const snapGrid: [number, number] = [5, 5];
@@ -641,7 +518,7 @@ function EditorCanvas({
 
 
 
-  useCopyPaste(network, onNetworkChange, onPaste);
+  useCopyPaste(onPaste);
 
   const { isSpacePanning } = useNetworkHotkeys({
     onDelete,
@@ -791,6 +668,9 @@ function EditorCanvas({
       screenToFlowPosition,
       getNodes,
       onNetworkChange,
+      network,
+      isConnectingMode,
+      onNetworkChange,
       network.nodes,
       network.pipes,
       snapToGrid,
@@ -844,7 +724,6 @@ function EditorCanvas({
         // setIsAddingNode(false); 
         // onSelect(newNodeId, "node"); // Don't select the new node
         return;
-        return;
       }
 
       onSelect(null, null);
@@ -864,11 +743,7 @@ function EditorCanvas({
 
 
 
-  useEffect(() => {
-    if (isConnectingMode) {
-      setIsAddingNode(false);
-    }
-  }, [isConnectingMode]);
+
 
   // Hotkey logic moved to useNetworkHotkeys hook
 

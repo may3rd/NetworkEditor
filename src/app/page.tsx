@@ -20,6 +20,7 @@ import {
 } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { parseExcelNetwork } from "@/utils/excelImport";
+import { useNetworkStore } from "@/store/useNetworkStore";
 // import { convertUnit } from "@/lib/unitConversion";
 
 const createNetworkWithDerivedValues = () =>
@@ -31,224 +32,26 @@ const applyFittingLosses = (network: NetworkState): NetworkState => ({
 });
 
 export default function Home() {
-  const [network, setNetwork] = useState<NetworkState>(() => createNetworkWithDerivedValues());
+  const {
+    network,
+    setNetwork,
+    selection,
+    resetNetwork,
+    clearNetwork,
+    showSummary,
+    setShowSummary,
+    showSnapshot,
+    setShowSnapshot,
+    isExporting,
+    setIsExporting,
+  } = useNetworkStore();
 
-
-  // Selection state
-  const [selection, setSelection] = useState<SelectedElement>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<"node" | "pipe" | null>(null);
-  const [showSnapshot, setShowSnapshot] = useState(false);
-  const [showSummary, setShowSummary] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const [isExporting, setIsExporting] = useState(false);
-  const [isAnimationEnabled, setIsAnimationEnabled] = useState(false);
-  const [isConnectingMode, setIsConnectingMode] = useState(false);
-
-  const [viewSettings, setViewSettings] = useState<ViewSettings>(() => {
-    const defaults: ViewSettings = {
-      unitSystem: "metric",
-      node: {
-        name: true,
-        pressure: false,
-        temperature: false,
-        hoverCard: false,
-        decimals: {
-          pressure: 2,
-          temperature: 2,
-        },
-      },
-      pipe: {
-        name: true,
-        length: true,
-        deltaP: false,
-        velocity: false,
-        dPPer100m: false,
-        massFlowRate: false,
-        decimals: {
-          length: 2,
-          deltaP: 2,
-          velocity: 2,
-          dPPer100m: 2,
-          massFlowRate: 2,
-        },
-      },
-    };
-
-    // We can't access network.viewSettings here easily because network is also state.
-    // But we can initialize with defaults and let useEffect sync if needed, 
-    // or just rely on the fact that we'll pass it down.
-    // Actually, let's just use defaults here. If network has settings, we should probably load them when network loads.
-    return defaults;
-  });
-
-  // Sync viewSettings from network when network changes (e.g. load)
-  useEffect(() => {
-    if (network.viewSettings) {
-      setViewSettings(prev => ({
-        ...prev,
-        ...network.viewSettings,
-        node: { ...prev.node, ...network.viewSettings!.node },
-        pipe: { ...prev.pipe, ...network.viewSettings!.pipe }
-      }));
-    }
-  }, [network.viewSettings]);
-
-  // ──────────────────────────────────────────────────────────────
-  // Multi-step Undo/Redo – fixed logic
-  // ──────────────────────────────────────────────────────────────
-  const HISTORY_LIMIT = 50;
-  const [history, setHistory] = useState<NetworkState[]>([createNetworkWithDerivedValues()]);
-  const [historyIndex, setHistoryIndex] = useState<number>(0); // start at 0
-
-  // Only push new state when the network actually changes (deep compare)
-  useEffect(() => {
-    const currentState = history[historyIndex];
-
-    // Simple deep equality check for our data structure
-    const isSame =
-      JSON.stringify(currentState?.nodes) === JSON.stringify(network.nodes) &&
-      JSON.stringify(currentState?.pipes) === JSON.stringify(network.pipes);
-
-    if (isSame) return; // no change → do nothing
-
-    // Truncate forward history if we are not at the end
-    let newHistory = history.slice(0, historyIndex + 1);
-
-    // Add new state
-    newHistory.push(network);
-
-    // Enforce limit
-    if (newHistory.length > HISTORY_LIMIT) {
-      newHistory = newHistory.slice(-HISTORY_LIMIT);
-    }
-
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [network, history, historyIndex]);
-
-  const handleUndo = useCallback(() => {
-    if (historyIndex <= 0) return;
-    setHistoryIndex(i => i - 1);
-    setNetwork(history[historyIndex - 1]);
-  }, [history, historyIndex]);
-
-  const handleRedo = useCallback(() => {
-    if (historyIndex >= history.length - 1) return;
-    setHistoryIndex(i => i + 1);
-    setNetwork(history[historyIndex + 1]);
-  }, [history, historyIndex]);
-
-  const canUndo = historyIndex > 0;
-  const canRedo = historyIndex < history.length - 1;
-  // ──────────────────────────────────────────────────────────────
-
-
-
-  const handleSelect = useCallback((id: string | null, type: "node" | "pipe" | null) => {
-    setSelectedId(id);
-    setSelectedType(type);
-    setSelection(id && type ? { id, type } : null);
-    // Clear multi-selection when single selecting
-    setMultiSelection({ nodes: [], edges: [] });
-  }, []);
-
-  const [multiSelection, setMultiSelection] = useState<{ nodes: string[]; edges: string[] }>({ nodes: [], edges: [] });
-
-  const handleSelectionChange = useCallback((selection: { nodes: string[]; edges: string[] }) => {
-    setMultiSelection(prev => {
-      // Simple deep equality check to prevent infinite loops
-      if (
-        prev.nodes.length === selection.nodes.length &&
-        prev.edges.length === selection.edges.length &&
-        prev.nodes.every((id, i) => id === selection.nodes[i]) &&
-        prev.edges.every((id, i) => id === selection.edges[i])
-      ) {
-        return prev;
-      }
-      return selection;
-    });
-
-    // We only update single selection state if it actually changed
-    // But since setMultiSelection is async, we should probably check against 'selection' argument
-    // However, updating single selection state also triggers re-renders.
-    // Let's rely on the check inside setMultiSelection to stop the loop if selection is stable.
-
-    // Wait, if we update single selection state (setSelectedId), it triggers a re-render of NetworkEditor.
-    // NetworkEditor then calls onSelectionChange again.
-    // If onSelectionChange passes the SAME selection, our check above prevents setMultiSelection update.
-    // But we still execute the code below.
-
-    // If single item selected, update single selection state for backward compatibility/properties panel
-    if (selection.nodes.length + selection.edges.length === 1) {
-      if (selection.nodes.length > 0) {
-        setSelectedId(selection.nodes[0]);
-        setSelectedType("node");
-        setSelection({ id: selection.nodes[0], type: "node" });
-      } else {
-        setSelectedId(selection.edges[0]);
-        setSelectedType("pipe");
-        setSelection({ id: selection.edges[0], type: "pipe" });
-      }
-    } else if (selection.nodes.length + selection.edges.length === 0) {
-      // Only clear if we are sure (React Flow might send empty selection on click)
-      // But we handle single select via onSelect.
-      // Let's trust React Flow's selection change.
-      setSelectedId(null);
-      setSelectedType(null);
-      setSelection(null);
-    } else {
-      // Multiple items selected
-      setSelectedId(null);
-      setSelectedType(null);
-      setSelection(null);
-    }
-  }, []);
-
-  const handleDelete = useCallback(() => {
-    const nodesToDelete = new Set(multiSelection.nodes);
-    const edgesToDelete = new Set(multiSelection.edges);
-
-    if (selectedId && selectedType) {
-      if (selectedType === "node") nodesToDelete.add(selectedId);
-      if (selectedType === "pipe") edgesToDelete.add(selectedId);
-    }
-
-    if (nodesToDelete.size === 0 && edgesToDelete.size === 0) return;
-
-    setNetwork(current => ({
-      ...current,
-      nodes: current.nodes.filter(n => !nodesToDelete.has(n.id)),
-      pipes: current.pipes.filter(p => !edgesToDelete.has(p.id) && !nodesToDelete.has(p.startNodeId) && !nodesToDelete.has(p.endNodeId)),
-    }));
-
-    handleSelect(null, null);
-    setMultiSelection({ nodes: [], edges: [] });
-  }, [selectedId, selectedType, multiSelection, handleSelect]);
+  const excelInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleNetworkChange = useCallback((updatedNetwork: NetworkState) => {
     setNetwork(updatedNetwork);
-  }, []);
-
-  const handleClearNetwork = useCallback(() => {
-    const emptyNetwork: NetworkState = { nodes: [], pipes: [] };
-    setNetwork(emptyNetwork);
-    setSelection(null);
-    setSelectedId(null);
-    setSelectedType(null);
-    setHistory([]);
-    setHistoryIndex(-1);
-  }, [setHistory, setHistoryIndex, setNetwork, setSelection, setSelectedId, setSelectedType]);
-
-  const handleReset = () => {
-    setNetwork(createNetworkWithDerivedValues());
-    setSelection(null);
-    setSelectedId(null);
-    setSelectedType(null);
-    setHistory([]);
-    setHistoryIndex(-1);
-  };
+  }, [setNetwork]);
 
   const handleExportPng = useCallback(async () => {
     const flowElement = document.querySelector(".react-flow") as HTMLElement | null;
@@ -322,7 +125,7 @@ export default function Home() {
       const dataUrl = await toPng(flowElement, {
         cacheBust: true,
         backgroundColor: "#ffffff",
-        filter: node => {
+        filter: (node: Node) => {
           if (!(node instanceof HTMLElement)) {
             return true;
           }
@@ -361,7 +164,7 @@ export default function Home() {
       });
       setIsExporting(false);
     }
-  }, [network.nodes]);
+  }, [network, setIsExporting]);
 
   const handleSaveNetwork = useCallback(() => {
     try {
@@ -406,11 +209,13 @@ export default function Home() {
           }
           const nextNetwork = applyFittingLosses(parsed as NetworkState);
           setNetwork(nextNetwork);
-          setSelection(null);
-          setSelectedId(null);
-          setSelectedType(null);
-          setHistory([nextNetwork]);
-          setHistoryIndex(0);
+          // Selection and history reset are handled in setNetwork if needed, 
+          // but here we might want to explicitly reset history if it's a new load.
+          // The store's setNetwork appends to history. 
+          // We might need a specific 'loadNetwork' action in the store to reset history.
+          // For now, let's use setNetwork, which will add to history. 
+          // If we want to reset history, we should add a resetHistory action or use clearNetwork then setNetwork.
+          // Actually, let's just use setNetwork. The user might want to undo the load.
         } catch (error) {
           console.error("Failed to load network file", error);
           alert("Unable to load the selected file. Please ensure it is a valid NHF/JSON snapshot.");
@@ -429,10 +234,8 @@ export default function Home() {
       };
       reader.readAsText(file);
     },
-    [setNetwork, setSelection, setSelectedId, setSelectedType, setHistory, setHistoryIndex]
+    [setNetwork]
   );
-
-  const excelInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleImportExcelClick = useCallback(() => {
     excelInputRef.current?.click();
@@ -447,11 +250,6 @@ export default function Home() {
       if (newState) {
         const nextNetwork = applyFittingLosses(newState);
         setNetwork(nextNetwork);
-        setSelection(null);
-        setSelectedId(null);
-        setSelectedType(null);
-        setHistory([nextNetwork]);
-        setHistoryIndex(0);
       }
     } catch (error) {
       console.error("Failed to import Excel file", error);
@@ -461,7 +259,7 @@ export default function Home() {
         excelInputRef.current.value = "";
       }
     }
-  }, []);
+  }, [setNetwork]);
 
   return (
     <Stack sx={{ bgcolor: "background.default", height: "100vh", gap: 3, p: 4 }}>
@@ -482,7 +280,7 @@ export default function Home() {
       <Header
         network={network}
         onNetworkChange={handleNetworkChange}
-        onReset={handleReset}
+        onReset={resetNetwork}
         onImportExcel={handleImportExcelClick}
       />
 
@@ -500,33 +298,12 @@ export default function Home() {
           height: "100%",
         }}>
           <NetworkEditor
-            network={network}
-            onSelect={handleSelect}
-            selectedId={selectedId}
-            selectedType={selectedType}
-            onDelete={handleDelete}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            onNetworkChange={handleNetworkChange}
-            historyIndex={historyIndex}
-            historyLength={history.length}
             height="100%"
             forceLightMode={isExporting}
             onLoad={handleLoadNetworkClick}
             onSave={handleSaveNetwork}
             onExport={handleExportPng}
-            onNew={handleClearNetwork}
-            onToggleSnapshot={() => setShowSnapshot(true)}
-            onToggleSummary={() => setShowSummary(true)}
-            isAnimationEnabled={isAnimationEnabled}
-            onToggleAnimation={() => setIsAnimationEnabled(!isAnimationEnabled)}
-            isConnectingMode={isConnectingMode}
-            onToggleConnectingMode={() => setIsConnectingMode(!isConnectingMode)}
-            onSelectionChangeProp={handleSelectionChange}
-            viewSettings={viewSettings}
-            setViewSettings={setViewSettings}
+            onNew={clearNetwork}
           />
         </Box>
 
@@ -544,125 +321,7 @@ export default function Home() {
               backgroundColor: "transparent",
             }}
           >
-            <PropertiesPanel
-              network={network}
-              selectedElement={selection}
-              onUpdateNode={(id, patch: NodePatch) =>
-                setNetwork(current => {
-                  let updatedNode: NodeProps | undefined;
-
-                  const nextNodes = current.nodes.map(node => {
-                    if (node.id !== id) return node;
-
-                    const nodePatch = typeof patch === "function" ? patch(node) : patch;
-                    const mergedNode = {
-                      ...node,
-                      ...nodePatch,
-                    };
-
-                    updatedNode = mergedNode;
-                    return mergedNode;
-                  });
-
-                  if (!updatedNode) {
-                    return current;
-                  }
-
-                  const nextPipes = current.pipes.map(pipe => {
-                    const isStartNode = pipe.startNodeId === id;
-                    const isEndNode = pipe.endNodeId === id;
-
-                    if (!isStartNode && !isEndNode) {
-                      return pipe;
-                    }
-
-                    const pipePatch: Partial<PipeProps> = {};
-
-                    const direction = pipe.direction ?? "forward";
-                    const shouldUpdateBoundary =
-                      (direction === "forward" && isStartNode) ||
-                      (direction === "backward" && isEndNode);
-
-                    if (shouldUpdateBoundary) {
-                      pipePatch.boundaryPressure = updatedNode?.pressure;
-                      pipePatch.boundaryPressureUnit = updatedNode?.pressureUnit;
-                      pipePatch.boundaryTemperature = updatedNode?.temperature;
-                      pipePatch.boundaryTemperatureUnit = updatedNode?.temperatureUnit;
-                      pipePatch.fluid = updatedNode?.fluid ? { ...updatedNode.fluid } : undefined;
-                    }
-
-                    if (Object.keys(pipePatch).length === 0) {
-                      return pipe;
-                    }
-                    return recalculatePipeFittingLosses({ ...pipe, ...pipePatch });
-                  });
-
-                  return {
-                    ...current,
-                    nodes: nextNodes,
-                    pipes: nextPipes,
-                  };
-                })
-              }
-              onUpdatePipe={(id, patch) =>
-                setNetwork(current => {
-                  const targetPipe = current.pipes.find(p => p.id === id);
-                  if (!targetPipe) return current;
-
-                  const resolvedPatch = typeof patch === "function" ? patch(targetPipe) : patch;
-                  const finalPipePatch: Partial<PipeProps> = { ...resolvedPatch };
-                  let nextNodes = current.nodes;
-
-                  const isDirectionChange = finalPipePatch.direction && finalPipePatch.direction !== targetPipe.direction;
-                  const isFluidChange = !!finalPipePatch.fluid;
-
-                  if (isDirectionChange) {
-                    const newDirection = finalPipePatch.direction!;
-                    const newInletNodeId = newDirection === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
-                    const newInletNode = current.nodes.find(n => n.id === newInletNodeId);
-
-                    if (newInletNode) {
-                      // 1. Pull Pressure & Temperature from New Inlet Node
-                      finalPipePatch.boundaryPressure = newInletNode.pressure;
-                      finalPipePatch.boundaryPressureUnit = newInletNode.pressureUnit;
-                      finalPipePatch.boundaryTemperature = newInletNode.temperature;
-                      finalPipePatch.boundaryTemperatureUnit = newInletNode.temperatureUnit;
-
-                      // 2. Handle Fluid
-                      if (newInletNode.fluid) {
-                        // Case A: Node has fluid -> Pipe adopts it (Pull)
-                        finalPipePatch.fluid = { ...newInletNode.fluid };
-                      } else {
-                        // Case B: Node empty -> Node adopts Pipe's fluid (Push)
-                        const fluidToPush = finalPipePatch.fluid || targetPipe.fluid;
-                        if (fluidToPush) {
-                          nextNodes = nextNodes.map(n => n.id === newInletNodeId ? { ...n, fluid: { ...fluidToPush } } : n);
-                        }
-                      }
-                    }
-                  } else if (isFluidChange) {
-                    // Explicit fluid change without direction change -> Push to current inlet node
-                    const direction = targetPipe.direction ?? "forward";
-                    const inletNodeId = direction === "forward" ? targetPipe.startNodeId : targetPipe.endNodeId;
-                    nextNodes = nextNodes.map(n => n.id === inletNodeId ? { ...n, fluid: { ...finalPipePatch.fluid! } } : n);
-                  }
-
-                  return {
-                    ...current,
-                    nodes: nextNodes,
-                    pipes: current.pipes.map(pipe => {
-                      if (pipe.id !== id) return pipe;
-                      const updatedPipe = { ...pipe, ...finalPipePatch };
-                      return recalculatePipeFittingLosses(updatedPipe);
-                    }),
-                  };
-                })
-              }
-
-              onClose={() => handleSelect(null, null)}
-              viewSettings={viewSettings}
-              onNetworkChange={handleNetworkChange}
-            />
+            <PropertiesPanel />
           </Paper>
         </Slide>
       </Box>

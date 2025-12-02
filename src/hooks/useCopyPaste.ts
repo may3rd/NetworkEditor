@@ -1,13 +1,13 @@
 import { useReactFlow } from "@xyflow/react";
 import { useCallback, useEffect } from "react";
-import { NetworkState, NodeProps, PipeProps } from "@/lib/types";
+import { NodeProps, PipeProps } from "@/lib/types";
+import { useNetworkStore } from "@/store/useNetworkStore";
 
 export const useCopyPaste = (
-    network: NetworkState,
-    onNetworkChange: ((updatedNetwork: NetworkState) => void) | undefined,
     onPaste?: (pastedNodeIds: string[]) => void,
 ) => {
     const { getNodes, getEdges } = useReactFlow();
+    const { network, setNetwork } = useNetworkStore();
 
     const onCopyCapture = useCallback(
         (event: ClipboardEvent) => {
@@ -142,21 +142,20 @@ export const useCopyPaste = (
                     });
                 }
 
-                if (onNetworkChange) {
-                    onNetworkChange({
-                        nodes: [...network.nodes, ...newNodes],
-                        pipes: [...network.pipes, ...newPipes],
-                    });
+                setNetwork((current) => ({
+                    ...current,
+                    nodes: [...current.nodes, ...newNodes],
+                    pipes: [...current.pipes, ...newPipes],
+                }));
 
-                    if (onPaste) {
-                        onPaste(newNodes.map((n) => n.id));
-                    }
+                if (onPaste) {
+                    onPaste(newNodes.map((n) => n.id));
                 }
             } catch (error) {
                 console.error("Failed to paste network elements:", error);
             }
         },
-        [network, onNetworkChange, onPaste]
+        [network, setNetwork, onPaste]
     );
 
     useEffect(() => {
