@@ -226,6 +226,7 @@ export function GenericTable<T>({
                         border-bottom: 1px solid #000 !important;
                         font-weight: bold !important;
                         text-align: center !important;
+                        box-shadow: none !important;
                     }
 
                     /* Section Headers */
