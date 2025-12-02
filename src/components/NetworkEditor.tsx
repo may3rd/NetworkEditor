@@ -173,6 +173,27 @@ function EditorCanvas({
   const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
   const [keepAspectRatio, setKeepAspectRatio] = useState(true);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
+  const [isCtrlPressed, setIsCtrlPressed] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta") {
+        setIsCtrlPressed(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta") {
+        setIsCtrlPressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
 
   const onSelect = selectElement;
   const onDelete = deleteSelection;
@@ -236,10 +257,11 @@ function EditorCanvas({
         forceLightMode,
         displayPressureUnit,
         isConnectingMode,
+        isCtrlPressed,
         pipes: network.pipes,
       });
     },
-    [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit, isConnectingMode, network.pipes]
+    [nodeFlowStates, viewSettings, forceLightMode, displayPressureUnit, isConnectingMode, isCtrlPressed, network.pipes]
   );
 
   const rfNodes = useMemo<Node[]>(

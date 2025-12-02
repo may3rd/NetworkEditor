@@ -208,7 +208,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                     alignItems: "center",
                     justifyContent: "center",
                     mb: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                    boxShadow: "0px 0px 2px 1px rgba(255, 255, 255, 0.3) inset, 2px 2px 2px -2px rgba(255,255,255,0.7) inset, -2px -2px 2px -2px rgba(255,255,255,0.7) inset"
                 }}>
                     {getIcon()}
                 </Box>

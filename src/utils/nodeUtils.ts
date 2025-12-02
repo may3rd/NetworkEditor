@@ -15,6 +15,7 @@ interface GetPressureNodeParams {
     forceLightMode?: boolean;
     displayPressureUnit?: string;
     isConnectingMode?: boolean;
+    isCtrlPressed?: boolean;
     pipes: PipeProps[];
 }
 
@@ -26,6 +27,7 @@ export const getPressureNode = ({
     forceLightMode = false,
     displayPressureUnit,
     isConnectingMode = false,
+    isCtrlPressed = false,
     pipes,
 }: GetPressureNodeParams): Node => {
     const flowState = nodeFlowStates[node.id] ?? {
@@ -68,6 +70,7 @@ export const getPressureNode = ({
             node, // Pass full node data for hover card
             showHoverCard: viewSettings.node.hoverCard,
             isConnectingMode,
+            isCtrlPressed,
             pipes,
         },
         width: 20,

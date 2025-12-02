@@ -26,6 +26,7 @@ type NodeData = {
   rotation?: number;
   node?: NodeProps;
   isConnectingMode?: boolean;
+  isCtrlPressed?: boolean;
   showHoverCard?: boolean;
   pipes?: import("@/lib/types").PipeProps[];
 };
@@ -147,19 +148,21 @@ function PressureNode({ data }: { data: NodeData }) {
   const borderRadius = 0;
 
   const isConnectingMode = data.isConnectingMode as boolean;
+  const isCtrlPressed = data.isCtrlPressed as boolean;
+  const showHandles = isConnectingMode || isCtrlPressed;
 
   const commonHandleStyle: CSSProperties = {
-    opacity: isConnectingMode ? 1 : 0, // Only show in connecting mode
+    opacity: showHandles ? 1 : 0, // Only show in connecting mode or when Ctrl is pressed
     border: "none",
-    zIndex: isConnectingMode ? 100 : -1, // Bring to front in connecting mode
+    zIndex: showHandles ? 100 : -1, // Bring to front in connecting mode
     borderRadius: borderRadius,
     width: handleWidth,
     height: handleHeight,
-    pointerEvents: isConnectingMode ? "all" : "none", // Only interactive in connecting mode
+    pointerEvents: showHandles ? "all" : "none", // Only interactive in connecting mode
   };
 
   const getHandlePositionStyle = (pos: Position): CSSProperties => {
-    const offset = isHovered || isConnectingMode ? -1 : 3; // Pull handle inward by 3px normally, 0px on hover/connecting
+    const offset = isHovered || showHandles ? -1 : 3; // Pull handle inward by 3px normally, 0px on hover/connecting
     switch (pos) {
       case Position.Left:
         return { left: offset };
@@ -176,9 +179,9 @@ function PressureNode({ data }: { data: NodeData }) {
 
   return (
     <div
-      onMouseEnter={!isConnectingMode ? handleMouseEnter : undefined}
-      onMouseLeave={!isConnectingMode ? handleMouseLeave : undefined}
-      onMouseMove={!isConnectingMode ? handleMouseMove : undefined}
+      onMouseEnter={!showHandles ? handleMouseEnter : undefined}
+      onMouseLeave={!showHandles ? handleMouseLeave : undefined}
+      onMouseMove={!showHandles ? handleMouseMove : undefined}
       style={{ position: "relative" }}
     >
       <Handle
