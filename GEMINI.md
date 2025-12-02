@@ -47,6 +47,9 @@ The application has recently undergone a major refactor to move state management
 - **SummaryTable Refactor**: The `SummaryTable` component still receives `network` and `onNetworkChange` as props. Consider refactoring it to use `useNetworkStore` for consistency.
 - **Testing**: Verify all interactions (drag, drop, connect, property updates) work as expected after the refactor.
 - **Feature Work**: Continue with any pending feature requests (e.g., advanced fluid calculations, export options).
+- **Database**: Add a database to store the network data.
+- **Performance**: Optimize the application for better performance, especially when handling large networks.
+- **Documentation**: Update the documentation to reflect the recent changes.
 
 ## Notes for Continuity
 - If you open this project on a new machine, ensure you have the latest `node_modules`.
