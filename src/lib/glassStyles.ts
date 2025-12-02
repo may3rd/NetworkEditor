@@ -49,3 +49,29 @@ export const glassDialogSx = {
     boxShadow: (theme: Theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
     border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
 };
+
+export const glassPanelSx = {
+    borderRadius: "26px",
+    backgroundColor: (theme: Theme) => theme.palette.mode === 'dark' ? "rgba(30, 41, 59, 0.7)" : "rgba(225, 225, 225, 0.7)",
+    backdropFilter: "blur(10px)",
+    boxShadow: (theme: Theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
+    border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
+};
+
+export const glassNodeSx = {
+    backdropFilter: "blur(4px)",
+    // Background color will be handled dynamically in the component
+};
+
+export const glassLabelSx = {
+    backdropFilter: "blur(4px)",
+    backgroundColor: (theme: Theme) => theme.palette.mode === 'dark' ? "rgba(30, 41, 59, 0.7)" : "rgba(255, 255, 255, 0.7)",
+    border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
+};
+
+export const glassListGroupSx = {
+    backgroundColor: (theme: Theme) => theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.2)' : '#ffffff',
+    backdropFilter: "blur(4px)",
+    borderRadius: "10px",
+    overflow: "hidden",
+};

@@ -15,7 +15,7 @@ export const IOSContainer = forwardRef<HTMLDivElement, Props>(({ children, onScr
             ref={ref}
             onScroll={onScroll}
             sx={{
-                backgroundColor: isDark ? "#000000" : "#f2f2f7",
+                backgroundColor: "transparent",
                 height: "100%",
                 width: "100%",
                 position: "relative",

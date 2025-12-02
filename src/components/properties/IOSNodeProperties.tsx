@@ -8,6 +8,7 @@ import { convertUnit } from "@/lib/unitConversion";
 import { propagatePressure } from "@/lib/pressurePropagation";
 import { getNodeWarnings } from "@/utils/validationUtils";
 import { RefObject } from "react";
+import { glassDialogSx } from "@/lib/glassStyles";
 
 type Props = {
     node: NodeProps;
@@ -186,13 +187,14 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
         <Box sx={{ pt: 2 }}>
             {/* Top Summary Section */}
             <Box sx={{
+                ...glassDialogSx,
                 px: 2,
                 py: 2,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
                 textAlign: "left",
-                backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
+                // backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
                 borderRadius: "10px",
                 mx: 2,
                 my: 2,

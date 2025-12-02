@@ -176,9 +176,11 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                         </Typography>
                     </Box>
                 ) : (
-                    <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-                        View Settings
-                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+                            View Settings
+                        </Typography>
+                    </Box>
                 )}
                 <IconButton
                     aria-label="close"

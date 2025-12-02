@@ -2,12 +2,13 @@
 
 import { memo, useState, useRef, type CSSProperties } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { useTheme } from "@mui/material";
+import { useTheme, alpha } from "@mui/material";
 import { ErrorOutline } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
 import { HoverCard } from "./HoverCard";
 import { NodeProps } from "@/lib/types";
 import { getNodeWarnings } from "@/utils/validationUtils";
+import { glassNodeSx, glassLabelSx } from "@/lib/glassStyles";
 
 type NodeRole = "source" | "sink" | "middle" | "isolated" | "neutral";
 
@@ -219,10 +220,11 @@ function PressureNode({ data }: { data: NodeData }) {
         </style>
         <div
           style={{
+            ...glassNodeSx,
             width: circleSize,
             height: circleSize,
             borderRadius: "50%",
-            background: fillColor,
+            background: alpha(fillColor, 0.6),
             border: `${borderWidth}px solid ${borderColor}`,
             boxShadow: isSelected ? "0 0 0 4px rgba(245, 158, 11, 0.3)" : baseShadow,
             animation: isSelected ? "pulse-orange 2s infinite" : "none",
@@ -261,6 +263,7 @@ function PressureNode({ data }: { data: NodeData }) {
       </div>
       <div
         style={{
+          backdropFilter: "blur(4px)",
           position: "absolute",
           top: circleSize + 4,
           left: "50%",
@@ -268,7 +271,7 @@ function PressureNode({ data }: { data: NodeData }) {
           textAlign: "center",
           fontSize: 9,
           color: textPrimary,
-          background: paperBackground,
+          background: alpha(paperBackground, 0.7),
           padding: "2px 4px",
           borderRadius: 4,
           pointerEvents: "none",

@@ -9,6 +9,7 @@ import { Navigator } from "../PropertiesPanel";
 import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import { Add, Check, Timeline, Close } from "@mui/icons-material";
 import { RefObject, useEffect, useRef, useState } from "react";
+import { glassDialogSx, glassListGroupSx, glassPanelSx } from "@/lib/glassStyles";
 
 function ControlValveIcon(props: SvgIconProps) {
     return (
@@ -244,16 +245,22 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
     };
 
     return (
-        <Box sx={{ pb: 4 }}>
+        <Box sx={{
+            ...glassPanelSx,
+            pb: 4,
+            borderRadius: "0px",
+            mt: "-100px",
+            pt: "100px",
+        }}>
             {/* Top Summary Section */}
             <Box ref={summaryRef} sx={{
+                ...glassListGroupSx,
                 px: 2,
                 py: 2,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "flex-start",
                 textAlign: "left",
-                backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
                 borderRadius: "10px",
                 mx: 2,
                 my: 2,

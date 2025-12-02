@@ -3,6 +3,7 @@
 import { useState, useEffect, ReactNode, useRef, RefObject } from "react";
 import { Paper, Box, Typography } from "@mui/material";
 import { NetworkState, NodePatch, PipePatch, ViewSettings } from "@/lib/types";
+import { glassPanelSx } from "@/lib/glassStyles";
 import { IOSContainer } from "./ios/IOSContainer";
 import { IOSNavBar } from "./ios/IOSNavBar";
 import { IOSPipeProperties } from "./properties/IOSPipeProperties";
@@ -120,13 +121,13 @@ export function PropertiesPanel({
     <Paper
       elevation={0}
       sx={{
+        ...glassPanelSx,
+        backgroundColor: "transparent",
+        border: "none",
         width: 340,
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        border: "none",
-        borderRadius: "26px",
-        boxShadow: (theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
         zIndex: 1100, // Above canvas
       }}
     >

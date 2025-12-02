@@ -1,4 +1,5 @@
 import { Box, Typography, useTheme } from "@mui/material";
+import { glassListGroupSx } from "@/lib/glassStyles";
 import { ReactNode } from "react";
 
 type Props = {
@@ -30,11 +31,7 @@ export function IOSListGroup({ children, header, footer, headerAlign = "left" }:
                     {header}
                 </Typography>
             )}
-            <Box sx={{
-                backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
-                borderRadius: "10px",
-                overflow: "hidden",
-            }}>
+            <Box sx={glassListGroupSx}>
                 {children}
             </Box>
             {footer && (
