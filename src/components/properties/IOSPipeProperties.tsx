@@ -238,9 +238,9 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
 
     const getIconBgColor = () => {
         switch (pipe.pipeSectionType) {
-            case "control valve": return "#FF9500"; // Orange
-            case "orifice": return "#5856D6"; // Purple
-            default: return "#007AFF"; // Blue
+            case "control valve": return "linear-gradient(#FFD60A, #FF9F0A)"; // Orange gradient
+            case "orifice": return "linear-gradient(#BF5AF2, #5E5CE6)"; // Purple gradient
+            default: return "linear-gradient(#00C4F9,#0076F0)"; // Blue gradient
         }
     };
 
@@ -266,12 +266,13 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     width: 60,
                     height: 60,
                     borderRadius: "14px",
-                    backgroundColor: getIconBgColor(),
+                    background: getIconBgColor(),
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     mb: 2,
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                    boxShadow: "0px 0px 2px 1px rgba(255, 255, 255, 0.3) inset, 2px 2px 3px -2px rgba(255,255,255,0.7) inset, -2px -2px 3px -2px rgba(255,255,255,0.7) inset"
+                    // boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
                 }}>
                     {getIcon()}
                 </Box>
@@ -301,7 +302,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                                             width: 16,
                                             height: 16,
                                             borderRadius: "50%",
-                                            backgroundColor: "#fbbf24",
+                                            background: "linear-gradient(#FFD60A, #FF9F0A)",
                                             color: "#000",
                                             display: "flex",
                                             alignItems: "center",

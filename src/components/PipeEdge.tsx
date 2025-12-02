@@ -123,7 +123,7 @@ export default function PipeEdge({
             return (
                 <div style={{
                     ...commonStyle,
-                    backgroundColor: theme.palette.error.main,
+                    background: "linear-gradient(#FF6B6B,#FF2D2D)",
                     color: "#fff",
                     top: -8,
                     right: -8,
@@ -149,7 +149,7 @@ export default function PipeEdge({
             return (
                 <div style={{
                     ...commonStyle,
-                    backgroundColor: "#fbbf24",
+                    background: "linear-gradient(#FFD60A, #FF9F0A)",
                     color: "#000",
                     top: -8,
                     right: -8,
@@ -184,7 +184,7 @@ export default function PipeEdge({
                 <div
                     style={{
                         ...commonStyle,
-                        backgroundColor: theme.palette.error.main,
+                        background: "linear-gradient(#FF6B6B,#FF2D2D)",
                         color: "#fff",
                     }}
                     className="nodrag nopan"
@@ -210,7 +210,7 @@ export default function PipeEdge({
                 <div
                     style={{
                         ...commonStyle,
-                        backgroundColor: "#fbbf24",
+                        background: "linear-gradient(#FFD60A, #FF9F0A)",
                         color: "#000",
                     }}
                     className="nodrag nopan"

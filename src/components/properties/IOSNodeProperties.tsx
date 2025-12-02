@@ -175,9 +175,9 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
     const getIconBgColor = () => {
         const phase = node.fluid?.phase;
         if (phase === "liquid") {
-            return "primary.main"; // Blue
+            return "linear-gradient(#00C4F9,#0076F0)";
         } else if (phase === "gas") {
-            return "#ff3b30"; // Red
+            return "linear-gradient(#FF6B6B,#FF2D2D)";
         } else {
             return "#8E8E93"; // Grey
         }
@@ -203,12 +203,13 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                     width: 60,
                     height: 60,
                     borderRadius: "14px",
-                    backgroundColor: getIconBgColor(),
+                    background: getIconBgColor(),
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     mb: 2,
-                    boxShadow: "0px 0px 2px 1px rgba(255, 255, 255, 0.3) inset, 2px 2px 2px -2px rgba(255,255,255,0.7) inset, -2px -2px 2px -2px rgba(255,255,255,0.7) inset"
+                    boxShadow: "0px 0px 2px 1px rgba(255, 255, 255, 0.3) inset, 2px 2px 3px -2px rgba(255,255,255,0.7) inset, -2px -2px 3px -2px rgba(255,255,255,0.7) inset"
+                    // boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
                 }}>
                     {getIcon()}
                 </Box>
@@ -229,7 +230,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                                             width: 16,
                                             height: 16,
                                             borderRadius: "50%",
-                                            backgroundColor: "#fbbf24",
+                                            background: "linear-gradient(#FFD60A, #FF9F0A)",
                                             color: "#000",
                                             display: "flex",
                                             alignItems: "center",
@@ -316,7 +317,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                                 width: 30,
                                 height: 30,
                                 borderRadius: "7px",
-                                backgroundColor: "primary.main",
+                                background: "linear-gradient(#00C4F9,#0076F0)",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",

@@ -178,7 +178,7 @@ export const NodeSelectionPage = ({
                                         width: 32,
                                         height: 32,
                                         borderRadius: "50%",
-                                        backgroundColor: isLiquid ? "primary.main" : "#ff3b30", // Red for Gas
+                                        background: isLiquid ? "linear-gradient(#00C4F9,#0076F0)" : "linear-gradient(#FF6B6B,#FF2D2D)", // Red for Gas
                                         color: "white",
                                         display: "flex",
                                         alignItems: "center",
@@ -388,7 +388,7 @@ export const NodeFluidPage = ({ node, onUpdateNode, navigator }: { node: NodePro
                             width: 30,
                             height: 30,
                             borderRadius: "7px",
-                            backgroundColor: "primary.main",
+                            background: "linear-gradient(#00C4F9,#0076F0)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
