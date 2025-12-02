@@ -7,7 +7,7 @@ export type RowConfig<T> =
         type: "data";
         label: string;
         unit?: string;
-        getValue: (item: T) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string; color?: string; helperText?: string; fontWeight?: string };
+        getValue: (item: T) => string | number | undefined | null | { value: string | number | undefined | null; subLabel?: string; color?: string; helperText?: string; fontWeight?: string; helperTextFontWeight?: string };
         subLabel?: string;
         decimals?: number
     };
@@ -144,7 +144,8 @@ export const getPipeSummaryRows = (network: NetworkState, unitSystem: "metric" |
                     return {
                         value: val,
                         subLabel: targetUnit,
-                        helperText: phase === "gas" ? "(at 1 atm, 25°C)" : undefined
+                        helperText: phase === "gas" ? "(at 1 atm, 25°C)" : undefined,
+                        helperTextFontWeight: "normal"
                     };
                 }
                 return "";
