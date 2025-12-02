@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, ReactNode, useRef, RefObject } from "react";
-import { Paper, Box, Typography } from "@mui/material";
+import { Paper, Box } from "@mui/material";
 import { NetworkState, NodePatch, PipePatch, ViewSettings } from "@/lib/types";
 import { glassPanelSx } from "@/lib/glassStyles";
-import { IOSContainer } from "./ios/IOSContainer";
 import { IOSNavBar } from "./ios/IOSNavBar";
 import { IOSPipeProperties } from "./properties/IOSPipeProperties";
 import { IOSNodeProperties } from "./properties/IOSNodeProperties";
@@ -159,7 +158,19 @@ export function PropertiesPanel() {
         zIndex: 1100, // Above canvas
       }}
     >
-      <IOSContainer ref={containerRef}>
+      <Box
+        ref={containerRef}
+        sx={{
+          ...glassPanelSx,
+          height: "100%",
+          width: "100%",
+          position: "relative",
+          overflowX: "hidden",
+          overflowY: "auto",
+          borderRadius: "24px",
+          border: "none",
+        }}
+      >
         <IOSNavBar
           title={activePage.title}
           onBack={stack.length > 1 ? pop : undefined}
@@ -169,7 +180,7 @@ export function PropertiesPanel() {
           titleOpacity={titleOpacity}
         />
         {activeComponent}
-      </IOSContainer>
+      </Box>
     </Paper>
   );
 }
