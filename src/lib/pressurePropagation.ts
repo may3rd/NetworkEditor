@@ -71,32 +71,91 @@ export const propagatePressure = (
             const targetNodeId = isForward ? pipe.endNodeId : pipe.startNodeId;
             const targetNode = nodesMap.get(targetNodeId);
 
+            if (!targetNode) {
+                // console.log("Target node not found:", targetNodeId);
+                continue;
+            }
+
+            // Scenario 1: Pipe without Length (Target Pressure Unknown)
+            // If pipe is not a special component (CV/Orifice) and has no length, and target has no pressure -> Stop & Error
+            const isSpecialComponent = pipe.pipeSectionType === "control valve" || pipe.pipeSectionType === "orifice";
+            if (!isSpecialComponent && (!updatedPipe.length || updatedPipe.length <= 0)) {
+                if (typeof targetNode.pressure !== "number") {
+                    warnings.push(`Pipe ${pipe.name}: Missing length and target node has no pressure. Propagation stopped.`);
+                    continue;
+                }
+            }
+
+            // Scenario 2: Pipe without Length (Target Pressure Known)
             // Estimate length if missing and target pressure is known
-            if (targetNode && typeof targetNode.pressure === "number" && (!updatedPipe.length || updatedPipe.length <= 0)) {
+            if (targetNode && typeof targetNode.pressure === "number" && !isSpecialComponent && (!updatedPipe.length || updatedPipe.length <= 0)) {
                 const p1 = convertUnit(currentNode.pressure, currentNode.pressureUnit || "kPag", "Pa");
                 const p2 = convertUnit(targetNode.pressure, targetNode.pressureUnit || "kPag", "Pa");
 
                 // Pressure drop needed (must be positive for flow)
                 const targetDeltaP = p1 - p2;
 
-                if (targetDeltaP > 0) {
-                    // Create temp pipe with 1m length to find gradient
-                    let tempPipe: PipeProps = { ...updatedPipe, length: 1, lengthUnit: "m" };
+                if (targetDeltaP <= 0) {
+                    // Impossible flow condition for estimation
+                    warnings.push(`Pipe ${pipe.name}: Cannot estimate length. Upstream pressure (${p1.toFixed(0)} Pa) is less than or equal to downstream (${p2.toFixed(0)} Pa). Propagation stopped to avoid overwriting target.`);
+                    continue;
+                }
 
-                    // Inject fluid if missing
-                    if (!tempPipe.fluid && currentNode.fluid) {
-                        tempPipe.fluid = { ...currentNode.fluid };
+                // Create temp pipe with 1m length to find gradient
+                let tempPipe: PipeProps = { ...updatedPipe, length: 1, lengthUnit: "m" };
+
+                // Inject fluid if missing
+                if (!tempPipe.fluid && currentNode.fluid) {
+                    tempPipe.fluid = { ...currentNode.fluid };
+                }
+
+                tempPipe = recalculatePipeFittingLosses(tempPipe);
+
+                const gradient = tempPipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
+
+                if (gradient && gradient > 0) {
+                    const estimatedLength = targetDeltaP / gradient;
+                    updatedPipe.length = estimatedLength;
+                    updatedPipe.lengthUnit = "m";
+                    warnings.push(`Pipe ${pipe.name}: Estimated length to be ${estimatedLength.toFixed(2)}m based on target pressure.`);
+                }
+            }
+
+            // Scenario 4: Control Valve / Orifice & Known Target Pressure
+            // Back-calculate dP if target pressure is known
+            if (isSpecialComponent && targetNode && typeof targetNode.pressure === "number") {
+                const p1 = convertUnit(currentNode.pressure, currentNode.pressureUnit || "kPag", "Pa");
+                const p2 = convertUnit(targetNode.pressure, targetNode.pressureUnit || "kPag", "Pa");
+                const reqDrop = p1 - p2;
+
+                if (reqDrop < 0) {
+                    warnings.push(`Component ${pipe.name}: Impossible flow. Upstream pressure is lower than target pressure. Propagation stopped.`);
+                    continue;
+                }
+
+                // Force update the component to match the required drop
+                if (updatedPipe.pipeSectionType === "control valve" && updatedPipe.controlValve) {
+                    // Check if we need to update (allow some tolerance)
+                    const currentDropPa = convertUnit(updatedPipe.controlValve.pressureDrop || 0, updatedPipe.controlValve.pressureDropUnit || "kPa", "Pa");
+                    if (Math.abs(currentDropPa - reqDrop) > 100) { // 100 Pa tolerance
+                        updatedPipe.controlValve = {
+                            ...updatedPipe.controlValve,
+                            pressureDrop: reqDrop,
+                            pressureDropUnit: "Pa",
+                            inputMode: "pressure_drop" // Force mode to calculate Cv from dP
+                        };
+                        warnings.push(`Component ${pipe.name}: Adjusted pressure drop to ${(reqDrop / 1000).toFixed(2)} kPa to match target node pressure.`);
                     }
-
-                    tempPipe = recalculatePipeFittingLosses(tempPipe);
-
-                    const gradient = tempPipe.pressureDropCalculationResults?.totalSegmentPressureDrop;
-
-                    if (gradient && gradient > 0) {
-                        const estimatedLength = targetDeltaP / gradient;
-                        updatedPipe.length = estimatedLength;
-                        updatedPipe.lengthUnit = "m";
-                        warnings.push(`Pipe ${pipe.name}: Estimated length to be ${estimatedLength.toFixed(2)}m based on target pressure.`);
+                } else if (updatedPipe.pipeSectionType === "orifice" && updatedPipe.orifice) {
+                    const currentDropPa = convertUnit(updatedPipe.orifice.pressureDrop || 0, updatedPipe.orifice.pressureDropUnit || "kPa", "Pa");
+                    if (Math.abs(currentDropPa - reqDrop) > 100) {
+                        updatedPipe.orifice = {
+                            ...updatedPipe.orifice,
+                            pressureDrop: reqDrop,
+                            pressureDropUnit: "Pa",
+                            inputMode: "pressure_drop"
+                        };
+                        warnings.push(`Component ${pipe.name}: Adjusted pressure drop to ${(reqDrop / 1000).toFixed(2)} kPa to match target node pressure.`);
                     }
                 }
             }
@@ -105,18 +164,6 @@ export const propagatePressure = (
             updatedPipe = recalculatePipeFittingLosses(updatedPipe);
 
             updatedPipesMap.set(updatedPipe.id, updatedPipe);
-
-            // The following lines were already present in the original code after updatedPipesMap.set,
-            // and are needed here for subsequent logic.
-            // The user's instruction included them again, but they are not new additions.
-            // const isForward = pipe.startNodeId === currentNodeId;
-            // const targetNodeId = isForward ? pipe.endNodeId : pipe.startNodeId;
-            // const targetNode = nodesMap.get(targetNodeId);
-
-            if (!targetNode) {
-                // console.log("Target node not found:", targetNodeId);
-                continue;
-            }
 
             // Get pressure drop from pipe results
             // We expect the pipe to have been calculated already
@@ -128,18 +175,23 @@ export const propagatePressure = (
                 pressureDrop = 0;
             }
 
-            // console.log(`Propagating to ${targetNode.label} via ${pipe.name}. Drop: ${pressureDrop}`);
-
-            // Calculate new pressure for target node
-            // Pressure Drop is always positive in flow direction
-            // P_downstream = P_upstream - PressureDrop
-
-            // Convert current node pressure to Pa
+            // Scenario 3: Pressure Drop > Inlet Pressure
             const currentPressurePa = convertUnit(
                 currentNode.pressure,
                 currentNode.pressureUnit || "kPag",
                 "Pa"
             );
+
+            if (pressureDrop > currentPressurePa) {
+                warnings.push(`Pipe ${pipe.name}: Pressure drop (${(pressureDrop / 1000).toFixed(2)} kPa) exceeds inlet pressure (${(currentPressurePa / 1000).toFixed(2)} kPa). Propagation stopped to avoid negative pressure.`);
+                continue;
+            }
+
+            // console.log(`Propagating to ${targetNode.label} via ${pipe.name}. Drop: ${pressureDrop}`);
+
+            // Calculate new pressure for target node
+            // Pressure Drop is always positive in flow direction
+            // P_downstream = P_upstream - PressureDrop
 
             const newTargetPressurePa = currentPressurePa - pressureDrop;
 
