@@ -127,6 +127,7 @@ export function EditorToolbar({
                     ...network,
                     backgroundImage: result,
                     backgroundImageSize: { width: img.width, height: img.height },
+                    backgroundImageOriginalSize: { width: img.width, height: img.height },
                     backgroundImageOpacity: 1,
                     backgroundImagePosition: { x: 0, y: 0 },
                     backgroundImageLocked: true,

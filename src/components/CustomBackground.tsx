@@ -16,18 +16,32 @@ export type CustomBackgroundProps = {
     color?: string;
     gap?: number;
     className?: string;
+    backgroundImage?: string;
+    backgroundImageSize?: { width: number; height: number };
+    backgroundImagePosition?: { x: number; y: number };
+    backgroundImageOpacity?: number;
 };
 
 const selector = (s: ReactFlowState) => s.transform;
 
-function CustomBackground({ width = 200, color, gap = 20, className = '' }: CustomBackgroundProps) {
+function CustomBackground({
+    width = 200,
+    color,
+    gap = 20,
+    className = '',
+    backgroundImage,
+    backgroundImageSize,
+    backgroundImagePosition = { x: 0, y: 0 },
+    backgroundImageOpacity = 1,
+}: CustomBackgroundProps) {
     const ref = useRef<SVGSVGElement>(null);
     const theme = useTheme();
     const patternId = useId();
 
     const transform = useStore(selector);
-    const scaledGap: number = gap * transform[2];
-    const columnWidth: number = width * transform[2];
+    const [tx, ty, tScale] = transform;
+    const scaledGap: number = gap * tScale;
+    const columnWidth: number = width * tScale;
 
     // Default color to theme background if not provided
     const fillColor = color || "background.paper";
@@ -47,8 +61,8 @@ function CustomBackground({ width = 200, color, gap = 20, className = '' }: Cust
         >
             <pattern
                 id={patternId}
-                x={transform[0] % scaledGap}
-                y={transform[1] % scaledGap}
+                x={tx % scaledGap}
+                y={ty % scaledGap}
                 width={scaledGap}
                 height={scaledGap}
                 patternUnits="userSpaceOnUse"
@@ -56,6 +70,19 @@ function CustomBackground({ width = 200, color, gap = 20, className = '' }: Cust
                 <ColumnPattern color={fillColor} columnWidth={columnWidth} />
             </pattern>
             <rect x="0" y="0" width="100%" height="100%" fill={`url(#${patternId})`} />
+
+            {backgroundImage && backgroundImageSize && (
+                <image
+                    href={backgroundImage}
+                    x={(backgroundImagePosition.x * tScale) + tx}
+                    y={(backgroundImagePosition.y * tScale) + ty}
+                    width={backgroundImageSize.width * tScale}
+                    height={backgroundImageSize.height * tScale}
+                    opacity={backgroundImageOpacity}
+                    style={{ pointerEvents: "none" }}
+                    preserveAspectRatio="none"
+                />
+            )}
         </svg>
     );
 }

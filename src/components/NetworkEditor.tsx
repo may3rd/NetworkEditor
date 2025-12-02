@@ -247,23 +247,7 @@ export function NetworkEditor({
         return mapNodeToReactFlow(node, isSelected);
       });
 
-      if (network.backgroundImage && network.backgroundImageSize) {
-        const isLocked = network.backgroundImageLocked ?? true;
-        nodes.unshift({
-          id: "background-image-node",
-          type: "background",
-          position: network.backgroundImagePosition ?? { x: 0, y: 0 },
-          data: {
-            url: network.backgroundImage,
-            width: network.backgroundImageSize.width,
-            height: network.backgroundImageSize.height,
-            opacity: network.backgroundImageOpacity ?? 1,
-          },
-          draggable: !isLocked,
-          selectable: false,
-          zIndex: -1,
-        });
-      }
+
 
       return nodes;
     },
@@ -642,6 +626,7 @@ function EditorCanvas({
   const [showGrid, setShowGrid] = useState(false);
   const [isAddingNode, setIsAddingNode] = useState(false);
   const [showBackgroundSettings, setShowBackgroundSettings] = useState(false);
+  const [keepAspectRatio, setKeepAspectRatio] = useState(true);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
 
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
@@ -1031,7 +1016,13 @@ function EditorCanvas({
           multiSelectionKeyCode={isPanMode ? null : "Meta"}
           style={{ cursor: editorCursor }}
         >
-          <CustomBackground color={theme.palette.background.paper} />
+          <CustomBackground
+            color={theme.palette.background.paper}
+            backgroundImage={network.backgroundImage}
+            backgroundImageSize={network.backgroundImageSize}
+            backgroundImagePosition={network.backgroundImagePosition}
+            backgroundImageOpacity={network.backgroundImageOpacity}
+          />
           {showGrid && <Background className="network-grid" style={{ backgroundColor: 'transparent' }} />}
           <MiniMap
             className="network-minimap"
@@ -1095,22 +1086,48 @@ function EditorCanvas({
               />
             </Box>
 
-            <Stack direction="row" spacing={2}>
+            <Stack direction="row" spacing={2} alignItems="center">
               <TextField
                 label="Width"
                 type="number"
                 size="small"
                 value={network.backgroundImageSize?.width ?? 0}
-                onChange={(e) => onNetworkChange?.({ ...network, backgroundImageSize: { ...network.backgroundImageSize!, width: Number(e.target.value) } })}
+                onChange={(e) => {
+                  const newWidth = Number(e.target.value);
+                  let newHeight = network.backgroundImageSize?.height ?? 0;
+                  if (keepAspectRatio && network.backgroundImageSize?.width && network.backgroundImageSize?.height) {
+                    const ratio = network.backgroundImageSize.height / network.backgroundImageSize.width;
+                    newHeight = Math.round(newWidth * ratio);
+                  }
+                  onNetworkChange?.({ ...network, backgroundImageSize: { width: newWidth, height: newHeight } });
+                }}
               />
               <TextField
                 label="Height"
                 type="number"
                 size="small"
                 value={network.backgroundImageSize?.height ?? 0}
-                onChange={(e) => onNetworkChange?.({ ...network, backgroundImageSize: { ...network.backgroundImageSize!, height: Number(e.target.value) } })}
+                onChange={(e) => {
+                  const newHeight = Number(e.target.value);
+                  let newWidth = network.backgroundImageSize?.width ?? 0;
+                  if (keepAspectRatio && network.backgroundImageSize?.width && network.backgroundImageSize?.height) {
+                    const ratio = network.backgroundImageSize.width / network.backgroundImageSize.height;
+                    newWidth = Math.round(newHeight * ratio);
+                  }
+                  onNetworkChange?.({ ...network, backgroundImageSize: { width: newWidth, height: newHeight } });
+                }}
               />
             </Stack>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={keepAspectRatio}
+                  onChange={(e) => setKeepAspectRatio(e.target.checked)}
+                />
+              }
+              label="Keep Aspect Ratio"
+            />
 
             <Stack direction="row" spacing={2}>
               <TextField
@@ -1139,23 +1156,41 @@ function EditorCanvas({
               label="Lock Background (Prevent Dragging)"
             />
 
-            <Button
-              variant="outlined"
-              color="error"
-              onClick={() => {
-                onNetworkChange?.({
-                  ...network,
-                  backgroundImage: undefined,
-                  backgroundImageSize: undefined,
-                  backgroundImageOpacity: undefined,
-                  backgroundImagePosition: undefined,
-                  backgroundImageLocked: undefined
-                });
-                setShowBackgroundSettings(false);
-              }}
-            >
-              Remove Background
-            </Button>
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  onNetworkChange?.({
+                    ...network,
+                    backgroundImageSize: network.backgroundImageOriginalSize ?? network.backgroundImageSize,
+                    backgroundImageOpacity: 1,
+                    backgroundImagePosition: { x: 0, y: 0 },
+                  });
+                }}
+                fullWidth
+              >
+                Reset
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => {
+                  onNetworkChange?.({
+                    ...network,
+                    backgroundImage: undefined,
+                    backgroundImageSize: undefined,
+                    backgroundImageOpacity: undefined,
+                    backgroundImagePosition: undefined,
+                    backgroundImageLocked: undefined,
+                    backgroundImageOriginalSize: undefined
+                  });
+                  setShowBackgroundSettings(false);
+                }}
+                fullWidth
+              >
+                Remove
+              </Button>
+            </Stack>
           </Stack>
         </DialogContent>
       </Dialog>

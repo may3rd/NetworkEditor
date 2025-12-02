@@ -211,6 +211,7 @@ export type NetworkState = {
   backgroundImageOpacity?: number;
   backgroundImagePosition?: { x: number; y: number };
   backgroundImageLocked?: boolean;
+  backgroundImageOriginalSize?: { width: number; height: number };
   visiblePipeIds?: string[];
   viewSettings?: ViewSettings;
 };
