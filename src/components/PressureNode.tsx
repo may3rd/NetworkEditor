@@ -202,6 +202,21 @@ function PressureNode({ data }: { data: NodeData }) {
       />
 
       <div style={{ position: "relative", width: circleSize, height: circleSize }}>
+        <style>
+          {`
+            @keyframes pulse-orange {
+              0% {
+                box-shadow: 0 0 0 0px rgba(245, 158, 11, 0.7);
+              }
+              70% {
+                box-shadow: 0 0 0 6px rgba(245, 158, 11, 0);
+              }
+              100% {
+                box-shadow: 0 0 0 0px rgba(245, 158, 11, 0);
+              }
+            }
+          `}
+        </style>
         <div
           style={{
             width: circleSize,
@@ -209,7 +224,8 @@ function PressureNode({ data }: { data: NodeData }) {
             borderRadius: "50%",
             background: fillColor,
             border: `${borderWidth}px solid ${borderColor}`,
-            boxShadow: selectionShadow,
+            boxShadow: isSelected ? "0 0 0 4px rgba(245, 158, 11, 0.3)" : baseShadow,
+            animation: isSelected ? "pulse-orange 2s infinite" : "none",
             transform: `scale(${scaleAmount})`,
             transition: "background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease",
             position: "absolute",

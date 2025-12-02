@@ -150,7 +150,7 @@ const getDesignTokens = (mode: 'light' | 'dark') => {
 };
 
 export function Providers({ children }: { children: ReactNode }) {
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const [mode, setMode] = useState<'light' | 'dark'>('dark');
 
   const colorMode = useMemo(
     () => ({

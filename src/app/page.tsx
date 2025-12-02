@@ -487,8 +487,19 @@ export default function Home() {
         onImportExcel={handleImportExcelClick}
       />
 
-      <Box sx={{ position: "relative", flex: 1, width: "100%", overflow: "hidden", borderRadius: 2, border: "1px solid", borderColor: "divider" }}>
-        <Box sx={{ width: "100%", height: "100%" }}>
+      <Box sx={{
+        position: "relative",
+        flex: 1, width: "100%",
+        overflow: "hidden",
+        borderRadius: "24px",
+        border: "1px solid",
+        borderColor: "divider",
+        boxShadow: "0px 0px 12px rgba(0, 0, 0, 0.1)",
+      }}>
+        <Box sx={{
+          width: "100%",
+          height: "100%",
+        }}>
           <NetworkEditor
             network={network}
             onSelect={handleSelect}

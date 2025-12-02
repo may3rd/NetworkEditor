@@ -61,7 +61,7 @@ export default function PipeEdge({
     const labelLines = (data?.labelLines as string[]) || [];
     const labelBgColor = (data?.labelBgColor as string) || theme.palette.background.paper;
     const labelTextColor = (data?.labelTextColor as string) || theme.palette.text.primary;
-    const labelBorderColor = (data?.labelBorderColor as string) || theme.palette.divider;
+    const labelBorderColor = theme.palette.divider;
     const isSelected = data?.isSelected as boolean;
     const pipe = data?.pipe as PipeProps | undefined;
 
@@ -102,8 +102,8 @@ export default function PipeEdge({
                             to { stroke-dashoffset: 0; }
                         }
                         @keyframes flowAnimationBackward {
-                            from { stroke-dashoffset: 0; }
-                            to { stroke-dashoffset: 20; }
+                            from { stroke-dashoffset: 20; }
+                            to { stroke-dashoffset: 0; }
                         }
                     `}
                 </style>

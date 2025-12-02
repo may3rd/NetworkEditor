@@ -160,16 +160,18 @@ export function EditorToolbar({
                     height: 64,
                     width: "100%",
                     flexShrink: 0,
-                    bgcolor: "background.paper",
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
+                    bgcolor: "transparent",
                     px: 2,
                     zIndex: 10,
                     pl: 1.5,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    pointerEvents: "none",
                 }}
             >
-                <Stack direction="row" spacing={2}>
-                    <ButtonGroup variant="contained" aria-label="File tools">
+                <Stack direction="row" spacing={2} sx={{ pointerEvents: "auto" }}>
+                    <ButtonGroup variant="contained" aria-label="File tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
                         <Tooltip title="New">
                             <span>
                                 <IconButton onClick={onNew} disabled={!onNew}>
@@ -219,7 +221,7 @@ export function EditorToolbar({
                         )}
                     </ButtonGroup>
 
-                    <ButtonGroup variant="contained" aria-label="Edit tools">
+                    <ButtonGroup variant="contained" aria-label="Edit tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
                         <Tooltip title="Delete Selected">
                             <span>
                                 <IconButton onClick={onDelete} disabled={!selectedId}>
@@ -243,7 +245,7 @@ export function EditorToolbar({
                         </Tooltip>
                     </ButtonGroup>
 
-                    <ButtonGroup variant="contained" aria-label="Rotation tools">
+                    <ButtonGroup variant="contained" aria-label="Rotation tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
                         <Tooltip title="Rotate 90° CW">
                             <span>
                                 <IconButton onClick={handleRotateCW} disabled={!selectedId || selectedType !== "node"}>
@@ -280,7 +282,7 @@ export function EditorToolbar({
                         </Tooltip>
                     </ButtonGroup>
 
-                    <ButtonGroup variant="contained" aria-label="View tools">
+                    <ButtonGroup variant="contained" aria-label="View tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
                         <Tooltip title="Snap to Grid">
                             <ToggleButton
                                 value="snap"
@@ -396,7 +398,7 @@ export function EditorToolbar({
 
                 {onToggleSnapshot && (
                     <Tooltip title="Network Snapshot">
-                        <IconButton onClick={onToggleSnapshot}>
+                        <IconButton onClick={onToggleSnapshot} sx={{ pointerEvents: "auto" }}>
                             <VisibilityIcon />
                         </IconButton>
                     </Tooltip>

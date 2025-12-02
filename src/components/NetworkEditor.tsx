@@ -71,6 +71,7 @@ import "@xyflow/react/dist/style.css";
 import PressureNode from "@/components/PressureNode";
 import BackgroundNode from "@/components/BackgroundNode";
 import PipeEdge from "@/components/PipeEdge";
+import CustomBackground from "@/components/CustomBackground";
 import { NetworkState, type NodeProps, type PipeProps } from "@/lib/types";
 import { recalculatePipeFittingLosses } from "@/lib/fittings";
 import { convertUnit } from "@/lib/unitConversion";
@@ -133,6 +134,10 @@ const generateUniquePipeName = (pipes: PipeProps[]): string => {
     counter++;
   }
 };
+
+const styles = {
+  background: "background.paper",
+}
 
 export function NetworkEditor({
   network,
@@ -923,6 +928,8 @@ function EditorCanvas({
         flexDirection: "column",
         borderRadius: "24px",
         border: "none",
+        bgcolor: "transparent",
+        boxShadow: "",
       }}
     >
       <EditorToolbar
@@ -1024,7 +1031,8 @@ function EditorCanvas({
           multiSelectionKeyCode={isPanMode ? null : "Meta"}
           style={{ cursor: editorCursor }}
         >
-          {showGrid && <Background className="network-grid" />}
+          <CustomBackground color={theme.palette.background.paper} />
+          {showGrid && <Background className="network-grid" style={{ backgroundColor: 'transparent' }} />}
           <MiniMap
             className="network-minimap"
             pannable
