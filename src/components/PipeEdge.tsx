@@ -78,7 +78,7 @@ export default function PipeEdge({
     const isFlowing = isAnimationEnabled && absVelocity > 0;
     const animationName = direction === "forward" ? "flowAnimationForward" : "flowAnimationBackward";
 
-    const status = pipe ? getPipeStatus(pipe) : { velocityStatus: { status: 'ok' }, pressureDropStatus: { status: 'ok' } };
+    const status = pipe ? getPipeStatus(pipe) : { velocityStatus: { status: 'ok' as const }, pressureDropStatus: { status: 'ok' as const } };
     let animationColor = theme.palette.info.main;
     if (status.velocityStatus.status === 'error') {
         animationColor = theme.palette.error.main;
@@ -91,6 +91,136 @@ export default function PipeEdge({
         pipe.resultSummary?.outletState === undefined ||
         (Math.abs(convertUnit(pipe.elevation || 0, pipe.elevationUnit || "m", "m")) > convertUnit(pipe.length || 0, pipe.lengthUnit || "m", "m"))
     );
+
+    // Determine Badge Type
+    let badgeType: 'error' | 'warning' | 'attention' | null = null;
+    if (status.velocityStatus.status === 'error') {
+        badgeType = 'error';
+    } else if (status.velocityStatus.status === 'warning' || status.pressureDropStatus.status === 'warning') {
+        badgeType = 'warning';
+    } else if (needsAttention) {
+        badgeType = 'attention';
+    }
+
+    const renderBadge = () => {
+        if (!badgeType) return null;
+
+        const commonStyle: React.CSSProperties = {
+            position: "absolute",
+            width: 14,
+            height: 14,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "10px",
+            fontWeight: 800,
+            border: `1px solid ${theme.palette.text.primary}`,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.15)"
+        };
+
+        if (badgeType === 'error') {
+            return (
+                <div style={{
+                    ...commonStyle,
+                    backgroundColor: theme.palette.error.main,
+                    color: "#fff",
+                    top: -8,
+                    right: -8,
+                }}>
+                    !
+                </div>
+            );
+        }
+
+        if (badgeType === 'warning') {
+            return (
+                <div style={{
+                    ...commonStyle,
+                    backgroundColor: theme.palette.warning.main,
+                    border: `1px solid ${theme.palette.warning.dark}`,
+                    top: -8,
+                    right: -8,
+                }} />
+            );
+        }
+
+        if (badgeType === 'attention') {
+            return (
+                <div style={{
+                    ...commonStyle,
+                    backgroundColor: "#fbbf24",
+                    color: "#000",
+                    top: -8,
+                    right: -8,
+                }}>
+                    !
+                </div>
+            );
+        }
+    };
+
+    const renderFallbackBadge = () => {
+        if (!badgeType) return null;
+        const commonStyle: React.CSSProperties = {
+            position: "absolute",
+            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            zIndex: 1,
+            pointerEvents: "none",
+            width: 14,
+            height: 14,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "10px",
+            fontWeight: 800,
+            border: `1px solid ${theme.palette.text.primary}`,
+            boxShadow: "0 1px 2px rgba(0,0,0,0.15)"
+        };
+
+        if (badgeType === 'error') {
+            return (
+                <div
+                    style={{
+                        ...commonStyle,
+                        backgroundColor: theme.palette.error.main,
+                        color: "#fff",
+                    }}
+                    className="nodrag nopan"
+                >
+                    !
+                </div>
+            );
+        }
+        if (badgeType === 'warning') {
+            return (
+                <div
+                    style={{
+                        ...commonStyle,
+                        backgroundColor: theme.palette.warning.main,
+                        border: `1px solid ${theme.palette.warning.dark}`,
+                    }}
+                    className="nodrag nopan"
+                />
+            );
+        }
+        if (badgeType === 'attention') {
+            return (
+                <div
+                    style={{
+                        ...commonStyle,
+                        backgroundColor: "#fbbf24",
+                        color: "#000",
+                    }}
+                    className="nodrag nopan"
+                >
+                    !
+                </div>
+            );
+        }
+    }
+
 
     return (
         <>
@@ -170,27 +300,7 @@ export default function PipeEdge({
                         onMouseLeave={handleMouseLeave}
                         onMouseMove={handleMouseMove}
                     >
-                        {needsAttention && (
-                            <div style={{
-                                position: "absolute",
-                                top: -8,
-                                right: -8,
-                                width: 14,
-                                height: 14,
-                                borderRadius: "50%",
-                                backgroundColor: "#fbbf24",
-                                color: "#000",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontSize: "10px",
-                                fontWeight: 800,
-                                border: `1px solid ${theme.palette.text.primary}`,
-                                boxShadow: "0 1px 2px rgba(0,0,0,0.15)"
-                            }}>
-                                !
-                            </div>
-                        )}
+                        {renderBadge()}
                         {labelLines.map((line, i) => (
                             <div key={i}>{line}</div>
                         ))}
@@ -198,31 +308,7 @@ export default function PipeEdge({
                 )}
 
                 {/* Fallback warning if no labels are shown */}
-                {labelLines.length === 0 && needsAttention && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-                            zIndex: 1,
-                            pointerEvents: "none",
-                            width: 14,
-                            height: 14,
-                            borderRadius: "50%",
-                            backgroundColor: "#fbbf24",
-                            color: "#000",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: "10px",
-                            fontWeight: 800,
-                            border: `1px solid ${theme.palette.text.primary}`,
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.15)"
-                        }}
-                        className="nodrag nopan"
-                    >
-                        !
-                    </div>
-                )}
+                {labelLines.length === 0 && renderFallbackBadge()}
 
                 {isHovered && pipe && (
                     <div
@@ -269,6 +355,15 @@ export default function PipeEdge({
                                 }
 
                                 const warnings = getPipeWarnings(pipe);
+
+                                // Add velocity/pressure warnings
+                                if (status.velocityStatus.status !== 'ok' && status.velocityStatus.message) {
+                                    warnings.push(status.velocityStatus.message);
+                                }
+                                if (status.pressureDropStatus.status !== 'ok' && status.pressureDropStatus.message) {
+                                    warnings.push(status.pressureDropStatus.message);
+                                }
+
                                 if (warnings.length > 0) {
                                     warnings.forEach(w => {
                                         rows.push({

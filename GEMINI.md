@@ -46,7 +46,7 @@ The application has recently undergone a major refactor to move state management
 ## Next Steps / Pending Tasks
 - **Testing**: Verify all interactions (drag, drop, connect, property updates) work as expected after the refactor.
 - **Feature Work**: Continue with any pending feature requests (e.g., advanced fluid calculations, export options).
-- **Database**: Add a database to store the network data.
+- **Database**: Add a database to store the network data. See `docs/DATABASE_SCHEMA.md` for the proposed design.
 - **Performance**: Optimize the application for better performance, especially when handling large networks.
 - **Documentation**: Update the documentation to reflect the recent changes.
 
