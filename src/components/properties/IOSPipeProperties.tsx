@@ -248,6 +248,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
         <Box sx={{
             mt: "-100px",
             pt: "100px",
+            pb: "60px",
         }}>
             {/* Top Summary Section */}
             <Box ref={summaryRef} sx={{

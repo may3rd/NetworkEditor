@@ -184,7 +184,7 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
     };
 
     return (
-        <Box sx={{ mt: "-100px", pt: "100px" }}>
+        <Box sx={{ mt: "-100px", pt: "100px", pb: "60px" }}>
             {/* Top Summary Section */}
             <Box sx={{
                 ...glassListGroupSx,
