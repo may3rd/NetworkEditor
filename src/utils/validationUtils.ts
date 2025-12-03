@@ -8,12 +8,53 @@ export const getPipeWarnings = (pipe: PipeProps): string[] => {
         warnings.push("Mass flow rate missing");
     }
 
-    if (!pipe.diameter && !pipe.pipeNPD) {
-        warnings.push("Diameter missing");
+    if (!pipe.diameter) {
+        warnings.push("Pipe diameter missing");
     }
 
-    if (!pipe.length && pipe.pipeSectionType !== "control valve" && pipe.pipeSectionType !== "orifice") {
-        warnings.push("Length is 0 or missing");
+    // Pipeline specific checks
+    if (!pipe.pipeSectionType || pipe.pipeSectionType === "pipeline") {
+        if (!pipe.length) {
+            warnings.push("Length is 0 or missing");
+        }
+        if (pipe.roughness === undefined) {
+            warnings.push("Roughness missing");
+        }
+    }
+
+    // Control Valve specific checks
+    if (pipe.pipeSectionType === "control valve") {
+        const cv = pipe.controlValve;
+        if (!cv) {
+            warnings.push("Control Valve properties missing");
+        } else {
+            const hasCv = cv.cv !== undefined && cv.cv > 0;
+            const hasCg = cv.cg !== undefined && cv.cg > 0;
+            const hasDp = cv.pressureDrop !== undefined && cv.pressureDrop > 0;
+
+            // For gas, we might use Cg, but Cv is often used as base. 
+            // Let's require either Cv/Cg OR Pressure Drop (if calculating Cv)
+            // Actually, usually we input Cv to get dP, or dP to get Cv.
+            // So at least one must be present.
+            if (!hasCv && !hasCg && !hasDp) {
+                warnings.push("Control Valve: Cv, Cg or Pressure Drop required");
+            }
+        }
+    }
+
+    // Orifice specific checks
+    if (pipe.pipeSectionType === "orifice") {
+        const orifice = pipe.orifice;
+        if (!orifice) {
+            warnings.push("Orifice properties missing");
+        } else {
+            const hasBeta = orifice.betaRatio !== undefined && orifice.betaRatio > 0;
+            const hasDp = orifice.pressureDrop !== undefined && orifice.pressureDrop > 0;
+
+            if (!hasBeta && !hasDp) {
+                warnings.push("Orifice: Beta Ratio or Pressure Drop required");
+            }
+        }
     }
 
     const elevation = convertUnit(pipe.elevation || 0, pipe.elevationUnit || "m", "m");

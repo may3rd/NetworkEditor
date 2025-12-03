@@ -10,7 +10,7 @@ import { IOSTextField } from "../../ios/IOSTextField";
 import { IOSQuantityPage } from '../../ios/IOSQuantityPage';
 import { VelocityCriteriaPage } from './VelocityCriteriaPage';
 import { SERVICE_TYPES } from "@/utils/velocityCriteria";
-import { Check, ArrowForwardIos, Add, Remove, AutoFixHigh, ContentCopy, Close } from "@mui/icons-material";
+import { Check, ArrowForwardIos, Add, Remove, AutoFixHigh, ContentCopy, Close, ErrorOutline } from "@mui/icons-material";
 
 // ... (existing code)
 
@@ -682,6 +682,16 @@ export const DiameterPage = ({ pipe, onUpdatePipe, navigator }: { pipe: PipeProp
 
     return (
         <Box sx={{ pt: 2 }}>
+            {(!pipe.diameter && !pipe.pipeNPD) && (
+                <Box sx={{ px: 2, pb: 2 }}>
+                    <Typography sx={{ color: "error.main", fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ErrorOutline /> Diameter is missing
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+                        Please select a Nominal Pipe Size (NPS) or enter a custom diameter.
+                    </Typography>
+                </Box>
+            )}
             <IOSListGroup>
                 <IOSListItem
                     label="Pipe Diameter Mode"

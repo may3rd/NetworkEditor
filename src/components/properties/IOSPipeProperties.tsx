@@ -7,7 +7,7 @@ import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
 import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
-import { Add, Check, Timeline, Close } from "@mui/icons-material";
+import { Add, Check, Timeline, Close, ErrorOutline } from "@mui/icons-material";
 import { RefObject, useEffect, useRef, useState } from "react";
 import { glassDialogSx, glassListGroupSx, glassPanelSx } from "@/lib/glassStyles";
 

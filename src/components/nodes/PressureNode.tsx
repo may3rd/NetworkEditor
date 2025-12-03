@@ -178,7 +178,7 @@ function PressureNode({ data }: { data: NodeData }) {
   };
 
   const myShadow = isDark ?
-    "0px 0px 2px 1px rgba(255, 255, 255, 0.7), 2px 2px 2px -2px rgba(0, 0, 0, 0.7) inset, -2px -2px 2px -2px rgba(0, 0, 0, 0.7) inset"
+    "0px 0px 2px 1px rgba(0, 0, 0, 0.7), 2px 2px 2px -2px rgba(255, 255, 255, 0.7) inset, -2px -2px 2px -2px rgba(255, 255, 255, 0.7) inset"
     : "0px 0px 2px 1px rgba(0, 0, 0, 0.7), 2px 2px 2px -2px rgba(255, 255, 255, 0.7) inset, -2px -2px 2px -2px rgba(255, 255, 255, 0.7) inset";
 
   // animateShadow
@@ -186,6 +186,11 @@ function PressureNode({ data }: { data: NodeData }) {
     "0px 0px 2px 1px rgba(255, 255, 255, 0.7), -2px 2px 2px -2px rgba(0, 0, 0, 0.7) inset, 2px -2px 2px -2px rgba(0, 0, 0, 0.7) inset"
     : "0px 0px 2px 1px rgba(0, 0, 0, 0.7), -2px 2px 2px -2px rgba(255, 255, 255, 0.7) inset, 2px -2px 2px -2px rgba(255, 255, 255, 0.7) inset";
 
+  // bandge shadow
+  const shadowBandage = isDark ?
+    "0 1px 2px rgba(255, 255, 255, 0.35)" :
+    "0 1px 2px rgba(0, 0, 0, 0.35)"
+  
   return (
     <div
       onMouseEnter={!showHandles ? handleMouseEnter : undefined}
@@ -222,7 +227,7 @@ function PressureNode({ data }: { data: NodeData }) {
                 box-shadow: 0 0 0 0px rgba(14, 165, 233, 0.7), ${myShadow};
               }
               70% {
-                box-shadow: 0 0 0 6px rgba(14, 165, 233, 0), ${animatedIconShadowKey70};
+                box-shadow: 0 0 0 6px rgba(14, 165, 233, 0), ${myShadow};
               }
               100% {
                 box-shadow: 0 0 0 0px rgba(14, 165, 233, 0), ${myShadow};
@@ -238,8 +243,6 @@ function PressureNode({ data }: { data: NodeData }) {
             borderRadius: "50%",
             background: fillColor,
             boxShadow: myShadow,
-            // border: `${borderWidth}px solid ${borderColor}`,
-            // boxShadow: isSelected ? "0 0 0 4px rgba(14, 165, 233, 0.3)" : baseShadow,
             animation: isSelected ? "pulse-sky 2s infinite" : "none",
             transform: `scale(${scaleAmount})`,
             transition: "background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease",
@@ -259,15 +262,16 @@ function PressureNode({ data }: { data: NodeData }) {
               height: 14,
               borderRadius: "50%",
               background: "linear-gradient(#FFD60A, #FF9F0A)",
-              color: "#000",
+              color: "black",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: "10px",
               fontWeight: 800,
               zIndex: 3,
-              border: `1px solid ${textPrimary}`,
-              boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+              border: `1px solid black`,
+              // border: `1px solid ${textPrimary}`,
+              boxShadow: shadowBandage,
             }}
           >
             !

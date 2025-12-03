@@ -56,7 +56,7 @@ export function Header({
           <ButtonGroup variant="outlined" sx={{ mr: 2 }}>
             <Tooltip title="Load example network">
               <Button onClick={onReset} color="warning">
-                Example
+                Load Example
               </Button>
             </Tooltip>
             <Tooltip title="Edit Project Details">

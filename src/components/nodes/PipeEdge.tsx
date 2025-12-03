@@ -58,6 +58,7 @@ export default function PipeEdge({
     });
 
     const theme = useTheme();
+    const isDark = theme.palette.mode === 'dark';
     const labelLines = (data?.labelLines as string[]) || [];
     const labelBgColor = (data?.labelBgColor as string) || theme.palette.background.paper;
     const labelTextColor = (data?.labelTextColor as string) || theme.palette.text.primary;
@@ -89,7 +90,8 @@ export default function PipeEdge({
     const needsAttention = pipe && (
         pipe.pressureDropCalculationResults?.totalSegmentPressureDrop === undefined ||
         pipe.resultSummary?.outletState === undefined ||
-        (Math.abs(convertUnit(pipe.elevation || 0, pipe.elevationUnit || "m", "m")) > convertUnit(pipe.length || 0, pipe.lengthUnit || "m", "m"))
+        (Math.abs(convertUnit(pipe.elevation || 0, pipe.elevationUnit || "m", "m")) > convertUnit(pipe.length || 0, pipe.lengthUnit || "m", "m")) ||
+        getPipeWarnings(pipe).length > 0
     );
 
     // Determine Badge Type
@@ -104,6 +106,10 @@ export default function PipeEdge({
 
     const renderBadge = () => {
         if (!badgeType) return null;
+        // bandge shadow
+        const shadowBandage = isDark ?
+            "0 1px 2px rgba(255, 255, 255, 0.35)" :
+            "0 1px 2px rgba(0, 0, 0, 0.35)"
 
         const commonStyle: React.CSSProperties = {
             position: "absolute",
@@ -115,8 +121,8 @@ export default function PipeEdge({
             justifyContent: "center",
             fontSize: "10px",
             fontWeight: 800,
-            border: `1px solid ${theme.palette.text.primary}`,
-            boxShadow: "0 1px 2px rgba(0,0,0,0.15)"
+            border: `1px solid black`,
+            boxShadow: shadowBandage
         };
 
         if (badgeType === 'error') {

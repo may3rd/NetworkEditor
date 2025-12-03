@@ -109,29 +109,41 @@ function getDiameterInInches(diameterMm: number): number {
 }
 
 function checkVelocity(value: number, rule: CriteriaRule): CriteriaCheckResult {
-    let limit = 0;
+    let maxLimit = 0;
+    let minLimit = 0;
+
     if (typeof rule.velocity === 'number') {
-        limit = rule.velocity;
+        maxLimit = rule.velocity;
     } else if (rule.velocity) {
-        limit = rule.velocity.max;
+        maxLimit = rule.velocity.max;
+        minLimit = rule.velocity.min;
     }
 
-    if (limit > 0 && value > limit) {
-        return { status: 'warning', message: `Velocity exceeds recommended limit of ${limit} m/s`, limit, limitType: 'velocity' };
+    if (maxLimit > 0 && value > maxLimit) {
+        return { status: 'warning', message: `Velocity exceeds recommended limit of ${maxLimit} m/s`, limit: maxLimit, limitType: 'velocity' };
+    }
+    if (minLimit > 0 && value < minLimit) {
+        return { status: 'warning', message: `Velocity below recommended limit of ${minLimit} m/s`, limit: minLimit, limitType: 'velocity' };
     }
     return { status: 'ok' };
 }
 
 function checkPressureDrop(value: number, rule: CriteriaRule): CriteriaCheckResult {
-    let limit = 0;
+    let maxLimit = 0;
+    let minLimit = 0;
+
     if (typeof rule.pressureDrop === 'number') {
-        limit = rule.pressureDrop;
+        maxLimit = rule.pressureDrop;
     } else if (rule.pressureDrop) {
-        limit = rule.pressureDrop.max;
+        maxLimit = rule.pressureDrop.max;
+        minLimit = rule.pressureDrop.min || 0;
     }
 
-    if (limit > 0 && value > limit) {
-        return { status: 'warning', message: `Pressure drop exceeds recommended limit of ${limit} bar/100m`, limit, limitType: 'pressureDrop' };
+    if (maxLimit > 0 && value > maxLimit) {
+        return { status: 'warning', message: `Pressure drop exceeds recommended limit of ${maxLimit} bar/100m`, limit: maxLimit, limitType: 'pressureDrop' };
+    }
+    if (minLimit > 0 && value < minLimit) {
+        return { status: 'warning', message: `Pressure drop below recommended limit of ${minLimit} bar/100m`, limit: minLimit, limitType: 'pressureDrop' };
     }
     return { status: 'ok' };
 }
