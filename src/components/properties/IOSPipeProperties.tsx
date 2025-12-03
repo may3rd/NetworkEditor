@@ -11,6 +11,7 @@ import { BackButtonPanel, ForwardButtonPanel } from "./NavigationButtons";
 import { Add, Check, Timeline, Close, ErrorOutline } from "@mui/icons-material";
 import { RefObject, useEffect, useRef, useState } from "react";
 import { glassDialogSx, glassListGroupSx, glassPanelSx } from "@/lib/glassStyles";
+import { createPortal } from "react-dom";
 
 function ControlValveIcon(props: SvgIconProps) {
     return (
@@ -73,6 +74,7 @@ type Props = {
     viewSettings: ViewSettings;
     containerRef?: RefObject<HTMLDivElement | null>;
     setTitleOpacity?: (o: number) => void;
+    footerNode?: HTMLDivElement | null;
 };
 
 export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUpdateNode,
@@ -80,6 +82,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
     viewSettings,
     containerRef,
     setTitleOpacity,
+    footerNode,
 }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
@@ -553,31 +556,35 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                 />
             </IOSListGroup>
 
-            {/* Navigation Buttons */}
-            <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                    position: "absolute",
-                    bottom: 24,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    zIndex: 1200,
-                }}
-            >
-                <BackButtonPanel
-                    disabled={!pipe.startNodeId}
-                    onClick={() => {
-                        console.log("Back (Start Node):", pipe.startNodeId);
+            {/* Navigation Buttons - Rendered via Portal if footerNode is available */}
+            {footerNode && createPortal(
+                <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{
+                        position: "absolute",
+                        bottom: 24,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        zIndex: 1200,
+                        pointerEvents: "auto", // Re-enable pointer events for buttons
                     }}
-                />
-                <ForwardButtonPanel
-                    disabled={!pipe.endNodeId}
-                    onClick={() => {
-                        console.log("Forward (End Node):", pipe.endNodeId);
-                    }}
-                />
-            </Stack>
+                >
+                    <BackButtonPanel
+                        disabled={!pipe.startNodeId}
+                        onClick={() => {
+                            console.log("Back (Start Node):", pipe.startNodeId);
+                        }}
+                    />
+                    <ForwardButtonPanel
+                        disabled={!pipe.endNodeId}
+                        onClick={() => {
+                            console.log("Forward (End Node):", pipe.endNodeId);
+                        }}
+                    />
+                </Stack>,
+                footerNode
+            )}
         </Box>
     );
 }

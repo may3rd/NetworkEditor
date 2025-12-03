@@ -10,6 +10,9 @@ import { propagatePressure } from "@/lib/pressurePropagation";
 import { getNodeWarnings } from "@/utils/validationUtils";
 import { RefObject } from "react";
 import { glassListGroupSx } from "@/lib/glassStyles";
+import { createPortal } from "react-dom";
+import { IOSTextField } from "../ios/IOSTextField";
+import { PressurePage, TemperaturePage, NodeFluidPage } from "./subPages/NodeSubPages";
 
 type Props = {
     node: NodeProps;
@@ -19,9 +22,8 @@ type Props = {
     containerRef?: RefObject<HTMLDivElement | null>;
     setTitleOpacity?: (o: number) => void;
     onNetworkChange?: (network: NetworkState) => void;
+    footerNode?: HTMLDivElement | null;
 };
-
-import { IOSTextField } from "../ios/IOSTextField";
 
 const NamePage = ({ value, onChange }: { value: string, onChange: (v: string) => void }) => (
     <Box sx={{ p: 2 }}>
@@ -36,9 +38,7 @@ const NamePage = ({ value, onChange }: { value: string, onChange: (v: string) =>
     </Box>
 );
 
-import { PressurePage, TemperaturePage, NodeFluidPage } from "./subPages/NodeSubPages";
-
-export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity, onNetworkChange }: Props) {
+export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity, onNetworkChange, footerNode }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
 
@@ -333,41 +333,45 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                 )}
             </IOSListGroup>
 
-            {/* Navigation Buttons */}
-            <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                    position: "absolute",
-                    bottom: 24,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    zIndex: 1200,
-                }}
-            >
-                {(() => {
-                    const incomingPipes = network.pipes.filter(p => p.endNodeId === node.id);
-                    return (
-                        <BackButtonPanel
-                            disabled={incomingPipes.length === 0}
-                            onClick={() => {
-                                console.log("Back (Incoming Pipes):", incomingPipes.map(p => p.id));
-                            }}
-                        />
-                    );
-                })()}
-                {(() => {
-                    const outgoingPipes = network.pipes.filter(p => p.startNodeId === node.id);
-                    return (
-                        <ForwardButtonPanel
-                            disabled={outgoingPipes.length === 0}
-                            onClick={() => {
-                                console.log("Forward (Outgoing Pipes):", outgoingPipes.map(p => p.id));
-                            }}
-                        />
-                    );
-                })()}
-            </Stack>
+            {/* Navigation Buttons - Rendered via Portal if footerNode is available */}
+            {footerNode && createPortal(
+                <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{
+                        position: "absolute",
+                        bottom: 24,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        zIndex: 1200,
+                        pointerEvents: "auto", // Re-enable pointer events for buttons
+                    }}
+                >
+                    {(() => {
+                        const incomingPipes = network.pipes.filter(p => p.endNodeId === node.id);
+                        return (
+                            <BackButtonPanel
+                                disabled={incomingPipes.length === 0}
+                                onClick={() => {
+                                    console.log("Back (Incoming Pipes):", incomingPipes.map(p => p.id));
+                                }}
+                            />
+                        );
+                    })()}
+                    {(() => {
+                        const outgoingPipes = network.pipes.filter(p => p.startNodeId === node.id);
+                        return (
+                            <ForwardButtonPanel
+                                disabled={outgoingPipes.length === 0}
+                                onClick={() => {
+                                    console.log("Forward (Outgoing Pipes):", outgoingPipes.map(p => p.id));
+                                }}
+                            />
+                        );
+                    })()}
+                </Stack>,
+                footerNode
+            )}
         </Box>
     );
 }
