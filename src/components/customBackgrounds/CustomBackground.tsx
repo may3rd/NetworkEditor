@@ -43,8 +43,8 @@ function CustomBackground({
     const scaledGap: number = gap * tScale;
     const columnWidth: number = width * tScale;
 
-    // Default color to theme background if not provided
-    const fillColor = color || "background.paper";
+    // Default color to theme paper background so the canvas matches the header styling
+    const fillColor = color ?? theme.palette.background.paper;
 
     return (
         <svg

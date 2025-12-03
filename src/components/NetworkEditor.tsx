@@ -813,6 +813,8 @@ function EditorCanvas({
     : isPanMode ? "grab" : "default";
   const { toggleColorMode } = useColorMode();
   const colorMode = theme.palette.mode;
+  const isDarkMode = colorMode === "dark";
+  const flowCanvasColor = isDarkMode ? theme.palette.background.paper : undefined;
 
   return (
     <Paper
@@ -930,10 +932,13 @@ function EditorCanvas({
           panOnDrag={panModeEnabled || [1, 2]} // Pan on left click if in pan mode, or middle/right click always
           selectionKeyCode={isPanMode ? null : "Shift"} // Use Shift for selection if not in pan mode
           multiSelectionKeyCode={isPanMode ? null : "Meta"}
-          style={{ cursor: editorCursor }}
+          style={{
+            cursor: editorCursor,
+            backgroundColor: flowCanvasColor,
+          }}
         >
           <CustomBackground
-            color={theme.palette.background.paper}
+            color={flowCanvasColor ?? theme.palette.background.paper}
             backgroundImage={network.backgroundImage}
             backgroundImageSize={network.backgroundImageSize}
             backgroundImagePosition={network.backgroundImagePosition}
