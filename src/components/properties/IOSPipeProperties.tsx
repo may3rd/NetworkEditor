@@ -578,7 +578,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                         disabled={!pipe.startNodeId}
                         onClick={() => {
                             console.log("Back (Start Node):", pipe.startNodeId);
-                            onClose();
+                            // onClose();
                             // select start node
                             selectElement(pipe.startNodeId, "node");
                         }}
@@ -587,7 +587,7 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                         disabled={!pipe.endNodeId}
                         onClick={() => {
                             console.log("Forward (End Node):", pipe.endNodeId);
-                            onClose();
+                            // onClose();
                             // select end node
                             selectElement(pipe.endNodeId, "node");
                         }}

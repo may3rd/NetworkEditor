@@ -68,7 +68,7 @@ export function IOSNodeProperties({
 
     const handleMenuClick = (pipeId: string) => {
         handleMenuClose();
-        onClose(); // Deselect current
+        // onClose(); // Deselect current - redundant as selectElement handles it
         selectElement(pipeId, "pipe");
     };
 
@@ -384,7 +384,7 @@ export function IOSNodeProperties({
                                 disabled={incomingPipes.length === 0}
                                 onClick={(e) => {
                                     if (incomingPipes.length === 1) {
-                                        onClose();
+                                        // onClose();
                                         console.log("Selecting start node:", incomingPipes[0].id);
                                         selectElement(incomingPipes[0].id, "pipe");
                                     } else {
@@ -402,7 +402,7 @@ export function IOSNodeProperties({
                                 disabled={outgoingPipes.length === 0}
                                 onClick={(e) => {
                                     if (outgoingPipes.length === 1) {
-                                        onClose();
+                                        // onClose();
                                         console.log("Selecting end node:", outgoingPipes[0].id);
                                         selectElement(outgoingPipes[0].id, "pipe");
                                     } else {
