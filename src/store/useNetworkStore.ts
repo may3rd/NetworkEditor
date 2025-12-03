@@ -41,10 +41,11 @@ interface NetworkStore {
     isAnimationEnabled: boolean;
     isConnectingMode: boolean;
     isExporting: boolean;
+    isPanelOpen: boolean;
 
     // Actions
     setNetwork: (network: NetworkState | ((prev: NetworkState) => NetworkState)) => void;
-    selectElement: (id: string | null, type: "node" | "pipe" | null) => void;
+    selectElement: (id: string | null, type: "node" | "pipe" | null, options?: { openPanel?: boolean }) => void;
     setMultiSelection: (selection: { nodes: string[]; edges: string[] }) => void;
     updateNode: (id: string, patch: NodePatch) => void;
     updatePipe: (id: string, patch: PipePatch) => void;
@@ -82,6 +83,7 @@ const defaultViewSettings: ViewSettings = {
         velocity: false,
         dPPer100m: false,
         massFlowRate: false,
+        hoverCard: false,
         decimals: {
             length: 2,
             deltaP: 2,
@@ -99,6 +101,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
     selectedId: null,
     selectedType: null,
     multiSelection: { nodes: [], edges: [] },
+    isPanelOpen: false,
 
     history: [createNetworkWithDerivedValues()],
     historyIndex: 0,
@@ -151,12 +154,23 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
         });
     },
 
-    selectElement: (id, type) => {
-        set({
-            selectedId: id,
-            selectedType: type,
-            selection: id && type ? { id, type } : null,
-            multiSelection: { nodes: [], edges: [] } // Clear multi-selection
+    selectElement: (id, type, options) => {
+        set((state) => {
+            // const isDeselecting = id === null; // No longer force close on deselect
+            let newIsPanelOpen = state.isPanelOpen;
+
+            if (options?.openPanel !== undefined) {
+                newIsPanelOpen = options.openPanel;
+            }
+            // If options.openPanel is undefined, keep current state (persist open if already open)
+
+            return {
+                selectedId: id,
+                selectedType: type,
+                selection: id && type ? { id, type } : null,
+                multiSelection: { nodes: [], edges: [] }, // Clear multi-selection
+                isPanelOpen: newIsPanelOpen
+            };
         });
     },
 
@@ -338,7 +352,7 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
             pipes: current.pipes.filter(p => !edgesToDelete.has(p.id) && !nodesToDelete.has(p.startNodeId) && !nodesToDelete.has(p.endNodeId)),
         }));
 
-        get().selectElement(null, null);
+        get().selectElement(null, null, { openPanel: false }); // Explicitly close panel on delete
     },
 
     undo: () => {
@@ -371,7 +385,8 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
             selectedId: null,
             selectedType: null,
             history: [newNetwork],
-            historyIndex: 0
+            historyIndex: 0,
+            isPanelOpen: false // Reset panel state
         });
     },
 
@@ -383,7 +398,8 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
             selectedId: null,
             selectedType: null,
             history: [],
-            historyIndex: -1
+            historyIndex: -1,
+            isPanelOpen: false // Reset panel state
         });
     },
 

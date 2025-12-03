@@ -416,7 +416,7 @@ export default function PipeEdge({
                 {/* Fallback warning if no labels are shown */}
                 {labelLines.length === 0 && renderFallbackBadge()}
 
-                {isHovered && pipe && (
+                {isHovered && pipe && (data?.hoverCardEnabled as boolean) && (
                     <div
                         style={{
                             position: "absolute",

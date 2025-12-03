@@ -386,12 +386,27 @@ function EditorCanvas({
             };
           }
 
+          // Identify moved nodes
+          const movedNodeIds = new Set(dragEndedChanges.map(c => c.id));
+
+          // Update node positions
           updatedNetwork = {
             ...updatedNetwork,
             nodes: updatedNetwork.nodes.map((node) => {
               const change = dragEndedChanges.find((c) => c.id === node.id);
               return change ? { ...node, position: change.position! } : node;
             }),
+          };
+
+          // Reset label position for pipes connected to moved nodes
+          updatedNetwork = {
+            ...updatedNetwork,
+            pipes: updatedNetwork.pipes.map(pipe => {
+              if (movedNodeIds.has(pipe.startNodeId) || movedNodeIds.has(pipe.endNodeId)) {
+                return { ...pipe, labelOffset: { x: 0, y: 0 } };
+              }
+              return pipe;
+            })
           };
 
           onNetworkChange(updatedNetwork);
@@ -748,7 +763,7 @@ function EditorCanvas({
         return;
       }
 
-      onSelect(null, null);
+      onSelect(null, null, { openPanel: false });
     },
     [isAddingNode, onNetworkChange, screenToFlowPosition, snapToGrid, snapGrid, network, onSelect, mapNodeToReactFlow],
   );
@@ -874,13 +889,15 @@ function EditorCanvas({
           fitViewOptions={{ padding: 0.2 }}
           onNodeClick={(_, node) => {
             if (node.type === 'background') {
-              onSelect(null, null);
+              onSelect(null, null, { openPanel: false });
               return;
             }
-            onSelect(node.id, "node");
+            // Explicit click opens the panel
+            onSelect(node.id, "node", { openPanel: true });
           }}
 
-          onEdgeClick={(_, edge) => onSelect(edge.id, "pipe")}
+          // Explicit click opens the panel
+          onEdgeClick={(_, edge) => onSelect(edge.id, "pipe", { openPanel: true })}
           onPaneClick={handlePaneClick}
           onPaneContextMenu={handlePaneContextMenu}
           onNodesChange={handleNodesChange}
@@ -888,10 +905,11 @@ function EditorCanvas({
             // If multiple items are selected, we don't update the single selection state
             // unless only one item is selected.
             if (nodes.length + edges.length === 1) {
+              // Implicitly preserves panel state (open if already open, closed if closed)
               if (nodes.length > 0) onSelect(nodes[0].id, "node");
               if (edges.length > 0) onSelect(edges[0].id, "pipe");
             } else if (nodes.length + edges.length === 0) {
-              onSelect(null, null);
+              onSelect(null, null, { openPanel: false });
             }
 
             // Always pass up the full selection for multi-delete support

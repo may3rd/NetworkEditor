@@ -44,6 +44,7 @@ export default function Home() {
     setShowSnapshot,
     isExporting,
     setIsExporting,
+    isPanelOpen,
   } = useNetworkStore();
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -336,7 +337,7 @@ export default function Home() {
           />
         </Box>
 
-        <Slide direction="left" in={!!selection} mountOnEnter unmountOnExit>
+        <Slide direction="left" in={!!selection && isPanelOpen} mountOnEnter unmountOnExit>
           <Paper
             elevation={0}
             sx={{

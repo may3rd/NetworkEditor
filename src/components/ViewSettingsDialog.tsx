@@ -262,6 +262,10 @@ export default function ViewSettingsDialog({ open, onClose, settings, onSettings
                                     label="dP/100m"
                                     value={<DecimalStepper value={settings.pipe.decimals?.dPPer100m} onChange={(v) => handlePipeDecimalChange("dPPer100m", v)} />}
                                     control={<Switch checked={settings.pipe.dPPer100m} onChange={() => togglePipeSetting("dPPer100m")} />}
+                                />
+                                <IOSListItem
+                                    label="Hover Card"
+                                    control={<Switch checked={settings.pipe.hoverCard ?? false} onChange={() => togglePipeSetting("hoverCard")} />}
                                     last
                                 />
                             </IOSListGroup>

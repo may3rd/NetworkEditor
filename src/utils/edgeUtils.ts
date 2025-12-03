@@ -137,6 +137,7 @@ export const getPipeEdge = ({
       isAnimationEnabled,
       isConnectingMode,
       velocity: pipe.resultSummary?.outletState?.velocity ?? 0,
+      hoverCardEnabled: viewSettings.pipe.hoverCard ?? false,
     },
     style: {
       strokeWidth: isSelectedPipe ? 2 : 1,

@@ -654,6 +654,7 @@ export type ViewSettings = {
     velocity: boolean;
     dPPer100m: boolean;
     massFlowRate: boolean;
+    hoverCard: boolean;
     decimals: {
       length: number;
       deltaP: number;
