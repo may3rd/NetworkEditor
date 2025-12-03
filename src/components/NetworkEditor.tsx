@@ -931,19 +931,29 @@ function EditorCanvas({
           onPaneContextMenu={handlePaneContextMenu}
           onNodesChange={handleNodesChange}
           onSelectionChange={useCallback(({ nodes, edges }: { nodes: Node[], edges: Edge[] }) => {
-            // If multiple items are selected, we don't update the single selection state
-            // unless only one item is selected.
-            if (nodes.length + edges.length === 1) {
-              // Implicitly preserves panel state (open if already open, closed if closed)
-              if (nodes.length > 0) onSelect(nodes[0].id, "node");
-              if (edges.length > 0) onSelect(edges[0].id, "pipe");
-            } else if (nodes.length + edges.length === 0) {
-              onSelect(null, null, { openPanel: false });
+            const selectionCount = nodes.length + edges.length;
+
+            if (selectionCount === 1) {
+              if (nodes.length > 0) {
+                const nodeId = nodes[0].id;
+                if (selectedType !== "node" || selectedId !== nodeId) {
+                  onSelect(nodeId, "node");
+                }
+              } else if (edges.length > 0) {
+                const edgeId = edges[0].id;
+                if (selectedType !== "pipe" || selectedId !== edgeId) {
+                  onSelect(edgeId, "pipe");
+                }
+              }
+            } else if (selectionCount === 0) {
+              if (selectedId !== null || selectedType !== null) {
+                onSelect(null, null, { openPanel: false });
+              }
             }
 
             // Always pass up the full selection for multi-delete support
             onSelectionChangeProp?.({ nodes: nodes.map(n => n.id), edges: edges.map(e => e.id) });
-          }, [onSelect, onSelectionChangeProp])}
+          }, [onSelect, onSelectionChangeProp, selectedId, selectedType])}
           onConnect={handleConnect}
           onConnectStart={onConnectStart}
           onConnectEnd={onConnectEnd}
