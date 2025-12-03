@@ -58,6 +58,14 @@ export const glassPanelSx = {
     border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
 };
 
+export const glassToolBarButtonGroupSx = {
+    borderRadius: "14px",
+    backgroundColor: (theme: Theme) => theme.palette.mode === 'dark' ? "rgba(30, 41, 59, 0.7)" : "rgba(255, 255, 255, 0.7)",
+    backdropFilter: "blur(10px)",
+    // boxShadow: (theme: Theme) => theme.palette.mode === 'dark' ? "-10px 0 40px rgba(0,0,0,0.7)" : "-10px 0 40px rgba(0,0,0,0.2)",
+    border: (theme: Theme) => `1px solid ${theme.palette.divider}`,
+};
+
 export const glassNodeSx = {
     backdropFilter: "blur(4px)",
     // Background color will be handled dynamically in the component

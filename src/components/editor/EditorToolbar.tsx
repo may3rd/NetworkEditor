@@ -35,6 +35,8 @@ import { useColorMode } from "@/contexts/ColorModeContext";
 import ViewSettingsDialog from "@/components/ViewSettingsDialog";
 import { NetworkState, ViewSettings } from "@/lib/types";
 import { useState, useRef, ChangeEvent } from "react";
+import { g } from "framer-motion/client";
+import { glassToolBarButtonGroupSx } from "@/lib/glassStyles";
 
 type EditorToolbarProps = {
     network: NetworkState;
@@ -150,7 +152,9 @@ export function EditorToolbar({
                 type="file"
                 accept="image/*"
                 ref={backgroundInputRef}
-                style={{ display: "none" }}
+                style={{
+                    display: "none"
+                }}
                 onChange={handleUploadBackground}
             />
             <Stack
@@ -172,7 +176,14 @@ export function EditorToolbar({
                 }}
             >
                 <Stack direction="row" spacing={2} sx={{ pointerEvents: "auto" }}>
-                    <ButtonGroup variant="contained" aria-label="File tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
+                    <ButtonGroup
+                        variant="contained"
+                        aria-label="File tools"
+                        sx={{
+                           ...glassToolBarButtonGroupSx,
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper'
+                        }}
+                    >
                         <Tooltip title="New">
                             <span>
                                 <IconButton onClick={onNew} disabled={!onNew}>
@@ -222,7 +233,14 @@ export function EditorToolbar({
                         )}
                     </ButtonGroup>
 
-                    <ButtonGroup variant="contained" aria-label="Edit tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
+                    <ButtonGroup
+                        variant="contained"
+                        aria-label="Edit tools"
+                        sx={{
+                            ...glassToolBarButtonGroupSx,
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper'
+                        }}
+                    >
                         <Tooltip title="Delete Selected">
                             <span>
                                 <IconButton onClick={onDelete} disabled={!selectedId}>
@@ -246,7 +264,14 @@ export function EditorToolbar({
                         </Tooltip>
                     </ButtonGroup>
 
-                    <ButtonGroup variant="contained" aria-label="Rotation tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
+                    <ButtonGroup
+                        variant="contained"
+                        aria-label="Rotation tools"
+                        sx={{
+                            ...glassToolBarButtonGroupSx,
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper'
+                        }}
+                    >
                         <Tooltip title="Rotate 90° CW">
                             <span>
                                 <IconButton onClick={handleRotateCW} disabled={!selectedId || selectedType !== "node"}>
@@ -283,7 +308,14 @@ export function EditorToolbar({
                         </Tooltip>
                     </ButtonGroup>
 
-                    <ButtonGroup variant="contained" aria-label="View tools" sx={{ bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper' }}>
+                    <ButtonGroup
+                        variant="contained"
+                        aria-label="View tools"
+                        sx={{
+                            ...glassToolBarButtonGroupSx,
+                            bgcolor: (theme) => theme.palette.mode === 'dark' ? '#1e293b' : 'background.paper'
+                        }}
+                    >
                         <Tooltip title="Snap to Grid">
                             <ToggleButton
                                 value="snap"
