@@ -12,6 +12,7 @@ import { Add, Check, Timeline, Close, ErrorOutline } from "@mui/icons-material";
 import { RefObject, useEffect, useRef, useState } from "react";
 import { glassDialogSx, glassListGroupSx, glassPanelSx } from "@/lib/glassStyles";
 import { createPortal } from "react-dom";
+import { useNetworkStore } from "@/store/useNetworkStore";
 
 function ControlValveIcon(props: SvgIconProps) {
     return (
@@ -87,6 +88,9 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const summaryRef = useRef<HTMLDivElement>(null);
+
+    const selectElement = useNetworkStore((state) => state.selectElement);
+    const onClose = () => selectElement(null, null);
 
 
     // Scroll listener for title fade-in
@@ -574,12 +578,18 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                         disabled={!pipe.startNodeId}
                         onClick={() => {
                             console.log("Back (Start Node):", pipe.startNodeId);
+                            onClose();
+                            // select start node
+                            selectElement(pipe.startNodeId, "node");
                         }}
                     />
                     <ForwardButtonPanel
                         disabled={!pipe.endNodeId}
                         onClick={() => {
                             console.log("Forward (End Node):", pipe.endNodeId);
+                            onClose();
+                            // select end node
+                            selectElement(pipe.endNodeId, "node");
                         }}
                     />
                 </Stack>,

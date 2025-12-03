@@ -90,12 +90,28 @@ export function PropertiesPanel() {
       return;
     }
 
-    const rootRender = (net: NetworkState, nav: Navigator, ref: RefObject<HTMLDivElement | null>, setOpacity: (o: number) => void, footer: HTMLDivElement | null) => {
+    const rootRender = (
+      net: NetworkState,
+      nav: Navigator,
+      ref: RefObject<HTMLDivElement | null>,
+      setOpacity: (o: number) => void,
+      footer: HTMLDivElement | null
+    ) => {
+      // Set the Node Properties Panel
       if (selectedElement.type === "node") {
         const node = net.nodes.find((n) => n.id === selectedElement.id);
         if (!node) return null;
-        return <IOSNodeProperties node={node} network={net} onUpdateNode={onUpdateNode} navigator={nav} onNetworkChange={onNetworkChange} footerNode={footer} />;
-      } else {
+        return <IOSNodeProperties
+          node={node}
+          network={net}
+          onUpdateNode={onUpdateNode}
+          navigator={nav}
+          containerRef={ref}
+          setTitleOpacity={setOpacity}
+          onNetworkChange={onNetworkChange}
+          footerNode={footer}
+        />;
+      } else { // Pipe Porperties Panel
         const pipe = net.pipes.find((p) => p.id === selectedElement.id);
         if (!pipe) return null;
         const startNode = net.nodes.find((n) => n.id === pipe.startNodeId);

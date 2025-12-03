@@ -14,6 +14,8 @@ import { createPortal } from "react-dom";
 import { IOSTextField } from "../ios/IOSTextField";
 import { PressurePage, TemperaturePage, NodeFluidPage } from "./subPages/NodeSubPages";
 
+import { useNetworkStore } from "@/store/useNetworkStore";
+
 type Props = {
     node: NodeProps;
     network: NetworkState;
@@ -38,9 +40,21 @@ const NamePage = ({ value, onChange }: { value: string, onChange: (v: string) =>
     </Box>
 );
 
-export function IOSNodeProperties({ node, network, onUpdateNode, navigator, containerRef, setTitleOpacity, onNetworkChange, footerNode }: Props) {
+export function IOSNodeProperties({
+    node,
+    network,
+    onUpdateNode,
+    navigator,
+    containerRef,
+    setTitleOpacity,
+    onNetworkChange,
+    footerNode,
+}: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
+    
+    const selectElement = useNetworkStore((state) => state.selectElement);
+    const onClose = () => selectElement(null, null);
 
     const openNamePage = () => {
         navigator.push("Label", (net: NetworkState, nav: Navigator) => {
@@ -354,6 +368,14 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                                 disabled={incomingPipes.length === 0}
                                 onClick={() => {
                                     console.log("Back (Incoming Pipes):", incomingPipes.map(p => p.id));
+                                    onClose();
+                                    // select start node
+                                    if (incomingPipes.length === 1) {
+                                        console.log("Selecting start node:", incomingPipes[0].startNodeId);
+                                    } else {
+                                        console.log("Multiple incoming pipes, cannot select start node");
+                                        // add popup to select start node
+                                    }
                                 }}
                             />
                         );
@@ -365,6 +387,14 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                                 disabled={outgoingPipes.length === 0}
                                 onClick={() => {
                                     console.log("Forward (Outgoing Pipes):", outgoingPipes.map(p => p.id));
+                                    onClose();
+                                    // select end node
+                                    if (outgoingPipes.length === 1) {
+                                        console.log("Selecting end node:", outgoingPipes[0].endNodeId);
+                                    } else {
+                                        console.log("Multiple outgoing pipes, cannot select end node");
+                                        // add popup to select end node
+                                    }
                                 }}
                             />
                         );
