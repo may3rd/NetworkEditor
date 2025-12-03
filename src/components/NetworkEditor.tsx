@@ -366,6 +366,37 @@ function EditorCanvas({
         setSelectedNodeIds(newSelectedIds);
       }
 
+      // Detect nodes being dragged - Reset label offset immediately
+      const draggingChanges = changes.filter(
+        (c): c is { id: string; type: "position"; dragging: true; position: { x: number; y: number } } =>
+          c.type === "position" && c.dragging === true
+      );
+
+      if (draggingChanges.length > 0 && onNetworkChange) {
+        const movedNodeIds = new Set(draggingChanges.map(c => c.id));
+
+        // Check if we need to reset any pipe labels
+        // We check if any connected pipe has a non-zero offset
+        const pipesToReset = network.pipes.some(pipe =>
+          (movedNodeIds.has(pipe.startNodeId) || movedNodeIds.has(pipe.endNodeId)) &&
+          (pipe.labelOffset && (pipe.labelOffset.x !== 0 || pipe.labelOffset.y !== 0))
+        );
+
+        if (pipesToReset) {
+          const updatedPipes = network.pipes.map(pipe => {
+            if (movedNodeIds.has(pipe.startNodeId) || movedNodeIds.has(pipe.endNodeId)) {
+              return { ...pipe, labelOffset: { x: 0, y: 0 } };
+            }
+            return pipe;
+          });
+
+          onNetworkChange({
+            ...network,
+            pipes: updatedPipes
+          });
+        }
+      }
+
       // Detect drag-end events (dragging: false + position exists)
       const dragEndedChanges = changes.filter(
         (c): c is { id: string; type: "position"; dragging: false; position: { x: number; y: number } } =>
@@ -387,7 +418,7 @@ function EditorCanvas({
           }
 
           // Identify moved nodes
-          const movedNodeIds = new Set(dragEndedChanges.map(c => c.id));
+          // const movedNodeIds = new Set(dragEndedChanges.map(c => c.id)); // No longer needed for label reset
 
           // Update node positions
           updatedNetwork = {
@@ -398,16 +429,7 @@ function EditorCanvas({
             }),
           };
 
-          // Reset label position for pipes connected to moved nodes
-          updatedNetwork = {
-            ...updatedNetwork,
-            pipes: updatedNetwork.pipes.map(pipe => {
-              if (movedNodeIds.has(pipe.startNodeId) || movedNodeIds.has(pipe.endNodeId)) {
-                return { ...pipe, labelOffset: { x: 0, y: 0 } };
-              }
-              return pipe;
-            })
-          };
+          // Label reset is now handled during drag, so we don't need to do it here.
 
           onNetworkChange(updatedNetwork);
         }

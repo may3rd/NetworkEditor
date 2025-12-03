@@ -37,8 +37,12 @@ export default function PipeEdge({
     const [isDragging, setIsDragging] = useState(false);
     const dragStartPos = useRef({ x: 0, y: 0 });
     const dragStartOffset = useRef({ x: 0, y: 0 });
+    const hasMoved = useRef(false);
     const { getZoom } = useReactFlow();
-    const updatePipe = useNetworkStore((state) => state.updatePipe);
+    const { updatePipe, selectElement } = useNetworkStore((state) => ({
+        updatePipe: state.updatePipe,
+        selectElement: state.selectElement,
+    }));
 
     // Local state for immediate feedback during drag
     // Initialize from props if available
@@ -56,6 +60,7 @@ export default function PipeEdge({
         e.stopPropagation(); // Prevent edge selection/dragging
 
         setIsDragging(true);
+        hasMoved.current = false;
         dragStartPos.current = { x: e.clientX, y: e.clientY };
         dragStartOffset.current = { ...manualOffset };
     };
@@ -64,8 +69,15 @@ export default function PipeEdge({
         if (!isDragging) return;
 
         const zoom = getZoom();
-        const dx = (e.clientX - dragStartPos.current.x) / zoom;
-        const dy = (e.clientY - dragStartPos.current.y) / zoom;
+        const dxRaw = e.clientX - dragStartPos.current.x;
+        const dyRaw = e.clientY - dragStartPos.current.y;
+
+        if (Math.abs(dxRaw) > 5 || Math.abs(dyRaw) > 5) {
+            hasMoved.current = true;
+        }
+
+        const dx = dxRaw / zoom;
+        const dy = dyRaw / zoom;
 
         setManualOffset({
             x: dragStartOffset.current.x + dx,
@@ -77,11 +89,17 @@ export default function PipeEdge({
         if (!isDragging) return;
 
         setIsDragging(false);
-        // Save to store
-        if (pipe?.id) {
-            updatePipe(pipe.id, { labelOffset: manualOffset });
+
+        if (!hasMoved.current) {
+            // Click detected
+            selectElement(id, "pipe", { openPanel: true });
+        } else {
+            // Drag finished, save to store
+            if (pipe?.id) {
+                updatePipe(pipe.id, { labelOffset: manualOffset });
+            }
         }
-    }, [isDragging, manualOffset, pipe?.id, updatePipe]);
+    }, [isDragging, manualOffset, pipe?.id, updatePipe, selectElement, id]);
 
     useEffect(() => {
         if (isDragging) {
