@@ -165,7 +165,6 @@ function EditorCanvas({
     setShowSnapshot,
     showSummary,
     setShowSummary,
-    multiSelection,
   } = useNetworkStore();
 
   const [snapToGrid, setSnapToGrid] = useState(true);
@@ -175,6 +174,7 @@ function EditorCanvas({
   const [keepAspectRatio, setKeepAspectRatio] = useState(true);
   const [panModeEnabled, setPanModeEnabled] = useState(false);
   const [isCtrlPressed, setIsCtrlPressed] = useState(false);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -196,7 +196,14 @@ function EditorCanvas({
     };
   }, []);
 
-  const onSelect = selectElement;
+  const onSelect = useCallback((id: string | null, type: "node" | "pipe" | null, options?: { openPanel?: boolean }) => {
+    if (type === "node" && id) {
+      setSelectedNodeIds(new Set([id]));
+    } else {
+      setSelectedNodeIds(new Set());
+    }
+    selectElement(id, type, options);
+  }, [selectElement]);
   const onDelete = deleteSelection;
   const onUndo = undo;
   const onRedo = redo;
@@ -281,28 +288,6 @@ function EditorCanvas({
 
   const [localNodes, setLocalNodes] = useState<Node[]>(rfNodes);
   const pastedNodeIdsRef = useRef<Set<string> | null>(null);
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
-  const multiSelectionCount = (multiSelection?.nodes.length ?? 0) + (multiSelection?.edges.length ?? 0);
-
-  useEffect(() => {
-    if (multiSelectionCount > 1) {
-      return; // Preserve explicit multi-selection state managed by React Flow
-    }
-
-    setSelectedNodeIds((prev) => {
-      if (selectedType === "node" && selectedId) {
-        if (prev.size === 1 && prev.has(selectedId)) {
-          return prev;
-        }
-        return new Set([selectedId]);
-      }
-
-      if (prev.size === 0) {
-        return prev;
-      }
-      return new Set();
-    });
-  }, [selectedId, selectedType, multiSelectionCount]);
 
   useEffect(() => {
     if (pastedNodeIdsRef.current) {
