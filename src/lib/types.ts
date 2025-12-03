@@ -147,6 +147,7 @@ export type PipeProps = {
   pressureDropCalculationResults?: PressureDropCalculationResults;
   resultSummary?: resultSummary,
   serviceType?: string;
+  labelOffset?: { x: number; y: number };
 };
 
 // Fluid propertis

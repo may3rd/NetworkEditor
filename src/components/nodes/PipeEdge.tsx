@@ -3,15 +3,17 @@ import {
     EdgeLabelRenderer,
     getSmoothStepPath,
     type EdgeProps,
+    useReactFlow,
 } from "@xyflow/react";
 import { useTheme } from "@mui/material";
 import { ErrorOutline } from "@mui/icons-material";
-import { useState, useRef, useLayoutEffect } from "react";
+import { useState, useRef, useLayoutEffect, useEffect, useCallback } from "react";
 import { HoverCard } from "./HoverCard";
 import { PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
 import { getPipeStatus } from "@/utils/velocityCriteria";
 import { getPipeWarnings } from "@/utils/validationUtils";
+import { useNetworkStore } from "@/store/useNetworkStore";
 
 
 export default function PipeEdge({
@@ -31,11 +33,76 @@ export default function PipeEdge({
     const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
     const currentMousePos = useRef({ x: 0, y: 0 });
 
+    // Dragging Logic
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartPos = useRef({ x: 0, y: 0 });
+    const dragStartOffset = useRef({ x: 0, y: 0 });
+    const { getZoom } = useReactFlow();
+    const updatePipe = useNetworkStore((state) => state.updatePipe);
+
+    // Local state for immediate feedback during drag
+    // Initialize from props if available
+    const pipe = data?.pipe as PipeProps | undefined;
+    const [manualOffset, setManualOffset] = useState({ x: 0, y: 0 });
+
+    useEffect(() => {
+        if (pipe?.labelOffset) {
+            setManualOffset(pipe.labelOffset);
+        }
+    }, [pipe?.labelOffset]);
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (e.button !== 0) return; // Only left click
+        e.stopPropagation(); // Prevent edge selection/dragging
+
+        setIsDragging(true);
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+        dragStartOffset.current = { ...manualOffset };
+    };
+
+    const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
+        if (!isDragging) return;
+
+        const zoom = getZoom();
+        const dx = (e.clientX - dragStartPos.current.x) / zoom;
+        const dy = (e.clientY - dragStartPos.current.y) / zoom;
+
+        setManualOffset({
+            x: dragStartOffset.current.x + dx,
+            y: dragStartOffset.current.y + dy,
+        });
+    }, [isDragging, getZoom]);
+
+    const handleGlobalMouseUp = useCallback(() => {
+        if (!isDragging) return;
+
+        setIsDragging(false);
+        // Save to store
+        if (pipe?.id) {
+            updatePipe(pipe.id, { labelOffset: manualOffset });
+        }
+    }, [isDragging, manualOffset, pipe?.id, updatePipe]);
+
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleGlobalMouseMove);
+            window.addEventListener('mouseup', handleGlobalMouseUp);
+        } else {
+            window.removeEventListener('mousemove', handleGlobalMouseMove);
+            window.removeEventListener('mouseup', handleGlobalMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleGlobalMouseMove);
+            window.removeEventListener('mouseup', handleGlobalMouseUp);
+        };
+    }, [isDragging, handleGlobalMouseMove, handleGlobalMouseUp]);
+
     const handleMouseMove = (e: React.MouseEvent) => {
         currentMousePos.current = { x: e.clientX, y: e.clientY };
     };
 
     const handleMouseEnter = (e: React.MouseEvent) => {
+        if (isDragging) return; // Don't trigger hover while dragging
         currentMousePos.current = { x: e.clientX, y: e.clientY };
         if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
         hoverTimerRef.current = setTimeout(() => {
@@ -94,7 +161,7 @@ export default function PipeEdge({
     const labelTextColor = (data?.labelTextColor as string) || theme.palette.text.primary;
     const labelBorderColor = theme.palette.divider;
     const isSelected = data?.isSelected as boolean;
-    const pipe = data?.pipe as PipeProps | undefined;
+    // pipe is already declared at the top
 
     const isAnimationEnabled = data?.isAnimationEnabled as boolean;
     const isConnectingMode = data?.isConnectingMode as boolean;
@@ -314,7 +381,7 @@ export default function PipeEdge({
                     <div
                         style={{
                             position: "absolute",
-                            transform: `translate(-50%, -50%) translate(${labelX + offsetX}px, ${labelY + offsetY}px)`,
+                            transform: `translate(-50%, -50%) translate(${labelX + offsetX + manualOffset.x}px, ${labelY + offsetY + manualOffset.y}px)`,
                             background: labelBgColor,
                             padding: "0px 8px",
                             borderRadius: "4px",
@@ -330,11 +397,13 @@ export default function PipeEdge({
                             display: "flex",
                             flexDirection: "column",
                             alignItems: "center",
+                            cursor: isDragging ? "grabbing" : "grab",
                         }}
                         className="nodrag nopan"
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         onMouseMove={handleMouseMove}
+                        onMouseDown={handleMouseDown}
                         ref={labelRef}
                     >
                         {renderBadge()}
