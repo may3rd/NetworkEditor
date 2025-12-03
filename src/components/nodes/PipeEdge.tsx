@@ -15,7 +15,6 @@ import { getPipeStatus } from "@/utils/velocityCriteria";
 import { getPipeWarnings } from "@/utils/validationUtils";
 import { useNetworkStore } from "@/store/useNetworkStore";
 
-
 export default function PipeEdge({
     id,
     sourceX,

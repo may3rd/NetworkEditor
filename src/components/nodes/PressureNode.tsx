@@ -76,7 +76,7 @@ function PressureNode({ data }: { data: NodeData }) {
   const fillColor = roleColor;
 
   // Use theme text color for border to adapt to light/dark mode automatically
-  const borderColor = isSelected ? "#0ea5e9" : theme.palette.text.primary;
+  const borderColor = isSelected ? "#f59e0b" : theme.palette.text.primary;
   const borderWidth = isSelected ? 2 : 1;
 
   const baseShadow = isDark
@@ -190,7 +190,7 @@ function PressureNode({ data }: { data: NodeData }) {
   const shadowBandage = isDark ?
     "0 1px 2px rgba(255, 255, 255, 0.35)" :
     "0 1px 2px rgba(0, 0, 0, 0.35)"
-  
+
   return (
     <div
       onMouseEnter={!showHandles ? handleMouseEnter : undefined}
@@ -222,15 +222,15 @@ function PressureNode({ data }: { data: NodeData }) {
       <div style={{ position: "relative", width: circleSize, height: circleSize }}>
         <style>
           {`
-            @keyframes pulse-sky {
+            @keyframes pulse-node-selected {
               0% {
-                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0.7), ${myShadow};
+                box-shadow: 0 0 0 0px #f59e0b, ${myShadow};
               }
               70% {
-                box-shadow: 0 0 0 6px rgba(14, 165, 233, 0), ${myShadow};
+                box-shadow: 0 0 0 6px rgba(245, 158, 11, 0), ${myShadow};
               }
               100% {
-                box-shadow: 0 0 0 0px rgba(14, 165, 233, 0), ${myShadow};
+                box-shadow: 0 0 0 0px rgba(245, 158, 11, 0), ${myShadow};
               }
             }
           `}
@@ -243,7 +243,7 @@ function PressureNode({ data }: { data: NodeData }) {
             borderRadius: "50%",
             background: fillColor,
             boxShadow: myShadow,
-            animation: isSelected ? "pulse-sky 2s infinite" : "none",
+            animation: isSelected ? "pulse-node-selected 2s infinite" : "none",
             transform: `scale(${scaleAmount})`,
             transition: "background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease",
             position: "absolute",

@@ -551,9 +551,6 @@ function EditorCanvas({
     onNetworkChange?.({ ...network, nodes: updatedNodes });
   }, [network, selectedId, selectedType, onNetworkChange]);
 
-
-
-
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
   const snapGrid: [number, number] = [5, 5];
   const connectingNodeId = useRef<string | null>(null);
@@ -562,8 +559,6 @@ function EditorCanvas({
 
   const { screenToFlowPosition, getNodes, getViewport, setViewport } = useReactFlow();
   const NODE_SIZE = 20;
-
-
 
   useCopyPaste(onPaste);
 

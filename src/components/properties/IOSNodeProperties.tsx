@@ -421,10 +421,20 @@ export function IOSNodeProperties({
                 anchorEl={anchorEl}
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
-                PaperProps={{
-                    sx: {
-                        ...glassListGroupSx,
-                        minWidth: 150,
+                anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'center',
+                }}
+                transformOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'center',
+                }}
+                slotProps={{
+                    paper: {
+                        sx: {
+                            ...glassListGroupSx,
+                            minWidth: 150,
+                        }
                     }
                 }}
             >
