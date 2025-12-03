@@ -6,10 +6,13 @@ import { getPipeWarnings } from "@/utils/validationUtils";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps, Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack } from "@mui/material";
+import { BackButtonPanel, ForwardButtonPanel } from "./NavigationButtons";
 import { Add, Check, Timeline, Close, ErrorOutline } from "@mui/icons-material";
 import { RefObject, useEffect, useRef, useState } from "react";
 import { glassDialogSx, glassListGroupSx, glassPanelSx } from "@/lib/glassStyles";
+import { createPortal } from "react-dom";
+import { useNetworkStore } from "@/store/useNetworkStore";
 
 function ControlValveIcon(props: SvgIconProps) {
     return (
@@ -62,8 +65,6 @@ import {
     BoundaryNodePage
 } from "./subPages/PipeSubPages";
 
-import { FloatingNavigationPanel } from "./FloatingNavigationPanel";
-
 type Props = {
     pipe: PipeProps;
     startNode?: NodeProps;
@@ -77,12 +78,7 @@ type Props = {
     footerNode?: HTMLDivElement | null;
 };
 
-export function IOSPipeProperties({
-    pipe,
-    startNode,
-    endNode,
-    onUpdatePipe,
-    onUpdateNode,
+export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUpdateNode,
     navigator,
     viewSettings,
     containerRef,
@@ -92,6 +88,9 @@ export function IOSPipeProperties({
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const summaryRef = useRef<HTMLDivElement>(null);
+
+    const selectElement = useNetworkStore((state) => state.selectElement);
+    const onClose = () => selectElement(null, null);
 
 
     // Scroll listener for title fade-in
@@ -257,6 +256,7 @@ export function IOSPipeProperties({
         <Box sx={{
             mt: "-100px",
             pt: "100px",
+            pb: "60px",
         }}>
             {/* Top Summary Section */}
             <Box ref={summaryRef} sx={{
@@ -559,11 +559,42 @@ export function IOSPipeProperties({
                     last
                 />
             </IOSListGroup>
-            <FloatingNavigationPanel
-                footerNode={footerNode || null}
-                onBack={() => console.log("Back clicked (mock)")}
-                onForward={() => console.log("Forward clicked (mock)")}
-            />
+
+            {/* Navigation Buttons - Rendered via Portal if footerNode is available */}
+            {footerNode && createPortal(
+                <Stack
+                    direction="row"
+                    spacing={2}
+                    sx={{
+                        position: "absolute",
+                        bottom: 24,
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        zIndex: 1200,
+                        pointerEvents: "auto", // Re-enable pointer events for buttons
+                    }}
+                >
+                    <BackButtonPanel
+                        disabled={!pipe.startNodeId}
+                        onClick={() => {
+                            console.log("Back (Start Node):", pipe.startNodeId);
+                            onClose();
+                            // select start node
+                            selectElement(pipe.startNodeId, "node");
+                        }}
+                    />
+                    <ForwardButtonPanel
+                        disabled={!pipe.endNodeId}
+                        onClick={() => {
+                            console.log("Forward (End Node):", pipe.endNodeId);
+                            onClose();
+                            // select end node
+                            selectElement(pipe.endNodeId, "node");
+                        }}
+                    />
+                </Stack>,
+                footerNode
+            )}
         </Box>
     );
 }

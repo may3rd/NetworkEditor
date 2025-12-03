@@ -409,7 +409,7 @@ function EditorCanvas({
           }
 
           // Identify moved nodes
-          const movedNodeIds = new Set(dragEndedChanges.map(c => c.id));
+          // const movedNodeIds = new Set(dragEndedChanges.map(c => c.id)); // No longer needed for label reset
 
           // Update node positions
           updatedNetwork = {
@@ -419,18 +419,6 @@ function EditorCanvas({
               return change ? { ...node, position: change.position! } : node;
             }),
           };
-
-          // Reset label position for pipes connected to moved nodes
-          updatedNetwork = {
-            ...updatedNetwork,
-            pipes: updatedNetwork.pipes.map(pipe => {
-              if (movedNodeIds.has(pipe.startNodeId) || movedNodeIds.has(pipe.endNodeId)) {
-                return { ...pipe, labelOffset: { x: 0, y: 0 } };
-              }
-              return pipe;
-            })
-          };
-
           onNetworkChange(updatedNetwork);
         }
       }
@@ -835,8 +823,6 @@ function EditorCanvas({
     : isPanMode ? "grab" : "default";
   const { toggleColorMode } = useColorMode();
   const colorMode = theme.palette.mode;
-  const isDarkMode = colorMode === "dark";
-  const flowCanvasColor = isDarkMode ? theme.palette.background.paper : undefined;
 
   return (
     <Paper
@@ -954,13 +940,10 @@ function EditorCanvas({
           panOnDrag={panModeEnabled || [1, 2]} // Pan on left click if in pan mode, or middle/right click always
           selectionKeyCode={isPanMode ? null : "Shift"} // Use Shift for selection if not in pan mode
           multiSelectionKeyCode={isPanMode ? null : "Meta"}
-          style={{
-            cursor: editorCursor,
-            backgroundColor: flowCanvasColor,
-          }}
+          style={{ cursor: editorCursor }}
         >
           <CustomBackground
-            color={flowCanvasColor ?? theme.palette.background.paper}
+            color={theme.palette.background.paper}
             backgroundImage={network.backgroundImage}
             backgroundImageSize={network.backgroundImageSize}
             backgroundImagePosition={network.backgroundImagePosition}

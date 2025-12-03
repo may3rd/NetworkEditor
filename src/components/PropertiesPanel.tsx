@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect, ReactNode, useRef, RefObject } from "react";
 import { Paper, Box } from "@mui/material";
-import { NetworkState, NodePatch, PipePatch, ViewSettings } from "@/lib/types";
+import { NetworkState } from "@/lib/types";
 import { glassPanelSx } from "@/lib/glassStyles";
 import { IOSNavBar } from "./ios/IOSNavBar";
 import { IOSPipeProperties } from "./properties/IOSPipeProperties";
@@ -28,9 +28,8 @@ export function PropertiesPanel() {
 
   const onClose = () => selectElement(null, null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [titleOpacity, setTitleOpacity] = useState(1);
-
   const [footerNode, setFooterNode] = useState<HTMLDivElement | null>(null);
+  const [titleOpacity, setTitleOpacity] = useState(1);
 
   const [stack, setStack] = useState<{
     id: string;
@@ -91,12 +90,28 @@ export function PropertiesPanel() {
       return;
     }
 
-    const rootRender = (net: NetworkState, nav: Navigator, ref: RefObject<HTMLDivElement | null>, setOpacity: (o: number) => void, footer: HTMLDivElement | null) => {
+    const rootRender = (
+      net: NetworkState,
+      nav: Navigator,
+      ref: RefObject<HTMLDivElement | null>,
+      setOpacity: (o: number) => void,
+      footer: HTMLDivElement | null
+    ) => {
+      // Set the Node Properties Panel
       if (selectedElement.type === "node") {
         const node = net.nodes.find((n) => n.id === selectedElement.id);
         if (!node) return null;
-        return <IOSNodeProperties node={node} network={net} onUpdateNode={onUpdateNode} navigator={nav} onNetworkChange={onNetworkChange} footerNode={footer} />;
-      } else {
+        return <IOSNodeProperties
+          node={node}
+          network={net}
+          onUpdateNode={onUpdateNode}
+          navigator={nav}
+          containerRef={ref}
+          setTitleOpacity={setOpacity}
+          onNetworkChange={onNetworkChange}
+          footerNode={footer}
+        />;
+      } else { // Pipe Porperties Panel
         const pipe = net.pipes.find((p) => p.id === selectedElement.id);
         if (!pipe) return null;
         const startNode = net.nodes.find((n) => n.id === pipe.startNodeId);
@@ -159,6 +174,7 @@ export function PropertiesPanel() {
         display: "flex",
         flexDirection: "column",
         zIndex: 1100, // Above canvas
+        position: "relative", // Ensure absolute children are relative to this
       }}
     >
       <Box
@@ -184,6 +200,8 @@ export function PropertiesPanel() {
         />
         {activeComponent}
       </Box>
+
+
       <Box
         ref={setFooterNode}
         sx={{
