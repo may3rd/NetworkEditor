@@ -126,7 +126,19 @@ export const useNetworkStore = create<NetworkStore>((set, get) => ({
                 JSON.stringify(currentState?.nodes) === JSON.stringify(newNetwork.nodes) &&
                 JSON.stringify(currentState?.pipes) === JSON.stringify(newNetwork.pipes);
 
-            if (isSame) return { network: newNetwork };
+            if (isSame) {
+                // Even if nodes/pipes are same, viewSettings might have changed
+                let newViewSettings = state.viewSettings;
+                if (newNetwork.viewSettings) {
+                    newViewSettings = {
+                        ...state.viewSettings,
+                        ...newNetwork.viewSettings,
+                        node: { ...state.viewSettings.node, ...newNetwork.viewSettings?.node },
+                        pipe: { ...state.viewSettings.pipe, ...newNetwork.viewSettings?.pipe }
+                    };
+                }
+                return { network: newNetwork, viewSettings: newViewSettings };
+            }
 
             let newHistory = state.history.slice(0, state.historyIndex + 1);
             newHistory.push(newNetwork);
