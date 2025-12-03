@@ -240,7 +240,7 @@ export type ProjectDetails = {
 const baseNetwork: NetworkState = {
   nodes: [
     {
-      id: "n1",
+      id: "Node-1",
       label: "A",
       position: { x: 0, y: 0 },
       pressure: 101.08,
@@ -257,7 +257,7 @@ const baseNetwork: NetworkState = {
       }
     },
     {
-      id: "n2",
+      id: "Node-2",
       label: "B1",
       position: { x: 200, y: 0 },
       pressure: 101.08,
@@ -274,7 +274,7 @@ const baseNetwork: NetworkState = {
       }
     },
     {
-      id: "n3",
+      id: "Node-3",
       label: "B2",
       position: { x: 400, y: 0 },
       pressure: 101.08,
@@ -291,7 +291,7 @@ const baseNetwork: NetworkState = {
       }
     },
     {
-      id: "n4",
+      id: "Node-4",
       label: "D",
       position: { x: 600, y: 0 },
       pressure: 101.08,
@@ -308,7 +308,7 @@ const baseNetwork: NetworkState = {
       }
     },
     {
-      id: "n5",
+      id: "Node-5",
       label: "G1",
       position: { x: 0, y: 150 },
       pressure: 101.08,
@@ -326,7 +326,7 @@ const baseNetwork: NetworkState = {
       },
     },
     {
-      id: "n6",
+      id: "Node-6",
       label: "G2",
       position: { x: 200, y: 150 },
       pressure: 101.08,
@@ -344,7 +344,7 @@ const baseNetwork: NetworkState = {
       },
     },
     {
-      id: "n7",
+      id: "Node-7",
       label: "G3",
       position: { x: 400, y: 150 },
       pressure: 101.08,
@@ -362,7 +362,7 @@ const baseNetwork: NetworkState = {
       },
     },
     {
-      id: "n8",
+      id: "Node-8",
       label: "G4",
       position: { x: 600, y: 150 },
       pressure: 101.08,
@@ -382,11 +382,11 @@ const baseNetwork: NetworkState = {
   ],
   pipes: [
     {
-      id: "1",
+      id: "Pipe-001",
       name: "P-001",
       description: "Pipeline 1",
-      startNodeId: "n1",
-      endNodeId: "n2",
+      startNodeId: "Node-1",
+      endNodeId: "Node-2",
       massFlowRate: 90513.6,
       massFlowRateUnit: "kg/h",
       diameter: 202.74,
@@ -411,11 +411,11 @@ const baseNetwork: NetworkState = {
       }
     },
     {
-      id: "2",
+      id: "Pipe-002",
       name: "P-002",
       description: "Pipeline 2",
-      startNodeId: "n2",
-      endNodeId: "n3",
+      startNodeId: "Node-2",
+      endNodeId: "Node-3",
       massFlowRate: 90513.6,
       massFlowRateUnit: "kg/h",
       diameter: 202.74,
@@ -440,11 +440,11 @@ const baseNetwork: NetworkState = {
       }
     },
     {
-      id: "3",
+      id: "Pipe-003",
       name: "P-003",
       description: "Pipeline 3",
-      startNodeId: "n3",
-      endNodeId: "n4",
+      startNodeId: "Node-3",
+      endNodeId: "Node-4",
       massFlowRate: 90513.6,
       massFlowRateUnit: "kg/h",
       diameter: 102.26,
@@ -469,11 +469,11 @@ const baseNetwork: NetworkState = {
       }
     },
     {
-      id: "4",
+      id: "Pipe-004",
       name: "P-004",
       description: "Pipeline 4",
-      startNodeId: "n5",
-      endNodeId: "n6",
+      startNodeId: "Node-5",
+      endNodeId: "Node-6",
       massFlowRate: 1000.0,
       massFlowRateUnit: "kg/h",
       gasFlowModel: "adiabatic",
@@ -499,11 +499,11 @@ const baseNetwork: NetworkState = {
       },
     },
     {
-      id: "5",
+      id: "Pipe-005",
       name: "P-005",
       description: "Pipeline 5",
-      startNodeId: "n6",
-      endNodeId: "n7",
+      startNodeId: "Node-6",
+      endNodeId: "Node-7",
       massFlowRate: 1000.0,
       massFlowRateUnit: "kg/h",
       gasFlowModel: "isothermal",
@@ -529,11 +529,11 @@ const baseNetwork: NetworkState = {
       },
     },
     {
-      id: "6",
+      id: "Pipe-006",
       name: "P-006",
       description: "Pipeline 6",
-      startNodeId: "n7",
-      endNodeId: "n8",
+      startNodeId: "Node-7",
+      endNodeId: "Node-8",
       massFlowRate: 1000.0,
       massFlowRateUnit: "kg/h",
       gasFlowModel: "adiabatic",

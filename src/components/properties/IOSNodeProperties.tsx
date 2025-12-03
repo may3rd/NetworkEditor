@@ -1,8 +1,9 @@
-import { NodeProps, NodePatch, NetworkState } from "@/lib/types";
+import { NodeProps, NodePatch, NetworkState, PipeProps } from "@/lib/types";
+import React from "react";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, TextField, Typography, useTheme, Stack } from "@mui/material";
+import { Box, TextField, Typography, useTheme, Stack, Menu, MenuItem } from "@mui/material";
 import { BackButtonPanel, ForwardButtonPanel } from "./NavigationButtons";
 import { Sync, PlayArrow } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
@@ -52,9 +53,24 @@ export function IOSNodeProperties({
 }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
-    
+
     const selectElement = useNetworkStore((state) => state.selectElement);
     const onClose = () => selectElement(null, null);
+
+    // Menu State
+    const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+    const [menuPipes, setMenuPipes] = React.useState<{ pipe: PipeProps, pipeId: string }[]>([]);
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setMenuPipes([]);
+    };
+
+    const handleMenuClick = (pipeId: string) => {
+        handleMenuClose();
+        onClose(); // Deselect current
+        selectElement(pipeId, "pipe");
+    };
 
     const openNamePage = () => {
         navigator.push("Label", (net: NetworkState, nav: Navigator) => {
@@ -366,15 +382,14 @@ export function IOSNodeProperties({
                         return (
                             <BackButtonPanel
                                 disabled={incomingPipes.length === 0}
-                                onClick={() => {
-                                    console.log("Back (Incoming Pipes):", incomingPipes.map(p => p.id));
-                                    onClose();
-                                    // select start node
+                                onClick={(e) => {
                                     if (incomingPipes.length === 1) {
-                                        console.log("Selecting start node:", incomingPipes[0].startNodeId);
+                                        onClose();
+                                        console.log("Selecting start node:", incomingPipes[0].id);
+                                        selectElement(incomingPipes[0].id, "pipe");
                                     } else {
-                                        console.log("Multiple incoming pipes, cannot select start node");
-                                        // add popup to select start node
+                                        setMenuPipes(incomingPipes.map(p => ({ pipe: p, pipeId: p.id })));
+                                        setAnchorEl(e.currentTarget);
                                     }
                                 }}
                             />
@@ -385,15 +400,14 @@ export function IOSNodeProperties({
                         return (
                             <ForwardButtonPanel
                                 disabled={outgoingPipes.length === 0}
-                                onClick={() => {
-                                    console.log("Forward (Outgoing Pipes):", outgoingPipes.map(p => p.id));
-                                    onClose();
-                                    // select end node
+                                onClick={(e) => {
                                     if (outgoingPipes.length === 1) {
-                                        console.log("Selecting end node:", outgoingPipes[0].endNodeId);
+                                        onClose();
+                                        console.log("Selecting end node:", outgoingPipes[0].id);
+                                        selectElement(outgoingPipes[0].id, "pipe");
                                     } else {
-                                        console.log("Multiple outgoing pipes, cannot select end node");
-                                        // add popup to select end node
+                                        setMenuPipes(outgoingPipes.map(p => ({ pipe: p, pipeId: p.id })));
+                                        setAnchorEl(e.currentTarget);
                                     }
                                 }}
                             />
@@ -402,6 +416,24 @@ export function IOSNodeProperties({
                 </Stack>,
                 footerNode
             )}
+
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                PaperProps={{
+                    sx: {
+                        ...glassListGroupSx,
+                        minWidth: 150,
+                    }
+                }}
+            >
+                {menuPipes.map(({ pipe, pipeId }) => (
+                    <MenuItem key={pipe.id} onClick={() => handleMenuClick(pipeId)}>
+                        {pipe.name || "Unnamed Pipe"}
+                    </MenuItem>
+                ))}
+            </Menu>
         </Box>
     );
 }
