@@ -2,7 +2,8 @@ import { NodeProps, NodePatch, NetworkState } from "@/lib/types";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, TextField, Typography, useTheme } from "@mui/material";
+import { Box, TextField, Typography, useTheme, Stack } from "@mui/material";
+import { BackButtonPanel, ForwardButtonPanel } from "./NavigationButtons";
 import { Sync, PlayArrow } from "@mui/icons-material";
 import { convertUnit } from "@/lib/unitConversion";
 import { propagatePressure } from "@/lib/pressurePropagation";
@@ -331,6 +332,42 @@ export function IOSNodeProperties({ node, network, onUpdateNode, navigator, cont
                     />
                 )}
             </IOSListGroup>
+
+            {/* Navigation Buttons */}
+            <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                    position: "absolute",
+                    bottom: 24,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 1200,
+                }}
+            >
+                {(() => {
+                    const incomingPipes = network.pipes.filter(p => p.endNodeId === node.id);
+                    return (
+                        <BackButtonPanel
+                            disabled={incomingPipes.length === 0}
+                            onClick={() => {
+                                console.log("Back (Incoming Pipes):", incomingPipes.map(p => p.id));
+                            }}
+                        />
+                    );
+                })()}
+                {(() => {
+                    const outgoingPipes = network.pipes.filter(p => p.startNodeId === node.id);
+                    return (
+                        <ForwardButtonPanel
+                            disabled={outgoingPipes.length === 0}
+                            onClick={() => {
+                                console.log("Forward (Outgoing Pipes):", outgoingPipes.map(p => p.id));
+                            }}
+                        />
+                    );
+                })()}
+            </Stack>
         </Box>
     );
 }

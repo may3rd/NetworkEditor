@@ -6,7 +6,8 @@ import { getPipeWarnings } from "@/utils/validationUtils";
 import { IOSListGroup } from "../ios/IOSListGroup";
 import { IOSListItem } from "../ios/IOSListItem";
 import { Navigator } from "../PropertiesPanel";
-import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import { Box, IconButton, Typography, useTheme, SvgIcon, SvgIconProps, Dialog, DialogTitle, DialogContent, DialogActions, Button, Stack } from "@mui/material";
+import { BackButtonPanel, ForwardButtonPanel } from "./NavigationButtons";
 import { Add, Check, Timeline, Close, ErrorOutline } from "@mui/icons-material";
 import { RefObject, useEffect, useRef, useState } from "react";
 import { glassDialogSx, glassListGroupSx, glassPanelSx } from "@/lib/glassStyles";
@@ -551,6 +552,32 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     last
                 />
             </IOSListGroup>
+
+            {/* Navigation Buttons */}
+            <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                    position: "absolute",
+                    bottom: 24,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    zIndex: 1200,
+                }}
+            >
+                <BackButtonPanel
+                    disabled={!pipe.startNodeId}
+                    onClick={() => {
+                        console.log("Back (Start Node):", pipe.startNodeId);
+                    }}
+                />
+                <ForwardButtonPanel
+                    disabled={!pipe.endNodeId}
+                    onClick={() => {
+                        console.log("Forward (End Node):", pipe.endNodeId);
+                    }}
+                />
+            </Stack>
         </Box>
     );
 }

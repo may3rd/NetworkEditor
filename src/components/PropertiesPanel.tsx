@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, ReactNode, useRef, RefObject } from "react";
-import { Paper, Box, Stack, IconButton, Theme } from "@mui/material";
-import { ChevronLeft, ChevronRight } from "@mui/icons-material";
-import { NetworkState, NodePatch, PipePatch, ViewSettings } from "@/lib/types";
+import { Paper, Box } from "@mui/material";
+import { NetworkState } from "@/lib/types";
 import { glassPanelSx } from "@/lib/glassStyles";
 import { IOSNavBar } from "./ios/IOSNavBar";
 import { IOSPipeProperties } from "./properties/IOSPipeProperties";
@@ -184,67 +183,7 @@ export function PropertiesPanel() {
         {activeComponent}
       </Box>
 
-      {/* Floating Navigation Buttons */}
-      <Stack
-        direction="row"
-        spacing={2}
-        sx={{
-          position: "absolute",
-          bottom: 24,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 1200,
-        }}
-      >
-        <IconButton
-          sx={{
-            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(30, 41, 59, 0.7)" : "rgba(255, 255, 255, 0.7)",
-            backdropFilter: "blur(10px)",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-            color: (theme) => theme.palette.text.primary,
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            '&:hover': {
-              backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(30, 41, 59, 0.9)" : "rgba(255, 255, 255, 0.9)",
-              transform: "scale(1.1)",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
-            },
-            '&:active': {
-              transform: "scale(0.95)",
-            }
-          }}
-          onClick={() => { /* TODO */ }}
-        >
-          <ChevronLeft />
-        </IconButton>
-        <IconButton
-          sx={{
-            backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(30, 41, 59, 0.7)" : "rgba(255, 255, 255, 0.7)",
-            backdropFilter: "blur(10px)",
-            boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
-            border: (theme) => `1px solid ${theme.palette.divider}`,
-            color: (theme) => theme.palette.text.primary,
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            '&:hover': {
-              backgroundColor: (theme) => theme.palette.mode === 'dark' ? "rgba(30, 41, 59, 0.9)" : "rgba(255, 255, 255, 0.9)",
-              transform: "scale(1.1)",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
-            },
-            '&:active': {
-              transform: "scale(0.95)",
-            }
-          }}
-          onClick={() => { /* TODO */ }}
-        >
-          <ChevronRight />
-        </IconButton>
-      </Stack>
+
     </Paper>
   );
 }
