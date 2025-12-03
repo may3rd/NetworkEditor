@@ -6,7 +6,7 @@ import {
 } from "@xyflow/react";
 import { useTheme } from "@mui/material";
 import { ErrorOutline } from "@mui/icons-material";
-import { useState, useRef } from "react";
+import { useState, useRef, useLayoutEffect } from "react";
 import { HoverCard } from "./HoverCard";
 import { PipeProps } from "@/lib/types";
 import { convertUnit } from "@/lib/unitConversion";
@@ -57,9 +57,39 @@ export default function PipeEdge({
         targetPosition,
     });
 
+    const [labelSize, setLabelSize] = useState({ width: 0, height: 0 });
+    const labelRef = useRef<HTMLDivElement>(null);
+
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
     const labelLines = (data?.labelLines as string[]) || [];
+
+    // Measure label size
+    useLayoutEffect(() => {
+        if (labelRef.current) {
+            const { width, height } = labelRef.current.getBoundingClientRect();
+            setLabelSize({ width, height });
+        }
+    }, [labelLines, data?.pipe, isDark]); // Re-measure when content changes
+
+    // Smart Label Positioning
+    const dx = Math.abs(sourceX - targetX);
+    const dy = Math.abs(sourceY - targetY);
+    const isHorizontal = dx > dy;
+
+    let offsetX = 0;
+    let offsetY = 0;
+    const gap = 0; // Gap between pipe and label
+
+    if (isHorizontal) {
+        // Move down by half height + gap
+        // Default to 14 (approx half of single line height) to minimize jump
+        offsetY = labelSize.height > 0 ? (labelSize.height / 2) + gap : 14;
+    } else {
+        // Move right by half width + gap
+        // Default to 40 (approx half of typical label width)
+        offsetX = labelSize.width > 0 ? (labelSize.width / 2) + gap : 40;
+    }
     const labelBgColor = (data?.labelBgColor as string) || theme.palette.background.paper;
     const labelTextColor = (data?.labelTextColor as string) || theme.palette.text.primary;
     const labelBorderColor = theme.palette.divider;
@@ -170,7 +200,7 @@ export default function PipeEdge({
         if (!badgeType) return null;
         const commonStyle: React.CSSProperties = {
             position: "absolute",
-            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+            transform: `translate(-50%, -50%) translate(${labelX + offsetX}px, ${labelY + offsetY}px)`,
             zIndex: 1,
             pointerEvents: "none",
             width: 14,
@@ -284,7 +314,7 @@ export default function PipeEdge({
                     <div
                         style={{
                             position: "absolute",
-                            transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+                            transform: `translate(-50%, -50%) translate(${labelX + offsetX}px, ${labelY + offsetY}px)`,
                             background: labelBgColor,
                             padding: "0px 8px",
                             borderRadius: "4px",
@@ -305,6 +335,7 @@ export default function PipeEdge({
                         onMouseEnter={handleMouseEnter}
                         onMouseLeave={handleMouseLeave}
                         onMouseMove={handleMouseMove}
+                        ref={labelRef}
                     >
                         {renderBadge()}
                         {labelLines.map((line, i) => (
