@@ -11,7 +11,7 @@ import { IOSNodeProperties } from "./properties/IOSNodeProperties";
 import { useNetworkStore } from "@/store/useNetworkStore";
 
 export type Navigator = {
-  push: (title: string, component: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void) => ReactNode, backLabel?: string, rightAction?: ReactNode) => void;
+  push: (title: string, component: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void, footerNode: HTMLDivElement | null) => ReactNode, backLabel?: string, rightAction?: ReactNode) => void;
   pop: () => void;
 };
 
@@ -30,12 +30,14 @@ export function PropertiesPanel() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [titleOpacity, setTitleOpacity] = useState(1);
 
+  const [footerNode, setFooterNode] = useState<HTMLDivElement | null>(null);
+
   const [stack, setStack] = useState<{
     id: string;
     title: string;
     backLabel?: string;
     rightAction?: ReactNode;
-    render: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void) => ReactNode;
+    render: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void, footerNode: HTMLDivElement | null) => ReactNode;
     scrollPos?: number;
   }[]>([]);
 
@@ -60,7 +62,7 @@ export function PropertiesPanel() {
     prevStackLengthRef.current = stack.length;
   }, [stack]);
 
-  const push = (title: string, render: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void) => ReactNode, backLabel?: string, rightAction?: ReactNode) => {
+  const push = (title: string, render: (network: NetworkState, navigator: Navigator, containerRef: RefObject<HTMLDivElement | null>, setTitleOpacity: (o: number) => void, footerNode: HTMLDivElement | null) => ReactNode, backLabel?: string, rightAction?: ReactNode) => {
     setStack(prev => {
       const newStack = [...prev];
       // Save scroll position of current top page
@@ -89,11 +91,11 @@ export function PropertiesPanel() {
       return;
     }
 
-    const rootRender = (net: NetworkState, nav: Navigator, ref: RefObject<HTMLDivElement | null>, setOpacity: (o: number) => void) => {
+    const rootRender = (net: NetworkState, nav: Navigator, ref: RefObject<HTMLDivElement | null>, setOpacity: (o: number) => void, footer: HTMLDivElement | null) => {
       if (selectedElement.type === "node") {
         const node = net.nodes.find((n) => n.id === selectedElement.id);
         if (!node) return null;
-        return <IOSNodeProperties node={node} network={net} onUpdateNode={onUpdateNode} navigator={nav} onNetworkChange={onNetworkChange} />;
+        return <IOSNodeProperties node={node} network={net} onUpdateNode={onUpdateNode} navigator={nav} onNetworkChange={onNetworkChange} footerNode={footer} />;
       } else {
         const pipe = net.pipes.find((p) => p.id === selectedElement.id);
         if (!pipe) return null;
@@ -109,6 +111,7 @@ export function PropertiesPanel() {
           viewSettings={viewSettings}
           containerRef={ref}
           setTitleOpacity={setOpacity}
+          footerNode={footer}
         />;
       }
     };
@@ -142,7 +145,7 @@ export function PropertiesPanel() {
 
   const activePage = stack[stack.length - 1];
   // eslint-disable-next-line
-  const activeComponent = activePage.render(network, navigator, containerRef, setTitleOpacity);
+  const activeComponent = activePage.render(network, navigator, containerRef, setTitleOpacity, footerNode);
 
   return (
     <Paper
@@ -181,6 +184,19 @@ export function PropertiesPanel() {
         />
         {activeComponent}
       </Box>
+      <Box
+        ref={setFooterNode}
+        sx={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 0,
+          overflow: "visible",
+          zIndex: 1200,
+          pointerEvents: "none", // Allow clicks to pass through empty areas
+        }}
+      />
     </Paper>
   );
 }

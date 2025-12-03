@@ -62,6 +62,8 @@ import {
     BoundaryNodePage
 } from "./subPages/PipeSubPages";
 
+import { FloatingNavigationPanel } from "./FloatingNavigationPanel";
+
 type Props = {
     pipe: PipeProps;
     startNode?: NodeProps;
@@ -72,13 +74,20 @@ type Props = {
     viewSettings: ViewSettings;
     containerRef?: RefObject<HTMLDivElement | null>;
     setTitleOpacity?: (o: number) => void;
+    footerNode?: HTMLDivElement | null;
 };
 
-export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUpdateNode,
+export function IOSPipeProperties({
+    pipe,
+    startNode,
+    endNode,
+    onUpdatePipe,
+    onUpdateNode,
     navigator,
     viewSettings,
     containerRef,
     setTitleOpacity,
+    footerNode,
 }: Props) {
     const theme = useTheme();
     const isDark = theme.palette.mode === 'dark';
@@ -550,6 +559,11 @@ export function IOSPipeProperties({ pipe, startNode, endNode, onUpdatePipe, onUp
                     last
                 />
             </IOSListGroup>
+            <FloatingNavigationPanel
+                footerNode={footerNode || null}
+                onBack={() => console.log("Back clicked (mock)")}
+                onForward={() => console.log("Forward clicked (mock)")}
+            />
         </Box>
     );
 }
